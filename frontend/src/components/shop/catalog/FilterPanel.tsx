@@ -13,7 +13,7 @@ interface Props {
   onReset: () => void;
 }
 
-/** Bộ lọc: CHỈ category_id, brand_id, search, min_price, max_price (task 2.2). Rating filter chờ backend. */
+/** Bộ lọc: CHỈ category_id, brand_id, search, min_price, max_price (task 2.2). Lọc rating dựa trên review đã duyệt. */
 export function FilterPanel({ filters, categories, brands, onChange, onSearch, onReset }: Props) {
   return (
     <aside aria-label="Bộ lọc" className="space-y-5 rounded-xl bg-white p-4">
@@ -48,6 +48,30 @@ export function FilterPanel({ filters, categories, brands, onChange, onSearch, o
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-800">Khoảng giá (VND)</h2>
         <PriceRange min={filters.min_price} max={filters.max_price} onApply={(min_price, max_price) => onChange({ min_price, max_price })} />
+      </section>
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Đánh giá</h2>
+        <ul className="space-y-1">
+          {[4, 3, 2, 1].map((stars) => (
+            <li key={stars}>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="radio"
+                  name="min_rating"
+                  checked={filters.min_rating === stars}
+                  onChange={() => onChange({ min_rating: stars })}
+                />
+                <span aria-hidden="true" className="text-amber-500">{"★".repeat(stars)}{"☆".repeat(5 - stars)}</span>
+                <span>Từ {stars} sao</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+        {filters.min_rating !== undefined ? (
+          <button type="button" className="mt-1 text-xs text-blue-700 underline" onClick={() => onChange({ min_rating: undefined })}>
+            Bỏ lọc đánh giá
+          </button>
+        ) : null}
       </section>
       <button type="button" onClick={onReset} className="w-full rounded border border-slate-300 px-3 py-1 text-sm text-slate-700">
         Xoá bộ lọc

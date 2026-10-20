@@ -73,4 +73,17 @@ describe("ProductList", () => {
     fireEvent.change(screen.getByLabelText(/Sắp xếp/), { target: { value: "price_desc" } });
     await waitFor(() => expect(router.state.location.search).toBe("?sort_by=price_desc"));
   });
+
+  it("syncs the rating filter to the URL and resets page", async () => {
+    vi.mocked(productService.getProducts).mockResolvedValue(page(1, 1, 1));
+    const router = setup("/san-pham?page=2&sort_by=name_desc");
+    await screen.findByLabelText(/Từ 4 sao/);
+    fireEvent.click(screen.getByLabelText(/Từ 4 sao/));
+    await waitFor(() => expect(router.state.location.search).toBe("?min_rating=4&sort_by=name_desc"));
+    await waitFor(() =>
+      expect(vi.mocked(productService.getProducts).mock.calls.at(-1)![0]).toEqual({ min_rating: "4", sort_by: "name_desc", per_page: 12 }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Bỏ lọc đánh giá" }));
+    await waitFor(() => expect(router.state.location.search).toBe("?sort_by=name_desc"));
+  });
 });

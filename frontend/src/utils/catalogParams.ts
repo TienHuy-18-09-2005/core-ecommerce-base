@@ -6,6 +6,8 @@ export const SORT_OPTIONS = [
   { value: "popular", label: "Phổ biến" },
   { value: "price_asc", label: "Giá tăng dần" },
   { value: "price_desc", label: "Giá giảm dần" },
+  { value: "name_asc", label: "Tên A → Z" },
+  { value: "name_desc", label: "Tên Z → A" },
 ] as const;
 
 export type SortValue = (typeof SORT_OPTIONS)[number]["value"];
@@ -16,6 +18,7 @@ export interface CatalogFilters {
   search?: string;
   min_price?: number;
   max_price?: number;
+  min_rating?: number;
   sort_by: SortValue;
   page: number;
 }
@@ -36,6 +39,10 @@ function price(raw: string | null): number | undefined {
   return value <= MAX_PRICE ? value : undefined;
 }
 
+function rating(raw: string | null): number | undefined {
+  return raw !== null && /^[1-5]$/.test(raw) ? Number(raw) : undefined;
+}
+
 export function parseCatalogParams(params: URLSearchParams): CatalogFilters {
   const sortRaw = params.get("sort_by");
   const sort_by = SORT_OPTIONS.some((o) => o.value === sortRaw) ? (sortRaw as SortValue) : "latest";
@@ -52,6 +59,7 @@ export function parseCatalogParams(params: URLSearchParams): CatalogFilters {
     search,
     min_price,
     max_price,
+    min_rating: rating(params.get("min_rating")),
     sort_by,
     page: Math.min(positiveInt(params.get("page")) ?? 1, 10000),
   };
@@ -60,7 +68,7 @@ export function parseCatalogParams(params: URLSearchParams): CatalogFilters {
 /** Thứ tự key cố định để URL ổn định và cache query không bị trùng. */
 export function toSearchParams(filters: Partial<CatalogFilters>): URLSearchParams {
   const out = new URLSearchParams();
-  const keys: (keyof CatalogFilters)[] = ["search", "category_id", "brand_id", "min_price", "max_price", "sort_by", "page"];
+  const keys: (keyof CatalogFilters)[] = ["search", "category_id", "brand_id", "min_price", "max_price", "min_rating", "sort_by", "page"];
   for (const key of keys) {
     const value = filters[key];
     if (value === undefined || value === "") continue;

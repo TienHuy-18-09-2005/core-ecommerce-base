@@ -1,13 +1,13 @@
 import { Menu, ShoppingCart, UserRound } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useCategoriesQuery } from "../../../hooks/useCatalogQuery.ts";
 import { useCartQuery } from "../../../hooks/useCartQuery.ts";
+import { SearchAutocomplete } from "./SearchAutocomplete.tsx";
 import { featuredDepartments } from "../../../types/catalog.ts";
 import { cartItemCount } from "../../../types/cart.ts";
 
 export function Header() {
-  const navigate = useNavigate();
   const cart = useCartQuery();
   const categories = useCategoriesQuery();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -27,34 +27,7 @@ export function Header() {
         <Link to="/" className="text-lg font-bold text-blue-700">
           Core Điện
         </Link>
-        <form
-          role="search"
-          className="order-3 flex w-full min-w-0 flex-1 gap-2 md:order-none"
-          action="/san-pham"
-          method="get"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const data = new FormData(event.currentTarget);
-            const search = String(data.get("search") ?? "").trim();
-            const params = new URLSearchParams();
-            if (search) {
-              params.set("search", search);
-            }
-            navigate({ pathname: "/san-pham", search: params.toString() });
-          }}
-        >
-          <label htmlFor="site-search" className="sr-only">Tìm kiếm sản phẩm</label>
-          <input
-            id="site-search"
-            name="search"
-            type="search"
-            placeholder="Tìm kiếm sản phẩm..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900"
-          />
-          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
-            Tìm
-          </button>
-        </form>
+        <SearchAutocomplete />
         <Link
           to="/gio-hang"
           className="ml-auto inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800 md:ml-0"

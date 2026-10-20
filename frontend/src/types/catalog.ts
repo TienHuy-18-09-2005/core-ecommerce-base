@@ -26,6 +26,16 @@ export interface CatalogProduct {
   default_variant_id?: number | null;
   default_variant_price?: number | string | null;
   default_compare_at_price?: number | string | null;
+  avg_rating?: number | string | null;
+  reviews_count?: number;
+}
+
+export interface ProductSuggestion {
+  id: number;
+  name: string;
+  slug: string;
+  thumbnail_url?: string | null;
+  min_price?: number | string | null;
 }
 
 export interface Paginated<T> {

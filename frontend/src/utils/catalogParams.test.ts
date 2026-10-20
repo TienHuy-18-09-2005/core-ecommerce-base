@@ -22,3 +22,14 @@ describe("catalogParams", () => {
     expect(toApiParams(parseCatalogParams(new URLSearchParams("sort_by=price_asc")))).toEqual({ sort_by: "price_asc", per_page: 12 });
   });
 });
+
+describe("catalogParams rating & name sort", () => {
+  it("accepts min_rating 1-5 and name sorts", () => {
+    const f = parseCatalogParams(new URLSearchParams("min_rating=4&sort_by=name_asc"));
+    expect(f.min_rating).toBe(4);
+    expect(f.sort_by).toBe("name_asc");
+    expect(parseCatalogParams(new URLSearchParams("min_rating=6")).min_rating).toBeUndefined();
+    expect(parseCatalogParams(new URLSearchParams("min_rating=2.5")).min_rating).toBeUndefined();
+    expect(toApiParams(f)).toEqual({ min_rating: "4", sort_by: "name_asc", per_page: 12 });
+  });
+});
