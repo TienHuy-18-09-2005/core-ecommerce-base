@@ -30,6 +30,8 @@ class InfrastructureConfigTest extends TestCase
         $this->assertStringContainsString('APP_KEY', $compose);
         $this->assertStringContainsString('DB_HOST: mysql', $compose);
         $this->assertStringContainsString('REDIS_HOST: redis', $compose);
+        $this->assertStringContainsString('listen = 0.0.0.0:9000', $compose);
+        $this->assertStringContainsString('php artisan migrate --force', $compose);
         $this->assertStringContainsString('X-Content-Type-Options "nosniff"', $nginx);
         $this->assertStringContainsString('Referrer-Policy', $nginx);
 
