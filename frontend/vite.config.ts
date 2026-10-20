@@ -2,9 +2,34 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnv } from "vite";
+import { loadEnv, type Connect, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 import { resolveDevProxyTarget } from "./devProxyTarget.ts";
+import { legacyProductLocation } from "./src/utils/legacyProductLocation.ts";
+
+function legacyProductRedirect(): Plugin {
+  const redirect: Connect.NextHandleFunction = (req, res, next) => {
+    const target = legacyProductLocation(req.url ?? "");
+    if (!target) {
+      next();
+      return;
+    }
+
+    res.statusCode = 301;
+    res.setHeader("Location", target);
+    res.end();
+  };
+
+  return {
+    name: "legacy-product-redirect",
+    configureServer(server) {
+      server.middlewares.use(redirect);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(redirect);
+    },
+  };
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,7 +53,8 @@ export default defineConfig(({ mode }) => {
   });
 
   return {
-    plugins: [react(), tailwindcss()],
+    appType: "spa",
+    plugins: [react(), tailwindcss(), legacyProductRedirect()],
 
     resolve: {
       alias: {
@@ -49,6 +75,7 @@ export default defineConfig(({ mode }) => {
 
     test: {
       environment: "node",
+      setupFiles: ["./testSetup.ts"],
       include: ["src/**/*.test.ts", "src/**/*.test.tsx", "*.test.ts"],
     },
   };

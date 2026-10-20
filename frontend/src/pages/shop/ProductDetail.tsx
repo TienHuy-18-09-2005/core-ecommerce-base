@@ -6,6 +6,8 @@ import { useAddToCartMutation } from '../../hooks/useCartQuery';
 import { ApiError, mapApiError } from '../../services/apiError';
 import { productService } from '../../services/productService';
 import type { Product, ProductVariant } from '../../types/product';
+import { ProductImage } from '../../components/shop/ProductImage';
+import { formatCurrency } from '../../utils/formatCurrency';
 
 export const ProductDetail: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -61,8 +63,8 @@ export const ProductDetail: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Khu vực Hình ảnh */}
                 <div>
-                    <img
-                        src={selectedVariant?.image_url || product.thumbnail_url || 'https://via.placeholder.com/500'}
+                    <ProductImage
+                        src={selectedVariant?.image_url || product.thumbnail_url}
                         alt={product.name}
                         className="w-full h-96 object-cover rounded-xl border shadow-sm"
                     />
@@ -77,12 +79,12 @@ export const ProductDetail: React.FC = () => {
 
                     {/* Giá hiển thị theo biến thể được chọn */}
                     <div className="my-4 p-4 bg-gray-50 rounded-lg flex items-baseline gap-4">
-                        <span className="text-3xl font-extrabold text-red-600">
-                            {selectedVariant ? Number(selectedVariant.price).toLocaleString('vi-VN') : 'Liên hệ'} đ
+                        <span className="text-3xl font-extrabold text-red-600 tabular-nums">
+                            {selectedVariant ? formatCurrency(selectedVariant.price) : 'Liên hệ'}
                         </span>
                         {selectedVariant?.compare_at_price && (
-                            <span className="text-lg text-gray-400 line-through">
-                                {Number(selectedVariant.compare_at_price).toLocaleString('vi-VN')} đ
+                            <span className="text-lg text-slate-600 line-through tabular-nums">
+                                {formatCurrency(selectedVariant.compare_at_price)}
                             </span>
                         )}
                     </div>
