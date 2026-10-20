@@ -26,6 +26,7 @@ class InfrastructureConfigTest extends TestCase
         $this->assertStringContainsString("frame-ancestors 'none'", $nginx);
         $this->assertStringContainsString('http://localhost:5173', $nginx);
         $this->assertStringContainsString('ws://localhost:5173', $nginx);
+        $this->assertStringContainsString('resolver 127.0.0.11', $nginx);
         $this->assertStringContainsString('APP_KEY', $compose);
         $this->assertStringContainsString('DB_HOST: mysql', $compose);
         $this->assertStringContainsString('REDIS_HOST: redis', $compose);
