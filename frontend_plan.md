@@ -325,10 +325,10 @@ Interceptor: 401 → xoá user, chuyển `/dang-nhap?redirect=`; 419 → gọi l
 | # | Task | File(s) | Mô tả |
 |---|---|---|---|
 | 2.1 | Trang danh sách | `ProductList.tsx` | Grid + filter + sort + pagination |
-| 2.2 | Filter Panel | `FilterPanel.tsx` | **Chỉ** `category_id`, `brand_id`, `search`, `min_price`, `max_price` (theo `GetProductsDTO`). Rating filter: chờ backend |
+| 2.2 | Filter Panel | `FilterPanel.tsx` | **Chỉ** `category_id`, `brand_id`, `search`, `min_price`, `max_price`, `min_rating` (theo `GetProductsDTO`). ✅ `min_rating` 1–5 tính trên review **đã duyệt** |
 | 2.3 | Category Sidebar | `CategorySidebar.tsx` | Tree parent_id |
-| 2.4 | Search | `SearchBar.tsx` | Debounce 300ms; auto-suggest khi có endpoint |
-| 2.5 | Sort | `ProductList.tsx` | Giá trị `sort_by` đã xác minh ở Bước 0 |
+| 2.4 | Search | `SearchBar.tsx` | Debounce 300ms. ✅ Auto-suggest ở Header qua `GET /api/products/suggest?q=` (throttle `search-suggest` 60/phút, tối đa 8 kết quả, ARIA combobox) |
+| 2.5 | Sort | `ProductList.tsx` | `sort_by`: `latest`, `popular`, `price_asc`, `price_desc`, `name_asc`, `name_desc` ✅ |
 | 2.6 | Product Grid | `ProductGrid.tsx` | Skeleton |
 | 2.7 | Breadcrumb | `Breadcrumb.tsx` | |
 | 2.8 | URL state | `useSearchParams` | Filter/page trên URL; đổi filter → reset `page=1`; backend clamp `per_page ≤ 48` |
@@ -360,7 +360,7 @@ Interceptor: 401 → xoá user, chuyển `/dang-nhap?redirect=`; 419 → gọi l
 ├──────────────┴──────────────────────────────────────────────┤
 ```
 
-> Sao trên card là hiển thị đánh giá. Bộ lọc theo rating và sort theo tên **chưa** bật cho tới khi backend hỗ trợ (task 2.2, 2.5).
+> Sao trên card lấy từ `avg_rating`/`reviews_count` (chỉ review đã duyệt). Lọc rating và sort theo tên đã bật (task 2.2, 2.5). Lỗi 4xx/422 trả `{success:false, code, message, errors?}`.
 
 ---
 
