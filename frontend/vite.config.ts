@@ -11,7 +11,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 function proxyOptions(target: string) {
   return {
     target,
-    changeOrigin: true,
+    // Keep the browser Host so Laravel builds links for Vite, not the
+    // Docker DNS name "nginx".
+    changeOrigin: false,
     // Drop Domain=localhost so the browser stores a host-only cookie for
     // whichever host opened Vite (localhost or 127.0.0.1).
     cookieDomainRewrite: "",

@@ -52,12 +52,15 @@ describe("frontend client boundaries", () => {
   it("installs dependencies with npm ci and proxies through nginx by default", () => {
     const compose = readFileSync(path.resolve(frontendRoot, "../docker-compose.yml"), "utf8");
 
+    expect(compose).toContain("image: node:22-alpine");
     expect(compose).toContain('command: sh -c "npm ci && npm run dev -- --host"');
     expect(compose).toContain("DEV_PROXY_TARGET: ${DEV_PROXY_TARGET:-http://nginx:80}");
+    expect(compose).toContain("NODE_OPTIONS: --dns-result-order=ipv4first");
     expect(compose).toContain("frontend_node_modules:/var/www/frontend/node_modules");
     expect(compose).not.toContain("npm install");
 
     const vite = readFileSync(path.join(frontendRoot, "vite.config.ts"), "utf8");
     expect(vite).toContain('cookieDomainRewrite: ""');
+    expect(vite).toContain("changeOrigin: false");
   });
 });

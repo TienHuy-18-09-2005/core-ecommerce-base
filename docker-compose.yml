@@ -43,7 +43,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: node:20-alpine
+    image: node:22-alpine
     container_name: ecom_frontend
     restart: unless-stopped
     working_dir: /var/www/frontend
@@ -52,6 +52,7 @@ services:
     environment:
       DEV_PROXY_TARGET: ${DEV_PROXY_TARGET:-http://nginx:80}
       CHOKIDAR_USEPOLLING: "true"
+      NODE_OPTIONS: --dns-result-order=ipv4first
     command: sh -c "npm ci && npm run dev -- --host"
     volumes:
       - ./frontend:/var/www/frontend
