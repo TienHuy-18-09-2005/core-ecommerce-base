@@ -1,0 +1,65 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+vendor/
+backend/vendor/
+
+# Logs
+*.log
+logs/
+backend/storage/logs/*
+!backend/storage/logs/.gitignore
+
+# Cache & compiled
+backend/bootstrap/cache/*
+!backend/bootstrap/cache/.gitignore
+backend/storage/framework/cache/*
+!backend/storage/framework/cache/.gitignore
+backend/storage/framework/sessions/*
+!backend/storage/framework/sessions/.gitignore
+backend/storage/framework/views/*
+!backend/storage/framework/views/.gitignore
+backend/storage/framework/testing/*
+!backend/storage/framework/testing/.gitignore
+.phpunit.cache
+.phpunit.result.cache
+
+# Build artifacts
+frontend/dist/
+frontend/dist-ssr/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+
+# IDE & OS
+.idea/
+.vscode/
+.fleet/
+.zed/
+.nova/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Misc
+*.local
+auth.json
+Homestead.json
+Homestead.yaml
+backend/storage/*.key
+backend/storage/pail
