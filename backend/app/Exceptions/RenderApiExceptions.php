@@ -41,6 +41,20 @@ class RenderApiExceptions
             ], $e->status);
         });
 
+        // 422 theo hợp đồng lỗi chuẩn (§2.3.6): {success:false, code, message, errors}
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if (! self::isApi($request)) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'code' => 'VALIDATION_ERROR',
+                'message' => $e->validator->errors()->first() ?: 'Dữ liệu không hợp lệ.',
+                'errors' => $e->errors(),
+            ], $e->status);
+        });
+
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             if (! self::isApi($request) || ! $e->getPrevious() instanceof ModelNotFoundException) {
                 return null;
@@ -83,6 +97,12 @@ class RenderApiExceptions
 
             unset($payload['trace'], $payload['exception'], $payload['file'], $payload['line']);
 
+            // Mọi lỗi 4xx đều có success:false + code (vd. 401, 403, 404, 429 mặc định của Laravel)
+            if ($response->getStatusCode() >= 400) {
+                $payload['success'] = false;
+                $payload['code'] = $payload['code'] ?? self::defaultCode($response->getStatusCode());
+            }
+
             if ($response->getStatusCode() >= 500) {
                 $payload = [
                     'success' => false,
@@ -110,6 +130,20 @@ class RenderApiExceptions
         }
 
         $response->headers->setCookie(app(GuestCartToken::class)->makeCookie($token));
+    }
+
+    private static function defaultCode(int $status): string
+    {
+        return match ($status) {
+            401 => 'UNAUTHENTICATED',
+            403 => 'FORBIDDEN',
+            404 => 'NOT_FOUND',
+            405 => 'METHOD_NOT_ALLOWED',
+            419 => 'CSRF_MISMATCH',
+            422 => 'VALIDATION_ERROR',
+            429 => 'TOO_MANY_REQUESTS',
+            default => 'REQUEST_FAILED',
+        };
     }
 
     private static function serverError(): JsonResponse

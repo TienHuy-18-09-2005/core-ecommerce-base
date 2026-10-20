@@ -46,6 +46,17 @@ class DemoCatalogSeederTest extends TestCase
         $parent = Category::where('slug', 'den-chieu-sang')->firstOrFail();
         $this->getJson('/api/products?category_id='.$parent->id)->assertOk()->assertJsonPath('data.total', 10);
         $this->getJson('/api/products?min_price=100000&max_price=200000')->assertOk();
+
+        $reviews = \App\Models\ProductReview::count();
+        $this->assertGreaterThan(0, $reviews);
+        $this->assertGreaterThan(0, \App\Models\ProductReview::where('is_approved', false)->count());
+        $this->seed(DemoCatalogSeeder::class);
+        $this->assertSame($reviews, \App\Models\ProductReview::count());
+        $four = $this->getJson('/api/products?min_rating=4&per_page=48')->assertOk()->json('data.total');
+        $one = $this->getJson('/api/products?min_rating=1&per_page=48')->assertOk()->json('data.total');
+        $this->assertGreaterThan(0, $four);
+        $this->assertGreaterThan($four, $one);
+        $this->assertLessThan(30, $one); // sản phẩm chưa có review bị loại
     }
 
     public function test_never_runs_in_production_even_with_flag(): void

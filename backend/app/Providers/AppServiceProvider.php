@@ -68,6 +68,11 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by((string) $request->ip());
         });
 
+        // Gợi ý tìm kiếm: FE debounce 300ms nên 60/phút/IP là đủ cho người gõ thật
+        RateLimiter::for('search-suggest', function (Request $request) {
+            return Limit::perMinute(60)->by((string) $request->ip());
+        });
+
         RateLimiter::for('admin', function (Request $request) {
             return Limit::perMinute(60)->by($this->clientKey($request));
         });

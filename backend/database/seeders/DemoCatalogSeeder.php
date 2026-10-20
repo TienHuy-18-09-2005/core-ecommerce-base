@@ -5,9 +5,12 @@ namespace Database\Seeders;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductReview;
 use App\Models\ProductVariant;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -28,6 +31,8 @@ class DemoCatalogSeeder extends Seeder
     ];
 
     private const BRANDS = ['Rạng Đông', 'Panasonic', 'Schneider', 'Cadivi', 'Sino'];
+
+    public const REVIEWER_COUNT = 3;
 
     public static function shouldRun(): bool
     {
@@ -74,6 +79,15 @@ class DemoCatalogSeeder extends Seeder
             $brands[] = Brand::updateOrCreate(
                 ['slug' => Str::slug($brandName)],
                 ['name' => $brandName, 'is_active' => true, 'sort_order' => $index + 1],
+            );
+        }
+
+        // Người đánh giá demo: mật khẩu ngẫu nhiên không công bố → không đăng nhập được
+        $reviewers = [];
+        for ($r = 1; $r <= self::REVIEWER_COUNT; $r++) {
+            $reviewers[] = User::firstOrCreate(
+                ['email' => "demo-reviewer-{$r}@ecom.local"],
+                ['name' => "Khách đánh giá {$r}", 'password' => Hash::make(Str::random(40)), 'role' => 'customer', 'is_active' => true],
             );
         }
 
@@ -127,10 +141,44 @@ class DemoCatalogSeeder extends Seeder
                     ],
                 );
             }
+
+            $this->seedReviews($product, $n, $reviewers);
         }
 
         // Cây danh mục/thương hiệu được cache 24h → xoá để dữ liệu mới hiện ngay
         Cache::forget('shop_active_category_tree_v2');
         Cache::forget('shop_active_brands_v2');
+    }
+
+    /**
+     * Review cố định theo n: n % 4 == 0 → chưa có review; còn lại 1–3 review đã duyệt
+     * + đôi khi 1 review 1 sao CHƯA duyệt (không được tính vào điểm/bộ lọc).
+     *
+     * @param  array<int, User>  $reviewers
+     */
+    private function seedReviews(Product $product, int $n, array $reviewers): void
+    {
+        if ($n % 4 === 0) {
+            return;
+        }
+
+        $count = ($n % 3) + 1;
+        for ($i = 0; $i < $count; $i++) {
+            ProductReview::updateOrCreate(
+                ['product_id' => $product->id, 'user_id' => $reviewers[$i]->id],
+                [
+                    'rating' => (($n + $i * 2) % 5) + 1,
+                    'comment' => "Đánh giá demo {$n}-{$i}.",
+                    'is_approved' => true,
+                ],
+            );
+        }
+
+        if ($n % 7 === 0 && $count < count($reviewers)) {
+            ProductReview::updateOrCreate(
+                ['product_id' => $product->id, 'user_id' => $reviewers[count($reviewers) - 1]->id],
+                ['rating' => 1, 'comment' => 'Đánh giá chờ duyệt.', 'is_approved' => false],
+            );
+        }
     }
 }

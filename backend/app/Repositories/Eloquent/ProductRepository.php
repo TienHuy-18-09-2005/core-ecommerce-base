@@ -5,7 +5,9 @@ namespace App\Repositories\Eloquent;
 use App\DTOs\Catalog\GetProductsDTO;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductReview;
 use App\Models\ProductVariant;
+use Illuminate\Support\Collection;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +36,8 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             ])
             ->with(['brand:id,name,slug'])
             ->withMin(['variants as min_price' => fn ($q) => $q->where('is_active', true)], 'price')
+            ->withAvg(['reviews as avg_rating' => fn ($q) => $q->where('is_approved', true)], 'rating')
+            ->withCount(['reviews as reviews_count' => fn ($q) => $q->where('is_approved', true)])
             ->withMax(['variants as max_price' => fn ($q) => $q->where('is_active', true)], 'price')
             ->addSelect([
                 'default_variant_id' => $this->defaultVariantColumn('id'),
@@ -84,17 +88,47 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             });
         }
 
+        // Lọc theo điểm trung bình của review ĐÃ DUYỆT (sản phẩm chưa có review bị loại)
+        if ($dto->minRating !== null) {
+            $query->where(
+                ProductReview::query()
+                    ->selectRaw('AVG(rating)')
+                    ->whereColumn('product_reviews.product_id', 'products.id')
+                    ->where('is_approved', true),
+                '>=',
+                $dto->minRating,
+            );
+        }
+
         // Sắp xếp
         match ($dto->sortBy) {
             'price_asc' => $query->orderBy('min_price', 'asc'),
             'price_desc' => $query->orderBy('min_price', 'desc'),
             'popular' => $query->orderBy('view_count', 'desc'),
+            'name_asc' => $query->orderBy('name', 'asc'),
+            'name_desc' => $query->orderBy('name', 'desc'),
             default => $query->orderBy('created_at', 'desc'),
         };
         // Thứ tự ổn định để phân trang không lặp/sót sản phẩm
         $query->orderBy('id', 'desc');
 
         return $query->paginate($dto->perPage);
+    }
+
+    /** Gợi ý tìm kiếm: tối đa $limit sản phẩm, chỉ cột nhẹ, ưu tiên tên bắt đầu bằng từ khoá. */
+    public function suggest(string $term, int $limit = 8): Collection
+    {
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
+
+        return $this->model->query()
+            ->select(['id', 'name', 'slug', 'thumbnail_url'])
+            ->withMin(['variants as min_price' => fn ($q) => $q->where('is_active', true)], 'price')
+            ->published()
+            ->whereRaw("name LIKE ? ESCAPE '!'", ['%'.$escaped.'%'])
+            ->orderByRaw("CASE WHEN name LIKE ? ESCAPE '!' THEN 0 ELSE 1 END", [$escaped.'%'])
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
     }
 
     /** @return array<int, int> */

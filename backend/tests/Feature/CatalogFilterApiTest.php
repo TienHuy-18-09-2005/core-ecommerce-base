@@ -38,11 +38,13 @@ class CatalogFilterApiTest extends TestCase
     {
         foreach ([
             'category_id=abc', 'brand_id=-1', 'min_price=x', 'sort_by=name; DROP TABLE',
-            'min_price=500&max_price=100', 'page=0', 'search='.str_repeat('a', 101),
+            'min_price=500&max_price=100', 'min_rating=6', 'min_rating=0', 'sort_by=name', 'page=0', 'search='.str_repeat('a', 101),
         ] as $query) {
             $this->getJson('/api/products?'.$query)
                 ->assertStatus(422)
-                ->assertJsonStructure(['message', 'errors']);
+                ->assertJsonPath('success', false)
+                ->assertJsonPath('code', 'VALIDATION_ERROR')
+                ->assertJsonStructure(['success', 'code', 'message', 'errors']);
         }
     }
 
@@ -116,5 +118,80 @@ class CatalogFilterApiTest extends TestCase
         $this->assertStringNotContainsString('cost_price', $response->getContent());
 
         $this->getJson('/api/products/khong-ton-tai')->assertNotFound()->assertJsonPath('success', false);
+    }
+
+    private function review(Product $product, int $rating, bool $approved = true): void
+    {
+        static $user = null;
+        $user ??= \App\Models\User::factory()->create();
+        \App\Models\ProductReview::create([
+            'product_id' => $product->id, 'user_id' => $user->id, 'rating' => $rating, 'is_approved' => $approved,
+        ]);
+    }
+
+    public function test_min_rating_uses_only_approved_reviews(): void
+    {
+        $good = $this->product('Tốt', 100);
+        $this->review($good, 5);
+        $this->review($good, 4);
+        $mixed = $this->product('Trung bình', 100);
+        $this->review($mixed, 3);
+        $this->review($mixed, 5, false); // chưa duyệt → không tính
+        $this->product('Chưa có review', 100);
+
+        $this->getJson('/api/products?min_rating=4')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.name', 'Tốt')
+            ->assertJsonPath('data.data.0.reviews_count', 2);
+        $this->assertEquals(4.5, (float) $this->getJson('/api/products?min_rating=4')->json('data.data.0.avg_rating'));
+        $this->getJson('/api/products?min_rating=3')->assertOk()->assertJsonCount(2, 'data.data');
+    }
+
+    public function test_sort_by_name(): void
+    {
+        $this->product('Bóng đèn', 1);
+        $this->product('Aptomat', 1);
+        $this->product('Công tắc', 1);
+
+        $this->getJson('/api/products?sort_by=name_asc')->assertOk()->assertJsonPath('data.data.0.name', 'Aptomat');
+        $this->getJson('/api/products?sort_by=name_desc')->assertOk()->assertJsonPath('data.data.0.name', 'Công tắc');
+    }
+
+    public function test_suggest_returns_small_escaped_published_set(): void
+    {
+        for ($i = 1; $i <= 12; $i++) {
+            $this->product("Đèn LED {$i}", 1000 * $i);
+        }
+        $this->product('Ổ cắm có đèn', 1);
+        $this->product('Đèn 100% đồng', 1);
+        Product::create(['name' => 'Đèn nháp', 'slug' => 'den-nhap', 'status' => 'draft']);
+
+        $response = $this->getJson('/api/products/suggest?q=Đèn')->assertOk()->assertJsonPath('success', true)->assertJsonCount(8, 'data');
+        $this->assertStringNotContainsString('Đèn nháp', $response->getContent());
+        $this->assertStringNotContainsString('cost_price', $response->getContent());
+        $this->assertSame(['id', 'name', 'slug', 'thumbnail_url', 'min_price'], array_keys($response->json('data.0')));
+
+        $this->getJson('/api/products/suggest?q=0%25')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Đèn 100% đồng');
+        $this->getJson('/api/products/suggest?q=__')->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/products/suggest?q=a')->assertStatus(422)->assertJsonPath('success', false)->assertJsonPath('code', 'VALIDATION_ERROR');
+        $this->getJson('/api/products/suggest')->assertStatus(422);
+    }
+
+    public function test_suggest_is_rate_limited_with_standard_error_shape(): void
+    {
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/products/suggest?q=den')->assertOk();
+        }
+        $this->getJson('/api/products/suggest?q=den')
+            ->assertStatus(429)
+            ->assertHeader('Retry-After')
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'TOO_MANY_REQUESTS');
+    }
+
+    public function test_unknown_api_route_404_has_standard_shape(): void
+    {
+        $this->getJson('/api/khong-co')->assertNotFound()->assertJsonPath('success', false)->assertJsonPath('code', 'NOT_FOUND');
     }
 }

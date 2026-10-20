@@ -13,6 +13,7 @@ readonly class GetProductsDTO
         public ?string $sortBy = 'latest',
         public int $perPage = 12,
         public ?bool $featured = null,
+        public ?int $minRating = null,
     ) {}
 
     public static function fromRequest($request): self
@@ -35,6 +36,7 @@ readonly class GetProductsDTO
             sortBy: $request->input('sort_by') ?: 'latest',
             perPage: max(1, min(48, (int) $request->input('per_page', 12))),
             featured: $featured,
+            minRating: $int('min_rating'),
         );
     }
 }
