@@ -2,8 +2,8 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Repositories\Contracts\CartRepositoryInterface;
 use App\Models\Cart;
+use App\Repositories\Contracts\CartRepositoryInterface;
 
 class CartRepository extends BaseRepository implements CartRepositoryInterface
 {
@@ -29,9 +29,13 @@ class CartRepository extends BaseRepository implements CartRepositoryInterface
 
     public function findOrCreateCart(?int $userId, ?string $sessionId): Cart
     {
+        if ($userId === null && ($sessionId === null || $sessionId === '')) {
+            throw new \InvalidArgumentException('Không thể tạo giỏ hàng khi thiếu định danh chủ sở hữu.');
+        }
+
         $cart = $this->getCartByUserOrSession($userId, $sessionId);
 
-        if (!$cart) {
+        if (! $cart) {
             $cart = $this->model->create([
                 'user_id' => $userId,
                 'session_id' => $sessionId,

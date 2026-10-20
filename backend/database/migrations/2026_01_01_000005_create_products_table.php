@@ -36,8 +36,10 @@ return new class extends Migration
                 'idx_products_catalog_filter'
             );
 
-            // Full-Text Index bắt buộc theo Phần 5
-            $table->fullText(['name', 'short_description'], 'ft_products_search');
+            // Full-Text Index bắt buộc theo Phần 5. SQLite (phpunit) không hỗ trợ fulltext.
+            if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+                $table->fullText(['name', 'short_description'], 'ft_products_search');
+            }
         });
     }
 

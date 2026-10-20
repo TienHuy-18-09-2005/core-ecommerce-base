@@ -2,30 +2,22 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
+use App\Models\Attribute;
+use App\Models\AttributeValue;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Attribute;
-use App\Models\AttributeValue;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Tạo tài khoản Admin và Customer mẫu
-        User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@ecom.local',
-            'phone' => '0900000001',
-            'password' => Hash::make('password123'),
-            'role' => 'admin',
-            'is_active' => true,
-        ]);
+        // 1. Admin lấy email/mật khẩu từ env (AdminUserSeeder). Customer mẫu cho local.
+        $this->call(AdminUserSeeder::class);
 
         User::create([
             'name' => 'Nguyễn Văn Khách',

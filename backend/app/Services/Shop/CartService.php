@@ -2,9 +2,10 @@
 
 namespace App\Services\Shop;
 
-use App\Repositories\Contracts\CartRepositoryInterface;
+use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
+use App\Repositories\Contracts\CartRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
 class CartService
@@ -79,14 +80,18 @@ class CartService
     {
         $cart = $this->cartRepository->findOrCreateCart($userId, $sessionId);
         CartItem::where('cart_id', $cart->id)->where('id', $itemId)->delete();
+
         return $this->cartRepository->findOrCreateCart($userId, $sessionId);
     }
 
     /**
-     * Tự động gộp giỏ hàng vãng lai (session_id) vào giỏ hàng tài khoản khi đăng nhập
+     * Gộp giỏ khách vào giỏ tài khoản. $plainToken là cart_token thô (chưa băm).
+     * Luồng đăng nhập chưa gọi hàm này.
      */
-    public function mergeGuestCartToUser(string $sessionId, int $userId)
+    public function mergeGuestCartToUser(string $plainToken, int $userId)
     {
+        $sessionId = hash('sha256', $plainToken);
+
         DB::transaction(function () use ($sessionId, $userId) {
             $guestCart = CartItem::whereHas('cart', function ($q) use ($sessionId) {
                 $q->where('session_id', $sessionId);
@@ -111,7 +116,7 @@ class CartService
             }
 
             // Xóa giỏ hàng session cũ
-            \App\Models\Cart::where('session_id', $sessionId)->delete();
+            Cart::where('session_id', $sessionId)->delete();
         });
     }
 }
