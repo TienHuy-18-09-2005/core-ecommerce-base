@@ -21,30 +21,29 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 2. Tạo Thương hiệu Thiết bị điện
-        $brandPanasonic = Brand::create(['name' => 'Panasonic', 'slug' => 'panasonic', 'is_active' => true]);
-        $brandRạngĐông = Brand::create(['name' => 'Rạng Đông', 'slug' => 'rang-dong', 'is_active' => true]);
-        $brandCadivi = Brand::create(['name' => 'Cadivi', 'slug' => 'cadivi', 'is_active' => true]);
+        $brandPanasonic = Brand::updateOrCreate(['slug' => 'panasonic'], ['name' => 'Panasonic', 'is_active' => true]);
+        $brandRạngĐông = Brand::updateOrCreate(['slug' => 'rang-dong'], ['name' => 'Rạng Đông', 'is_active' => true]);
+        $brandCadivi = Brand::updateOrCreate(['slug' => 'cadivi'], ['name' => 'Cadivi', 'is_active' => true]);
 
         // 3. Tạo Danh mục sản phẩm
-        $catRoot = Category::create(['name' => 'Thiết bị điện', 'slug' => 'thiet-bi-dien', 'is_active' => true]);
-        $catFan = Category::create(['parent_id' => $catRoot->id, 'name' => 'Quạt trần & Quạt điện', 'slug' => 'quat-tran-quat-dien', 'is_active' => true]);
-        $catLight = Category::create(['parent_id' => $catRoot->id, 'name' => 'Đèn chiếu sáng LED', 'slug' => 'den-chieu-sang-led', 'is_active' => true]);
-        $catWire = Category::create(['parent_id' => $catRoot->id, 'name' => 'Dây & Cáp điện', 'slug' => 'day-cap-dien', 'is_active' => true]);
+        $catRoot = Category::updateOrCreate(['slug' => 'thiet-bi-dien'], ['name' => 'Thiết bị điện', 'is_active' => true]);
+        $catFan = Category::updateOrCreate(['slug' => 'quat-tran-quat-dien'], ['parent_id' => $catRoot->id, 'name' => 'Quạt trần & Quạt điện', 'is_active' => true]);
+        $catLight = Category::updateOrCreate(['slug' => 'den-chieu-sang-led'], ['parent_id' => $catRoot->id, 'name' => 'Đèn chiếu sáng LED', 'is_active' => true]);
+        $catWire = Category::updateOrCreate(['slug' => 'day-cap-dien'], ['parent_id' => $catRoot->id, 'name' => 'Dây & Cáp điện', 'is_active' => true]);
 
         // 4. Tạo Thuộc tính động EAV (Công suất, Màu ánh sáng)
-        $attrPower = Attribute::create(['name' => 'Công suất', 'code' => 'power', 'display_type' => 'button']);
-        $val30W = AttributeValue::create(['attribute_id' => $attrPower->id, 'value' => '30W', 'sort_order' => 1]);
-        $val50W = AttributeValue::create(['attribute_id' => $attrPower->id, 'value' => '50W', 'sort_order' => 2]);
+        $attrPower = Attribute::updateOrCreate(['code' => 'power'], ['name' => 'Công suất', 'display_type' => 'button']);
+        $val30W = AttributeValue::updateOrCreate(['attribute_id' => $attrPower->id, 'value' => '30W'], ['sort_order' => 1]);
+        $val50W = AttributeValue::updateOrCreate(['attribute_id' => $attrPower->id, 'value' => '50W'], ['sort_order' => 2]);
 
-        $attrColor = Attribute::create(['name' => 'Màu ánh sáng', 'code' => 'light_color', 'display_type' => 'color']);
-        $valWhite = AttributeValue::create(['attribute_id' => $attrColor->id, 'value' => 'Trắng', 'color_hex' => '#FFFFFF', 'sort_order' => 1]);
-        $valYellow = AttributeValue::create(['attribute_id' => $attrColor->id, 'value' => 'Vàng', 'color_hex' => '#FFD700', 'sort_order' => 2]);
+        $attrColor = Attribute::updateOrCreate(['code' => 'light_color'], ['name' => 'Màu ánh sáng', 'display_type' => 'color']);
+        $valWhite = AttributeValue::updateOrCreate(['attribute_id' => $attrColor->id, 'value' => 'Trắng'], ['color_hex' => '#FFFFFF', 'sort_order' => 1]);
+        $valYellow = AttributeValue::updateOrCreate(['attribute_id' => $attrColor->id, 'value' => 'Vàng'], ['color_hex' => '#FFD700', 'sort_order' => 2]);
 
         // 5. Tạo Sản phẩm mẫu 1: Đèn LED Panel (Có biến thể)
-        $productLed = Product::create([
+        $productLed = Product::updateOrCreate(['slug' => 'den-led-panel-tron-rang-dong'], [
             'brand_id' => $brandRạngĐông->id,
             'name' => 'Đèn LED Panel Tròn Rạng Đông',
-            'slug' => 'den-led-panel-tron-rang-dong',
             'short_description' => 'Đèn LED Panel âm trần tiết kiệm điện năng, ánh sáng trung thực.',
             'description' => 'Chi tiết kỹ thuật đèn LED Panel Rạng Đông dùng chiếu sáng văn phòng, nhà ở.',
             'unit' => 'cái',
@@ -53,12 +52,11 @@ class DatabaseSeeder extends Seeder
             'status' => 'published',
             'is_featured' => true,
         ]);
-        $productLed->categories()->attach($catLight->id);
+        $productLed->categories()->syncWithoutDetaching($catLight->id);
 
         // Tạo biến thể cho Đèn LED
-        $variant1 = ProductVariant::create([
+        $variant1 = ProductVariant::updateOrCreate(['sku' => 'LED-PANEL-30W-W'], [
             'product_id' => $productLed->id,
-            'sku' => 'LED-PANEL-30W-W',
             'name' => '30W - Ánh sáng Trắng',
             'price' => 250000,
             'compare_at_price' => 300000,
@@ -66,11 +64,10 @@ class DatabaseSeeder extends Seeder
             'is_default' => true,
             'is_active' => true,
         ]);
-        $variant1->attributeValues()->attach([$val30W->id, $valWhite->id]);
+        $variant1->attributeValues()->syncWithoutDetaching([$val30W->id, $valWhite->id]);
 
-        $variant2 = ProductVariant::create([
+        $variant2 = ProductVariant::updateOrCreate(['sku' => 'LED-PANEL-50W-Y'], [
             'product_id' => $productLed->id,
-            'sku' => 'LED-PANEL-50W-Y',
             'name' => '50W - Ánh sáng Vàng',
             'price' => 350000,
             'compare_at_price' => 400000,
@@ -78,13 +75,12 @@ class DatabaseSeeder extends Seeder
             'is_default' => false,
             'is_active' => true,
         ]);
-        $variant2->attributeValues()->attach([$val50W->id, $valYellow->id]);
+        $variant2->attributeValues()->syncWithoutDetaching([$val50W->id, $valYellow->id]);
 
         // 6. Tạo Sản phẩm mẫu 2: Dây cáp điện Cadivi (Không biến thể - bắt buộc có 1 dòng variant mặc định)
-        $productWire = Product::create([
+        $productWire = Product::updateOrCreate(['slug' => 'day-dien-doi-mem-det-cadivi-vcmd-2x1.5'], [
             'brand_id' => $brandCadivi->id,
             'name' => 'Dây điện đôi mềm dẹt Cadivi VCmd 2x1.5',
-            'slug' => 'day-dien-doi-mem-det-cadivi-vcmd-2x1.5',
             'short_description' => 'Dây điện lực hạ thế ruột đồng cách điện PVC.',
             'description' => 'Sản phẩm chính hãng Cadivi dùng đi điện dân dụng âm tường hoặc nổi.',
             'unit' => 'cuộn',
@@ -93,11 +89,10 @@ class DatabaseSeeder extends Seeder
             'status' => 'published',
             'is_featured' => true,
         ]);
-        $productWire->categories()->attach($catWire->id);
+        $productWire->categories()->syncWithoutDetaching($catWire->id);
 
-        ProductVariant::create([
+        ProductVariant::updateOrCreate(['sku' => 'CADIVI-VCMD-2X1.5'], [
             'product_id' => $productWire->id,
-            'sku' => 'CADIVI-VCMD-2X1.5',
             'name' => 'Mặc định',
             'price' => 480000,
             'compare_at_price' => 520000,
@@ -105,5 +100,10 @@ class DatabaseSeeder extends Seeder
             'is_default' => true,
             'is_active' => true,
         ]);
+
+        // 7. Dữ liệu demo cho catalog (Pha 2) — chỉ môi trường dev, KHÔNG BAO GIỜ ở production
+        if (DemoCatalogSeeder::shouldRun()) {
+            $this->call(DemoCatalogSeeder::class);
+        }
     }
 }
