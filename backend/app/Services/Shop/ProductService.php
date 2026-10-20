@@ -37,9 +37,11 @@ class ProductService
         return $product;
     }
 
-    public function getActiveCategories(): Collection
+    public function getActiveCategories(): array
     {
-        return Cache::remember('shop_active_category_tree', 86400, function () {
+        // Redis cache in this app unserializes with allowed_classes=false, so
+        // Eloquent models come back as incomplete classes. Store a plain tree.
+        return Cache::remember('shop_active_category_tree_v2', 86400, function (): array {
             $categories = Category::query()
                 ->active()
                 ->orderBy('sort_order')
@@ -58,18 +60,19 @@ class ProductService
                     });
             };
 
-            return $build(0);
+            return $build(0)->toArray();
         });
     }
 
-    public function getActiveBrands(): Collection
+    public function getActiveBrands(): array
     {
-        return Cache::remember('shop_active_brands', 86400, function () {
+        return Cache::remember('shop_active_brands_v2', 86400, function (): array {
             return Brand::query()
                 ->active()
                 ->orderBy('sort_order')
                 ->orderBy('name')
-                ->get();
+                ->get()
+                ->toArray();
         });
     }
 }

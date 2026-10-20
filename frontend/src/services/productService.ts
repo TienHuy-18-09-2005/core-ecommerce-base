@@ -1,3 +1,4 @@
+import type { BrandSummary, CatalogProduct, CategoryNode, Paginated } from "../types/catalog.ts";
 import type { Product } from "../types/product.ts";
 import { apiClient } from "./apiClient.ts";
 
@@ -10,7 +11,17 @@ export type ProductListParams = Record<string, string | number | boolean | undef
 
 export const productService = {
   async getProducts(params?: ProductListParams) {
-    const response = await apiClient.get<ApiSuccess<unknown>>("/products", { params });
+    const response = await apiClient.get<ApiSuccess<Paginated<CatalogProduct>>>("/products", { params });
+    return response.data.data;
+  },
+
+  async getCategories() {
+    const response = await apiClient.get<ApiSuccess<CategoryNode[]>>("/categories");
+    return response.data.data;
+  },
+
+  async getBrands() {
+    const response = await apiClient.get<ApiSuccess<BrandSummary[]>>("/brands");
     return response.data.data;
   },
 

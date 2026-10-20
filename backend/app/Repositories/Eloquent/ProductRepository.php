@@ -4,8 +4,10 @@ namespace App\Repositories\Eloquent;
 
 use App\DTOs\Catalog\GetProductsDTO;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductRepository extends BaseRepository implements ProductRepositoryInterface
 {
@@ -32,6 +34,11 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
             ->with(['brand:id,name,slug'])
             ->withMin('variants as min_price', 'price')
             ->withMax('variants as max_price', 'price')
+            ->addSelect([
+                'default_variant_id' => $this->defaultVariantColumn('id'),
+                'default_variant_price' => $this->defaultVariantColumn('price'),
+                'default_compare_at_price' => $this->defaultVariantColumn('compare_at_price'),
+            ])
             ->published();
 
         // Lọc theo danh mục qua bảng pivot category_product
@@ -79,6 +86,17 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
         };
 
         return $query->paginate($dto->perPage);
+    }
+
+    private function defaultVariantColumn(string $column): Builder
+    {
+        return ProductVariant::query()
+            ->select($column)
+            ->whereColumn('product_variants.product_id', 'products.id')
+            ->where('is_active', true)
+            ->orderByDesc('is_default')
+            ->orderBy('id')
+            ->limit(1);
     }
 
     public function findBySlugWithDetails(string $slug): ?Product

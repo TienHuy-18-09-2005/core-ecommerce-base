@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class HomeCatalogApiTest extends TestCase
@@ -58,6 +59,11 @@ class HomeCatalogApiTest extends TestCase
 
         $this->assertStringNotContainsString('Ẩn', $response->getContent());
         $this->assertStringNotContainsString('Con của mục ẩn', $response->getContent());
+
+        $cached = Cache::get('shop_active_category_tree_v2');
+        $this->assertIsArray($cached);
+        $restored = unserialize(serialize($cached), ['allowed_classes' => false]);
+        $this->assertSame('Đèn LED', $restored[0]['children'][0]['name']);
     }
 
     public function test_brands_return_only_active_rows(): void
@@ -94,7 +100,8 @@ class HomeCatalogApiTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonCount(1, 'data.data')
             ->assertJsonPath('data.data.0.name', 'Đèn nổi bật')
-            ->assertJsonPath('data.data.0.is_featured', true);
+            ->assertJsonPath('data.data.0.is_featured', true)
+            ->assertJsonPath('data.data.0.default_variant_id', null);
 
         $this->getJson('/api/products?per_page=1000')
             ->assertOk()
