@@ -2,12 +2,12 @@
 
 namespace App\Services\Shop;
 
-use App\Repositories\Contracts\CartRepositoryInterface;
 use App\DTOs\Order\CreateOrderDTO;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\ProductVariant;
+use App\Exceptions\DomainException;
 use App\Models\Coupon;
+use App\Models\Order;
+use App\Models\ProductVariant;
+use App\Repositories\Contracts\CartRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -26,8 +26,8 @@ class OrderService
             // 1. Lấy giỏ hàng của user hoặc session
             $cart = $this->cartRepository->getCartByUserOrSession($dto->userId, $sessionId);
 
-            if (!$cart || $cart->items->isEmpty()) {
-                throw new \Exception('Giỏ hàng trống, không thể đặt hàng.');
+            if (! $cart || $cart->items->isEmpty()) {
+                throw new DomainException(DomainException::CART_EMPTY, 'Giỏ hàng trống, không thể đặt hàng.');
             }
 
             $subtotal = 0;
@@ -39,12 +39,18 @@ class OrderService
                     ->lockForUpdate()
                     ->first();
 
-                if (!$variant || !$variant->is_active) {
-                    throw new \Exception("Sản phẩm {$item->variant->name} hiện không khả dụng.");
+                if (! $variant || ! $variant->is_active) {
+                    throw new DomainException(
+                        DomainException::PRODUCT_UNAVAILABLE,
+                        "Sản phẩm {$item->variant->name} hiện không khả dụng."
+                    );
                 }
 
                 if ($variant->stock_quantity < $item->quantity) {
-                    throw new \Exception("Sản phẩm {$variant->product->name} ({$variant->name}) chỉ còn lại {$variant->stock_quantity} trong kho.");
+                    throw new DomainException(
+                        DomainException::STOCK_UNAVAILABLE,
+                        "Sản phẩm {$variant->product->name} ({$variant->name}) chỉ còn lại {$variant->stock_quantity} trong kho."
+                    );
                 }
 
                 $lineTotal = $variant->price * $item->quantity;
@@ -93,7 +99,7 @@ class OrderService
 
             // 4. Tạo bản ghi Đơn hàng (Orders)
             $order = Order::create([
-                'order_code' => 'ORD-' . strtoupper(Str::random(8)),
+                'order_code' => 'ORD-'.strtoupper(Str::random(8)),
                 'user_id' => $dto->userId,
                 'coupon_id' => $couponId,
                 'customer_name' => $dto->customerName,

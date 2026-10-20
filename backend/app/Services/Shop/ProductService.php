@@ -2,10 +2,13 @@
 
 namespace App\Services\Shop;
 
-use App\Repositories\Contracts\ProductRepositoryInterface;
 use App\DTOs\Catalog\GetProductsDTO;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Product;
+use App\Repositories\Contracts\ProductRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 class ProductService
@@ -34,10 +37,39 @@ class ProductService
         return $product;
     }
 
-    public function getActiveCategories()
+    public function getActiveCategories(): Collection
     {
-        return Cache::remember('shop_active_categories', 86400, function () {
-            return \App\Models\Category::active()->with('children')->whereNull('parent_id')->get();
+        return Cache::remember('shop_active_category_tree', 86400, function () {
+            $categories = Category::query()
+                ->active()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+
+            $grouped = $categories->groupBy(fn (Category $category) => $category->parent_id ?? 0);
+
+            $build = function (int $parentId) use (&$build, $grouped): Collection {
+                return $grouped->get($parentId, collect())
+                    ->values()
+                    ->map(function (Category $category) use ($build) {
+                        $category->setRelation('children', $build($category->id));
+
+                        return $category;
+                    });
+            };
+
+            return $build(0);
+        });
+    }
+
+    public function getActiveBrands(): Collection
+    {
+        return Cache::remember('shop_active_brands', 86400, function () {
+            return Brand::query()
+                ->active()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
         });
     }
 }

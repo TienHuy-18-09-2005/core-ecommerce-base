@@ -30,55 +30,41 @@ class CartController extends Controller
     public function store(AddToCartRequest $request): JsonResponse
     {
         $owner = $this->cartToken->resolve($request);
+        $cart = $this->cartService->addToCart(
+            $owner->userId,
+            $this->cartToken->storageKey($owner),
+            (int) $request->validated('product_variant_id'),
+            (int) $request->validated('quantity')
+        );
 
-        try {
-            $cart = $this->cartService->addToCart(
-                $owner->userId,
-                $this->cartToken->storageKey($owner),
-                (int) $request->validated('product_variant_id'),
-                (int) $request->validated('quantity')
-            );
-
-            $response = response()->json([
+        return $this->cartToken->attach(
+            response()->json([
                 'success' => true,
                 'message' => 'Đã thêm vào giỏ hàng',
                 'data' => $cart,
-            ]);
-        } catch (\Exception $e) {
-            $response = response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-
-        return $this->cartToken->attach($response, $owner);
+            ]),
+            $owner
+        );
     }
 
     public function update(Request $request, int $itemId): JsonResponse
     {
         $owner = $this->cartToken->resolve($request);
+        $cart = $this->cartService->updateItemQuantity(
+            $owner->userId,
+            $this->cartToken->storageKey($owner),
+            $itemId,
+            (int) $request->input('quantity', 1)
+        );
 
-        try {
-            $cart = $this->cartService->updateItemQuantity(
-                $owner->userId,
-                $this->cartToken->storageKey($owner),
-                $itemId,
-                (int) $request->input('quantity', 1)
-            );
-
-            $response = response()->json([
+        return $this->cartToken->attach(
+            response()->json([
                 'success' => true,
                 'message' => 'Đã cập nhật giỏ hàng',
                 'data' => $cart,
-            ]);
-        } catch (\Exception $e) {
-            $response = response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-
-        return $this->cartToken->attach($response, $owner);
+            ]),
+            $owner
+        );
     }
 
     public function destroy(Request $request, int $itemId): JsonResponse

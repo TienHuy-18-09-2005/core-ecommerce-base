@@ -2,9 +2,9 @@
 
 namespace App\Repositories\Eloquent;
 
-use App\Repositories\Contracts\ProductRepositoryInterface;
 use App\DTOs\Catalog\GetProductsDTO;
 use App\Models\Product;
+use App\Repositories\Contracts\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class ProductRepository extends BaseRepository implements ProductRepositoryInterface
@@ -26,7 +26,8 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
                 'thumbnail_url',
                 'unit',
                 'has_variants',
-                'created_at'
+                'is_featured',
+                'created_at',
             ])
             ->with(['brand:id,name,slug'])
             ->withMin('variants as min_price', 'price')
@@ -43,6 +44,10 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
         // Lọc theo thương hiệu
         if ($dto->brandId) {
             $query->where('brand_id', $dto->brandId);
+        }
+
+        if ($dto->featured !== null) {
+            $query->where('is_featured', $dto->featured);
         }
 
         // Tìm kiếm Full-Text hoặc Like an toàn
@@ -92,7 +97,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
                 },
                 'reviews' => function ($q) {
                     $q->approved()->latest()->limit(10);
-                }
+                },
             ])
             ->first();
     }

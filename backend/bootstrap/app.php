@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\RenderApiExceptions;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,5 +22,5 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['cart_token']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        RenderApiExceptions::register($exceptions);
     })->create();
