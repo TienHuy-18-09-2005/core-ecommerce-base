@@ -1,47 +1,35 @@
-import axios from 'axios';
+import type { Cart } from "../types/cart.ts";
+import { apiClient } from "./apiClient.ts";
 
-const api = axios.create({
-    baseURL: '/api',
-    withCredentials: true,
-    withXSRFToken: true,
-    xsrfCookieName: 'XSRF-TOKEN',
-    xsrfHeaderName: 'X-XSRF-TOKEN',
-});
-
-let csrfPromise: Promise<void> | null = null;
-
-function ensureCsrfCookie(): Promise<void> {
-    if (!csrfPromise) {
-        csrfPromise = axios
-            .get('/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true })
-            .then(() => undefined)
-            .catch((error: unknown) => {
-                csrfPromise = null;
-                throw error;
-            });
-    }
-
-    return csrfPromise;
+interface ApiSuccess<T> {
+  success: boolean;
+  data: T;
+  message?: string;
 }
 
 export const cartService = {
-    async getCart() {
-        const res = await api.get('/cart');
-        return res.data.data;
-    },
-    async addToCart(product_variant_id: number, quantity: number) {
-        await ensureCsrfCookie();
-        const res = await api.post('/cart', { product_variant_id, quantity });
-        return res.data.data;
-    },
-    async updateQuantity(itemId: number, quantity: number) {
-        await ensureCsrfCookie();
-        const res = await api.put(`/cart/${itemId}`, { quantity });
-        return res.data.data;
-    },
-    async removeItem(itemId: number) {
-        await ensureCsrfCookie();
-        const res = await api.delete(`/cart/${itemId}`);
-        return res.data.data;
-    },
+  async getCart(): Promise<Cart> {
+    const response = await apiClient.get<ApiSuccess<Cart>>("/cart");
+    return response.data.data;
+  },
+
+  async addToCart(productVariantId: number, quantity: number): Promise<Cart> {
+    const response = await apiClient.post<ApiSuccess<Cart>>("/cart", {
+      product_variant_id: productVariantId,
+      quantity,
+    });
+    return response.data.data;
+  },
+
+  async updateQuantity(itemId: number, quantity: number): Promise<Cart> {
+    const response = await apiClient.put<ApiSuccess<Cart>>(`/cart/${itemId}`, {
+      quantity,
+    });
+    return response.data.data;
+  },
+
+  async removeItem(itemId: number): Promise<Cart> {
+    const response = await apiClient.delete<ApiSuccess<Cart>>(`/cart/${itemId}`);
+    return response.data.data;
+  },
 };
