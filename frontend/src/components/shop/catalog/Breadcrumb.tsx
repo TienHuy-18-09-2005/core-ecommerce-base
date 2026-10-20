@@ -1,0 +1,30 @@
+import { Link } from "react-router-dom";
+
+export interface Crumb {
+  label: string;
+  to?: string;
+}
+
+export function Breadcrumb({ items }: { items: Crumb[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="mb-4 text-sm text-slate-600">
+      <ol className="flex flex-wrap items-center gap-1">
+        {items.map((item, index) => {
+          const last = index === items.length - 1;
+          return (
+            <li key={`${item.label}-${index}`} className="flex items-center gap-1">
+              {item.to && !last ? (
+                <Link to={item.to} className="hover:text-blue-700 hover:underline">{item.label}</Link>
+              ) : (
+                <span aria-current={last ? "page" : undefined} className={last ? "font-medium text-slate-900" : undefined}>
+                  {item.label}
+                </span>
+              )}
+              {!last ? <span aria-hidden="true">›</span> : null}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
