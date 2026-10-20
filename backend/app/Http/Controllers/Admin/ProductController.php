@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreProductRequest;
 use App\Services\Admin\AdminProductService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
@@ -16,19 +16,20 @@ class ProductController extends Controller
         $this->productService = $productService;
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreProductRequest $request): JsonResponse
     {
         try {
-            $product = $this->productService->createProductWithVariants($request->all());
+            $product = $this->productService->createProductWithVariants($request->validated());
+
             return response()->json([
                 'success' => true,
                 'message' => 'Đã tạo sản phẩm thiết bị điện thành công!',
-                'data' => $product
+                'data' => $product,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400);
         }
     }

@@ -2,38 +2,22 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
+use App\Models\Attribute;
+use App\Models\AttributeValue;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Attribute;
-use App\Models\AttributeValue;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Tạo tài khoản Admin và Customer mẫu
-        User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@ecom.local',
-            'phone' => '0900000001',
-            'password' => Hash::make('password123'),
-            'role' => 'admin',
-            'is_active' => true,
-        ]);
-
-        User::create([
-            'name' => 'Nguyễn Văn Khách',
-            'email' => 'customer@ecom.local',
-            'phone' => '0900000002',
-            'password' => Hash::make('password123'),
-            'role' => 'customer',
-            'is_active' => true,
+        // Tài khoản mẫu chỉ được tạo khi mật khẩu nằm trong env. Không có mật khẩu mặc định.
+        $this->call([
+            AdminUserSeeder::class,
+            CustomerUserSeeder::class,
         ]);
 
         // 2. Tạo Thương hiệu Thiết bị điện

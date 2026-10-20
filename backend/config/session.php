@@ -156,7 +156,9 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    // Empty means a host-only cookie. Domain=localhost is rejected when the
+    // browser opens the SPA at 127.0.0.1, so the Vite proxy cannot store it.
+    'domain' => env('SESSION_DOMAIN') ?: null,
 
     /*
     |--------------------------------------------------------------------------

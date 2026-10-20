@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
 >
     <testsuites>
@@ -19,7 +19,12 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_KEY" value="base64:WC84oQ5861l1kYGPeFJGi0x34iJnKRGPb8my7B6bOOs="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="SANCTUM_STATEFUL_DOMAINS" value="localhost,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173"/>
+        <env name="SESSION_SAME_SITE" value="lax"/>
+        <env name="SESSION_DOMAIN" value="" force="true"/>
+        <env name="CORS_ALLOWED_ORIGINS" value="http://localhost:5173"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

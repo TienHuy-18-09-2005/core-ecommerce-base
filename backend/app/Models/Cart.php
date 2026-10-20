@@ -13,6 +13,10 @@ class Cart extends Model
         'session_id',
     ];
 
+    protected $hidden = [
+        'session_id',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
