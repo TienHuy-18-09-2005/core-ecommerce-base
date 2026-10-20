@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { ShoppingCart, ShieldCheck, Zap } from 'lucide-react';
+import { useToast } from '../../app/useToast';
+import { useAddToCartMutation } from '../../hooks/useCartQuery';
+import { ApiError, mapApiError } from '../../services/apiError';
 import { productService } from '../../services/productService';
 import type { Product, ProductVariant } from '../../types/product';
-import { ShoppingCart, ShieldCheck, Zap } from 'lucide-react';
 
 export const ProductDetail: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
@@ -10,25 +13,47 @@ export const ProductDetail: React.FC = () => {
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
     const [quantity, setQuantity] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const { showError } = useToast();
+    const addToCart = useAddToCartMutation();
 
     useEffect(() => {
-        if (slug) {
-            productService.getProductDetail(slug)
-                .then(data => {
-                    setProduct(data);
-                    // Mặc định chọn biến thể đầu tiên hoặc biến thể is_default
-                    const defaultVar = data.variants.find(v => v.is_default) || data.variants[0];
-                    setSelectedVariant(defaultVar || null);
-                    setLoading(false);
-                })
-                .catch(err => {
-                    console.error("Lỗi tải chi tiết sản phẩm thiết bị điện:", err);
-                    setLoading(false);
-                });
+        if (!slug) {
+            return;
         }
-    }, [slug]);
+
+        let active = true;
+        productService.getProductDetail(slug)
+            .then(data => {
+                if (!active) {
+                    return;
+                }
+                setLoadError(null);
+                setProduct(data);
+                const defaultVar = data.variants.find(v => v.is_default) || data.variants[0];
+                setSelectedVariant(defaultVar || null);
+                setLoading(false);
+            })
+            .catch((error: unknown) => {
+                if (!active) {
+                    return;
+                }
+                const apiError = error instanceof ApiError ? error : mapApiError(error);
+                showError(apiError);
+                setProduct(null);
+                setLoadError(
+                    apiError.status === 404 ? 'Không tìm thấy sản phẩm.' : apiError.message,
+                );
+                setLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [slug, showError]);
 
     if (loading) return <div className="p-10 text-center">Đang tải thông số thiết bị điện...</div>;
+    if (loadError) return <div className="p-10 text-center text-red-500">{loadError}</div>;
     if (!product) return <div className="p-10 text-center text-red-500">Không tìm thấy sản phẩm.</div>;
 
     return (
@@ -102,11 +127,21 @@ export const ProductDetail: React.FC = () => {
                             className="w-20 border border-gray-300 rounded-lg text-center py-2"
                         />
                         <button
-                            disabled={!selectedVariant || selectedVariant.stock_quantity <= 0}
+                            type="button"
+                            disabled={!selectedVariant || selectedVariant.stock_quantity <= 0 || addToCart.isPending}
+                            onClick={() => {
+                                if (!selectedVariant) {
+                                    return;
+                                }
+                                addToCart.mutate({
+                                    productVariantId: selectedVariant.id,
+                                    quantity,
+                                });
+                            }}
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-300 transition-colors"
                         >
                             <ShoppingCart className="w-5 h-5" />
-                            Thêm vào giỏ hàng
+                            {addToCart.isPending ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
                         </button>
                     </div>
 
