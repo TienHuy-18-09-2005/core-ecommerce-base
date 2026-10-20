@@ -47,15 +47,19 @@ services:
     container_name: ecom_frontend
     restart: unless-stopped
     working_dir: /var/www/frontend
-    volumes:
-      - ./frontend:/var/www/frontend
     ports:
       - "5173:5173"
     environment:
       DEV_PROXY_TARGET: ${DEV_PROXY_TARGET:-http://nginx:80}
+      CHOKIDAR_USEPOLLING: "true"
     command: sh -c "npm ci && npm run dev -- --host"
+    volumes:
+      - ./frontend:/var/www/frontend
+      - frontend_node_modules:/var/www/frontend/node_modules
     networks:
       - ecom_network
+    depends_on:
+      - nginx
 
   nginx:
     image: nginx:alpine
@@ -112,3 +116,4 @@ networks:
 
 volumes:
   ecom_mysql_data:
+  frontend_node_modules:

@@ -8,6 +8,16 @@ import { resolveDevProxyTarget } from "./devProxyTarget.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function proxyOptions(target: string) {
+  return {
+    target,
+    changeOrigin: true,
+    // Drop Domain=localhost so the browser stores a host-only cookie for
+    // whichever host opened Vite (localhost or 127.0.0.1).
+    cookieDomainRewrite: "",
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, __dirname, "");
   const proxyTarget = resolveDevProxyTarget({
@@ -27,21 +37,17 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       port: 5173,
+      // Docker bind mounts often miss inotify events. The container sets this.
+      watch: process.env.CHOKIDAR_USEPOLLING === "true" ? { usePolling: true } : undefined,
       proxy: {
-        "/api": {
-          target: proxyTarget,
-          changeOrigin: true,
-        },
-        "/sanctum": {
-          target: proxyTarget,
-          changeOrigin: true,
-        },
+        "/api": proxyOptions(proxyTarget),
+        "/sanctum": proxyOptions(proxyTarget),
       },
     },
 
     test: {
       environment: "node",
-      include: ["src/**/*.test.ts", "*.test.ts"],
+      include: ["src/**/*.test.ts", "src/**/*.test.tsx", "*.test.ts"],
     },
   };
 });
