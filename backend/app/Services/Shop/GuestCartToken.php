@@ -33,7 +33,10 @@ class GuestCartToken
             return new ResolvedCartOwner(null, null, false);
         }
 
-        return new ResolvedCartOwner(null, $this->issue(), true);
+        $token = $this->issue();
+        $this->rememberIssuedToken($request, $token);
+
+        return new ResolvedCartOwner(null, $token, true);
     }
 
     /**
@@ -62,6 +65,24 @@ class GuestCartToken
     public function issue(): string
     {
         return Str::random(self::LENGTH);
+    }
+
+    /**
+     * Form requests are a copy of the pipeline request. The exception renderer
+     * sees the original, so the issued token has to live on both.
+     */
+    private function rememberIssuedToken(Request $request, string $token): void
+    {
+        $request->attributes->set('issued_cart_token', $token);
+
+        if (! app()->bound('request')) {
+            return;
+        }
+
+        $current = app('request');
+        if ($current instanceof Request && $current !== $request) {
+            $current->attributes->set('issued_cart_token', $token);
+        }
     }
 
     public function attach(JsonResponse $response, ResolvedCartOwner $owner): JsonResponse

@@ -18,24 +18,17 @@ class OrderController extends Controller
 
     public function updateStatus(UpdateOrderStatusRequest $request, int $id): JsonResponse
     {
-        try {
-            $data = $request->validated();
-            $order = $this->orderService->updateOrderStatus(
-                $id,
-                $data['status'],
-                $data['admin_note'] ?? null
-            );
+        $data = $request->validated();
+        $order = $this->orderService->updateOrderStatus(
+            $id,
+            $data['status'],
+            $data['admin_note'] ?? null
+        );
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Cập nhật trạng thái đơn hàng thành công!',
-                'data' => $order,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật trạng thái đơn hàng thành công!',
+            'data' => $order,
+        ]);
     }
 }

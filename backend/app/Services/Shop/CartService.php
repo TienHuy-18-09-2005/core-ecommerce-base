@@ -2,6 +2,7 @@
 
 namespace App\Services\Shop;
 
+use App\Exceptions\DomainException;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
@@ -30,7 +31,7 @@ class CartService
             // Kiểm tra tồn kho biến thể SKU
             $variant = ProductVariant::findOrFail($variantId);
             if ($variant->stock_quantity < $quantity) {
-                throw new \Exception('Số lượng sản phẩm trong kho không đủ.');
+                throw new DomainException(DomainException::STOCK_UNAVAILABLE, 'Số lượng sản phẩm trong kho không đủ.');
             }
 
             // Tìm xem item đã có trong giỏ hàng chưa
@@ -41,7 +42,7 @@ class CartService
             if ($cartItem) {
                 $newQty = $cartItem->quantity + $quantity;
                 if ($variant->stock_quantity < $newQty) {
-                    throw new \Exception('Tổng số lượng vượt quá tồn kho cho phép.');
+                    throw new DomainException(DomainException::STOCK_UNAVAILABLE, 'Tổng số lượng vượt quá tồn kho cho phép.');
                 }
                 $cartItem->update(['quantity' => $newQty]);
             } else {
@@ -67,7 +68,7 @@ class CartService
             } else {
                 $variant = $cartItem->variant;
                 if ($variant->stock_quantity < $quantity) {
-                    throw new \Exception('Số lượng trong kho không đủ.');
+                    throw new DomainException(DomainException::STOCK_UNAVAILABLE, 'Số lượng trong kho không đủ.');
                 }
                 $cartItem->update(['quantity' => $quantity]);
             }

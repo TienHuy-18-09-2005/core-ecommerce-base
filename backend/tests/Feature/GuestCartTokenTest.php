@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\DomainException;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
@@ -115,7 +116,8 @@ class GuestCartTokenTest extends TestCase
 
         $this->withCartToken($attackerToken)
             ->putJson('/api/cart/'.$item->id, ['quantity' => 9])
-            ->assertStatus(400);
+            ->assertNotFound()
+            ->assertJsonPath('code', 'NOT_FOUND');
 
         $this->withCartToken($attackerToken)
             ->deleteJson('/api/cart/'.$item->id)
@@ -197,14 +199,16 @@ class GuestCartTokenTest extends TestCase
         try {
             $repository->findOrCreateCart(null, null);
             $this->fail('Expected a cart without an owner to be rejected.');
-        } catch (\InvalidArgumentException $e) {
+        } catch (DomainException $e) {
+            $this->assertSame(DomainException::CART_OWNER_REQUIRED, $e->errorCode);
             $this->assertSame(0, Cart::query()->count());
         }
 
         try {
             $repository->findOrCreateCart(null, '');
             $this->fail('Expected an empty session id to be rejected.');
-        } catch (\InvalidArgumentException) {
+        } catch (DomainException $e) {
+            $this->assertSame(DomainException::CART_OWNER_REQUIRED, $e->errorCode);
             $this->assertSame(0, Cart::query()->count());
         }
     }

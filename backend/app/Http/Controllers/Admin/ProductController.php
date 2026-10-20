@@ -18,19 +18,12 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request): JsonResponse
     {
-        try {
-            $product = $this->productService->createProductWithVariants($request->validated());
+        $product = $this->productService->createProductWithVariants($request->validated());
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã tạo sản phẩm thiết bị điện thành công!',
-                'data' => $product,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã tạo sản phẩm thiết bị điện thành công!',
+            'data' => $product,
+        ], 201);
     }
 }

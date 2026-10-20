@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Exceptions\DomainException;
 use App\Models\Cart;
 use App\Repositories\Contracts\CartRepositoryInterface;
 
@@ -30,7 +31,10 @@ class CartRepository extends BaseRepository implements CartRepositoryInterface
     public function findOrCreateCart(?int $userId, ?string $sessionId): Cart
     {
         if ($userId === null && ($sessionId === null || $sessionId === '')) {
-            throw new \InvalidArgumentException('Không thể tạo giỏ hàng khi thiếu định danh chủ sở hữu.');
+            throw new DomainException(
+                DomainException::CART_OWNER_REQUIRED,
+                'Không thể tạo giỏ hàng khi thiếu định danh chủ sở hữu.'
+            );
         }
 
         $cart = $this->getCartByUserOrSession($userId, $sessionId);

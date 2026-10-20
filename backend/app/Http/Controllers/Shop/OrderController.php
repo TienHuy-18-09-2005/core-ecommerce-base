@@ -23,22 +23,14 @@ class OrderController extends Controller
 
     public function store(CheckoutRequest $request): JsonResponse
     {
-        try {
-            $owner = $this->cartToken->resolve($request, issueIfMissing: false);
+        $owner = $this->cartToken->resolve($request, issueIfMissing: false);
+        $dto = CreateOrderDTO::fromRequest($request, $owner->userId);
+        $order = $this->orderService->createOrder($dto, $this->cartToken->storageKey($owner));
 
-            $dto = CreateOrderDTO::fromRequest($request, $owner->userId);
-            $order = $this->orderService->createOrder($dto, $this->cartToken->storageKey($owner));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Đặt hàng thành công!',
-                'data' => $order,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Đặt hàng thành công!',
+            'data' => $order,
+        ], 201);
     }
 }
