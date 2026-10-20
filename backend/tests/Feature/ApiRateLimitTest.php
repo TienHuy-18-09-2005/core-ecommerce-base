@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class ApiRateLimitTest extends TestCase
         $this->assertLimit('order-lookup', 5, $request);
         $this->assertLimit('cart', 60, $request);
         $this->assertLimit('public-read', 120, $request);
+        $this->assertLimit('admin', 60, $request);
     }
 
     public function test_cart_returns_429_with_retry_after_on_the_61st_request(): void
@@ -46,6 +48,24 @@ class ApiRateLimitTest extends TestCase
         }
 
         $this->postJson('/api/checkout', [])
+            ->assertStatus(429)
+            ->assertHeader('Retry-After');
+    }
+
+    public function test_admin_returns_429_on_the_61st_request(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        for ($i = 0; $i < 60; $i++) {
+            $this->actingAs($admin)
+                ->withHeader('Origin', 'http://localhost:5173')
+                ->postJson('/api/admin/products', [])
+                ->assertStatus(422);
+        }
+
+        $this->actingAs($admin)
+            ->withHeader('Origin', 'http://localhost:5173')
+            ->postJson('/api/admin/products', [])
             ->assertStatus(429)
             ->assertHeader('Retry-After');
     }

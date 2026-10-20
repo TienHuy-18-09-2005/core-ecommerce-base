@@ -67,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('public-read', function (Request $request) {
             return Limit::perMinute(120)->by((string) $request->ip());
         });
+
+        RateLimiter::for('admin', function (Request $request) {
+            return Limit::perMinute(60)->by($this->clientKey($request));
+        });
     }
 
     private function clientKey(Request $request): string

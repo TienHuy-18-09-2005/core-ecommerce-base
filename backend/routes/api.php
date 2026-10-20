@@ -30,7 +30,7 @@ Route::middleware('throttle:cart')->group(function () {
 
 Route::post('/checkout', [OrderController::class, 'store'])->middleware('throttle:checkout');
 
-Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin'])->group(function () {
     Route::post('/products', [AdminProductController::class, 'store']);
     Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
 });
