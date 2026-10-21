@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../app/useAuth.ts";
+import { authQueryKey, useAuth } from "../../app/useAuth.ts";
 import { useToast } from "../../app/useToast.ts";
 import { CartSummaryBox } from "../../components/shop/cart/CartSummaryBox.tsx";
 import { Breadcrumb } from "../../components/shop/catalog/Breadcrumb.tsx";
@@ -86,6 +86,9 @@ export function CheckoutPage() {
         if (error.code.startsWith("COUPON_")) {
           setPreview(null);
           setCouponError(error.message);
+        }
+        if (error.code === "EMAIL_NOT_VERIFIED") {
+          void queryClient.invalidateQueries({ queryKey: authQueryKey });
         }
         if (error.code === "STOCK_UNAVAILABLE" || error.code === "PRODUCT_UNAVAILABLE" || error.code === "CART_EMPTY") {
           void queryClient.invalidateQueries({ queryKey: cartQueryKey });
@@ -224,6 +227,12 @@ export function CheckoutPage() {
             {couponError ? <p role="alert" className="mt-1 text-xs text-red-700">{couponError}</p> : null}
           </div>
           <CartSummaryBox summary={summary} preview={preview} />
+          {user && !user.email_verified ? (
+            <p role="alert" className="text-sm text-amber-800">
+              Tài khoản chưa xác thực email nên chưa thể đặt hàng. Hãy mở link trong email xác thực
+              (hoặc bấm "Gửi lại email" ở thông báo phía trên), hoặc đăng xuất để đặt hàng với tư cách khách.
+            </p>
+          ) : null}
           {summary.has_issues ? (
             <p role="alert" className="text-sm text-red-700">
               Giỏ có sản phẩm hết hàng/ngừng bán. <Link to="/gio-hang" className="underline">Cập nhật giỏ hàng</Link>
@@ -231,7 +240,7 @@ export function CheckoutPage() {
           ) : null}
           <button
             type="submit"
-            disabled={placeOrder.isPending || summary.has_issues}
+            disabled={placeOrder.isPending || summary.has_issues || (user !== null && !user.email_verified)}
             className="w-full rounded-lg bg-red-600 px-4 py-3 font-bold text-white disabled:bg-slate-300"
           >
             {placeOrder.isPending ? "Đang đặt hàng..." : "ĐẶT HÀNG NGAY"}

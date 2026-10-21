@@ -21,7 +21,7 @@ vi.mock("../services/authService.ts", () => ({
 }));
 vi.mock("../services/cartService.ts", () => ({ cartService: { getCart: vi.fn().mockResolvedValue({ id: 1, user_id: null, items: [] }) } }));
 
-const user: User = { id: 1, name: "Khách A", email: "a@example.com", phone: null, role: "customer", avatar_url: null };
+const user: User = { id: 1, name: "Khách A", email: "a@example.com", phone: null, role: "customer", avatar_url: null, email_verified: true };
 
 function Who() {
   const { user: u, isLoading } = useAuth();

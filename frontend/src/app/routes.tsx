@@ -12,6 +12,9 @@ import { NotFound } from "../pages/shop/NotFound.tsx";
 import { OrderLookupPage } from "../pages/shop/OrderLookupPage.tsx";
 import { OrderSuccess } from "../pages/shop/OrderSuccess.tsx";
 import { OrderTracking } from "../pages/shop/OrderTracking.tsx";
+import { ForgotPasswordPage } from "../pages/shop/ForgotPasswordPage.tsx";
+import { ResetPasswordPage } from "../pages/shop/ResetPasswordPage.tsx";
+import { VerifyEmailPage } from "../pages/shop/VerifyEmailPage.tsx";
 import { RegisterPage } from "../pages/shop/RegisterPage.tsx";
 import { ProductDetail } from "../pages/shop/ProductDetail.tsx";
 import { ProductList } from "../pages/shop/ProductList.tsx";
@@ -30,6 +33,9 @@ export const appRoutes: RouteObject[] = [
       { path: "tra-cuu-don-hang", element: <OrderLookupPage /> },
       { path: "dang-nhap", element: <LoginPage /> },
       { path: "dang-ky", element: <RegisterPage /> },
+      { path: "quen-mat-khau", element: <ForgotPasswordPage /> },
+      { path: "dat-lai-mat-khau", element: <ResetPasswordPage /> },
+      { path: "xac-thuc-email", element: <VerifyEmailPage /> },
       { path: "tai-khoan", element: <ProtectedRoute><AccountPage /></ProtectedRoute> },
       { path: "tai-khoan/don-hang/:code", element: <ProtectedRoute><OrderTracking /></ProtectedRoute> },
       { path: "gioi-thieu", element: <InfoPage slug="gioi-thieu" /> },

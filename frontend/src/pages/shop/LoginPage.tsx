@@ -39,9 +39,12 @@ export function LoginPage() {
       <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
         <FormField label="Email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} error={fields.email} />
         <FormField label="Mật khẩu" name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} error={fields.password} />
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Ghi nhớ đăng nhập
-        </label>
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Ghi nhớ đăng nhập
+          </label>
+          <Link to="/quen-mat-khau" className="font-semibold text-blue-700">Quên mật khẩu?</Link>
+        </div>
         {mutation.isError && Object.keys(fields).length === 0 ? (
           <p role="alert" className="text-sm text-red-700">{errorMessage(mutation.error)}</p>
         ) : null}

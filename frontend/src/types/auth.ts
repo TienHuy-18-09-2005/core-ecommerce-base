@@ -5,6 +5,8 @@ export interface User {
   phone: string | null;
   role: string;
   avatar_url: string | null;
+  /** false = chưa xác thực email: vẫn duyệt/giỏ/đăng nhập, nhưng không đặt hàng bằng tài khoản. */
+  email_verified: boolean;
 }
 
 /** Điều chỉnh khi server gộp giỏ khách vào giỏ tài khoản. */

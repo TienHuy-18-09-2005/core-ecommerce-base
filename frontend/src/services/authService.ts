@@ -22,6 +22,20 @@ export interface RegisterInput {
   password_confirmation: string;
 }
 
+export interface ResetPasswordInput {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface VerifyLink {
+  id: string;
+  hash: string;
+  expires: string;
+  signature: string;
+}
+
 /** Sanctum SPA cookie: không token, không lưu gì ở trình duyệt ngoài cookie HttpOnly của server. */
 export const authService = {
   /** Khôi phục phiên khi khởi động; 401 = khách (trả null, không phải lỗi). */
@@ -49,6 +63,33 @@ export const authService = {
     await ensureCsrfCookie();
     const response = await apiClient.post<Envelope<AuthResult>>("/auth/register", input);
     return response.data.data;
+  },
+
+  /** Luôn trả cùng một thông điệp chung (server không tiết lộ email có tồn tại hay không). */
+  async forgotPassword(email: string): Promise<string> {
+    await ensureCsrfCookie();
+    const response = await apiClient.post<Envelope<null>>("/auth/forgot-password", { email });
+    return response.data.message ?? "";
+  },
+
+  async resetPassword(input: ResetPasswordInput): Promise<string> {
+    await ensureCsrfCookie();
+    const response = await apiClient.post<Envelope<null>>("/auth/reset-password", input);
+    return response.data.message ?? "";
+  },
+
+  /** Link ký từ email: giữ nguyên thứ tự query expires → signature (server kiểm chữ ký trên URL tương đối). */
+  async verifyEmail(link: VerifyLink): Promise<string> {
+    const path = `/email/verify/${encodeURIComponent(link.id)}/${encodeURIComponent(link.hash)}`
+      + `?expires=${encodeURIComponent(link.expires)}&signature=${encodeURIComponent(link.signature)}`;
+    const response = await apiClient.get<Envelope<null>>(path);
+    return response.data.message ?? "";
+  },
+
+  async resendVerification(): Promise<string> {
+    await ensureCsrfCookie();
+    const response = await apiClient.post<Envelope<null>>("/email/verification-notification");
+    return response.data.message ?? "";
   },
 
   async logout(): Promise<void> {
