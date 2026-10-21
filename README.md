@@ -55,7 +55,7 @@ Muốn làm sạch DB và seed lại từ đầu: `docker compose exec backend p
 - Gồm cây danh mục 3 cấp, 5 thương hiệu và 30 sản phẩm (6 sản phẩm có 2 biến thể), giá từ 15.000đ đến 1.200.000đ. Bộ dữ liệu cố định và chạy lại không bị nhân đôi.
 - `SEED_DEMO_DATA` trong `backend/.env`: để trống thì chỉ seed khi `APP_ENV=local` (docker-compose đặt sẵn `local`). Đặt `true`/`false` để bật/tắt ở môi trường không phải production.
 - **Không bao giờ seed khi `APP_ENV=production`**, kể cả khi đặt `SEED_DEMO_DATA=true`.
-- Mã giảm giá demo (Pha 3): `GIAM10` (giảm 10%, tối đa 50.000đ, đơn từ 200.000đ, 3 lần/khách), `FREESHIP30` (giảm 30.000đ, 100 lượt), `HETHAN` (đã hết hạn — để thử lỗi `COUPON_INVALID`).
+- Mã giảm giá demo (Pha 3): `GIAM10` (giảm 10%, tối đa 50.000đ, đơn từ 200.000đ, 3 lần/khách), `FREESHIP30` (giảm 30.000đ, 100 lượt), `HETHAN` (đã hết hạn — để thử lỗi `COUPON_EXPIRED`).
 
 ### Giỏ hàng & thanh toán (Pha 3)
 
@@ -70,6 +70,16 @@ Test dùng SQLite in-memory (`phpunit.xml`). **Không** chạy `php artisan test
 ```bash
 docker run --rm --network none -v "$PWD":/var/www -w /var/www/backend core-ecommerce-base-backend php artisan test
 ```
+
+### Test đồng thời trên MySQL (checkout / coupon)
+
+Bộ test riêng `backend/tests/Concurrency`, **không** nằm trong `php artisan test` mặc định (SQLite). Script tự tạo 1 container MySQL tạm (dữ liệu trên tmpfs, mạng riêng), fork nhiều tiến trình PHP cùng đặt hàng một lúc, rồi xoá container khi xong. Không đụng DB dev; test tự từ chối chạy nếu DB không phải `ecom_concurrency_test`.
+
+```bash
+./scripts/concurrency-test.sh            # hoặc: DOCKER="sudo docker" ./scripts/concurrency-test.sh
+```
+
+Kiểm tra: 10 người tranh 1 sản phẩm cuối → đúng 1 đơn; kho không bao giờ âm; coupon `usage_limit=3` với 12 người → `used_count` = 3; 6 request cùng `Idempotency-Key` → 1 đơn.
 
 ### Đổi nhánh
 
