@@ -208,20 +208,30 @@ class CheckoutFlowTest extends TestCase
 
     // ---------- 3.C coupon ----------
 
-    public function test_unknown_and_expired_coupons_return_the_same_generic_error(): void
+    public function test_each_coupon_rejection_has_a_specific_code_and_vietnamese_message(): void
     {
         Coupon::create(['code' => 'HETHAN', 'type' => 'fixed', 'value' => 10000, 'expires_at' => now()->subDay()]);
+        Coupon::create(['code' => 'SAPTOI', 'type' => 'fixed', 'value' => 10000, 'starts_at' => now()->addDay()]);
+        Coupon::create(['code' => 'TAT', 'type' => 'fixed', 'value' => 10000, 'is_active' => false]);
         $token = $this->guestCartWith($this->makeVariant(price: 100000), 1);
 
-        $unknown = $this->withCartToken($token)->postJson('/api/coupons/check', ['code' => 'KHONGCO'])->assertStatus(422);
-        $expired = $this->withCartToken($token)->postJson('/api/coupons/check', ['code' => 'HETHAN'])->assertStatus(422);
+        $cases = [
+            'KHONGCO' => [CouponService::NOT_FOUND, 'Mã giảm giá không tồn tại.'],
+            'TAT' => [CouponService::NOT_FOUND, 'Mã giảm giá không tồn tại.'],
+            'HETHAN' => [CouponService::EXPIRED, 'Mã giảm giá đã hết hạn.'],
+        ];
+        foreach ($cases as $code => [$errorCode, $message]) {
+            $this->withCartToken($token)->postJson('/api/coupons/check', ['code' => $code])
+                ->assertStatus(422)->assertJsonPath('success', false)
+                ->assertJsonPath('code', $errorCode)->assertJsonPath('message', $message);
+        }
 
-        $this->assertSame($unknown->json(), $expired->json());
-        $unknown->assertJsonPath('code', DomainException::COUPON_INVALID)
-            ->assertJsonPath('message', CouponService::INVALID_MESSAGE);
+        $this->withCartToken($token)->postJson('/api/coupons/check', ['code' => 'SAPTOI'])
+            ->assertStatus(422)->assertJsonPath('code', CouponService::NOT_STARTED)
+            ->assertJsonPath('message', fn ($m) => str_starts_with($m, 'Mã giảm giá chưa đến thời gian áp dụng'));
 
         $this->checkout($token, $this->payload(['coupon_code' => 'KHONGCO']))
-            ->assertStatus(422)->assertJsonPath('code', DomainException::COUPON_INVALID);
+            ->assertStatus(422)->assertJsonPath('code', CouponService::NOT_FOUND);
         $this->assertSame(0, Order::count());
     }
 
@@ -262,9 +272,11 @@ class CheckoutFlowTest extends TestCase
         $this->checkout($this->guestCartWith($variant, 1), $this->payload(['coupon_code' => 'MOTLAN']))->assertCreated();
         // Cùng SĐT, giỏ khác → đã dùng hết lượt cho khách này
         $this->checkout($this->guestCartWith($variant, 1), $this->payload(['coupon_code' => 'MOTLAN', 'customer_phone' => '+84900000000']))
-            ->assertStatus(422)->assertJsonPath('code', DomainException::COUPON_INVALID);
+            ->assertStatus(422)->assertJsonPath('code', CouponService::CUSTOMER_LIMIT_REACHED)
+            ->assertJsonPath('message', 'Bạn đã dùng hết số lần cho phép của mã giảm giá này.');
         $this->checkout($this->guestCartWith($variant, 1), $this->payload(['coupon_code' => 'HETLUOT']))
-            ->assertStatus(422)->assertJsonPath('code', DomainException::COUPON_INVALID);
+            ->assertStatus(422)->assertJsonPath('code', CouponService::USAGE_LIMIT_REACHED)
+            ->assertJsonPath('message', 'Mã giảm giá đã hết lượt sử dụng.');
     }
 
     public function test_min_order_amount_is_enforced(): void
@@ -273,7 +285,8 @@ class CheckoutFlowTest extends TestCase
         $token = $this->guestCartWith($this->makeVariant(price: 100000), 1);
 
         $this->withCartToken($token)->postJson('/api/coupons/check', ['code' => 'DON500'])
-            ->assertStatus(422)->assertJsonPath('code', DomainException::COUPON_INVALID);
+            ->assertStatus(422)->assertJsonPath('code', CouponService::MIN_ORDER_NOT_MET)
+            ->assertJsonPath('message', 'Đơn hàng chưa đạt giá trị tối thiểu 500.000đ để dùng mã này.');
     }
 
     // ---------- 3.D tra cứu đơn ----------
@@ -316,6 +329,15 @@ class CheckoutFlowTest extends TestCase
 
         $this->actingAs($admin)->patchJson('/api/admin/orders/999999/status', ['status' => 'confirmed'])
             ->assertNotFound()->assertJsonPath('code', 'NOT_FOUND');
+    }
+
+    public function test_coupon_check_is_still_rate_limited(): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $this->postJson('/api/coupons/check', ['code' => 'X'])->assertStatus(422);
+        }
+
+        $this->postJson('/api/coupons/check', ['code' => 'X'])->assertStatus(429);
     }
 
     public function test_lookup_is_rate_limited_to_five_per_minute(): void

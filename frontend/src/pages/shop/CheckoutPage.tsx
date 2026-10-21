@@ -78,7 +78,7 @@ export function CheckoutPage() {
           }
           setErrors(next);
         }
-        if (error.code === "COUPON_INVALID") {
+        if (error.code.startsWith("COUPON_")) {
           setPreview(null);
           setCouponError(error.message);
         }

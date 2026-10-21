@@ -131,16 +131,16 @@ describe("CheckoutPage", () => {
     expect(keys[1]).not.toBe(keys[0]);
   });
 
-  it("shows server coupon preview totals and the generic invalid message", async () => {
+  it("shows the specific coupon rejection reason and server preview totals", async () => {
     vi.mocked(couponService.check)
-      .mockRejectedValueOnce(new ApiError("Mã giảm giá không hợp lệ hoặc không áp dụng được cho đơn hàng này.", { status: 422, code: "COUPON_INVALID" }))
+      .mockRejectedValueOnce(new ApiError("Đơn hàng chưa đạt giá trị tối thiểu 500.000đ để dùng mã này.", { status: 422, code: "COUPON_MIN_ORDER_NOT_MET" }))
       .mockResolvedValueOnce({ code: "GIAM10", subtotal: 200000, discount_amount: 20000, shipping_fee: 30000, total: 210000 });
     setup();
     await screen.findByRole("heading", { name: "Thanh toán" });
 
     fireEvent.change(screen.getByLabelText("Mã giảm giá"), { target: { value: "SAI" } });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
-    expect(await screen.findByText(/Mã giảm giá không hợp lệ/)).toBeTruthy();
+    expect(await screen.findByText("Đơn hàng chưa đạt giá trị tối thiểu 500.000đ để dùng mã này.")).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Mã giảm giá"), { target: { value: "GIAM10" } });
     fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
@@ -164,5 +164,22 @@ describe("OrderSuccess", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tra cứu" }));
     expect(await screen.findByText(/090\*\*\*\*000/)).toBeTruthy();
     expect(orderService.lookup).toHaveBeenCalledWith("ORD-ABC", "0900000000");
+  });
+});
+
+describe("CheckoutPage coupon errors at order time", () => {
+  it("shows the coupon reason under the coupon field when checkout rejects it", async () => {
+    vi.mocked(cartService.getCart).mockResolvedValue(cart());
+    vi.mocked(couponService.check).mockResolvedValue({ code: "GIAM10", subtotal: 200000, discount_amount: 20000, shipping_fee: 30000, total: 210000 });
+    vi.mocked(orderService.createOrder).mockReset().mockRejectedValue(new ApiError("Mã giảm giá đã hết lượt sử dụng.", { status: 422, code: "COUPON_USAGE_LIMIT_REACHED" }));
+    setup();
+    await screen.findByRole("heading", { name: "Thanh toán" });
+    fireEvent.change(screen.getByLabelText("Mã giảm giá"), { target: { value: "GIAM10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Áp dụng" }));
+    await screen.findByRole("button", { name: "Bỏ mã" });
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "ĐẶT HÀNG NGAY" }));
+    expect((await screen.findAllByText("Mã giảm giá đã hết lượt sử dụng.")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Áp dụng" })).toBeTruthy();
   });
 });

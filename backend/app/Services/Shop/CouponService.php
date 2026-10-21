@@ -7,38 +7,61 @@ use App\Models\Coupon;
 use App\Models\Order;
 
 /**
- * Mọi lý do từ chối (không tồn tại, hết hạn, hết lượt, chưa đủ giá trị đơn...)
- * trả về cùng 1 lỗi COUPON_INVALID để không lộ thông tin mã nào có thật.
+ * Mỗi lý do từ chối có code riêng (tiền tố COUPON_) và thông báo tiếng Việt cho khách.
+ * /coupons/check vẫn bị throttle 10/phút để hạn chế dò mã.
  */
 class CouponService
 {
-    public const INVALID_MESSAGE = 'Mã giảm giá không hợp lệ hoặc không áp dụng được cho đơn hàng này.';
+    public const NOT_FOUND = 'COUPON_NOT_FOUND';
+
+    public const NOT_STARTED = 'COUPON_NOT_STARTED';
+
+    public const EXPIRED = 'COUPON_EXPIRED';
+
+    public const USAGE_LIMIT_REACHED = 'COUPON_USAGE_LIMIT_REACHED';
+
+    public const CUSTOMER_LIMIT_REACHED = 'COUPON_CUSTOMER_LIMIT_REACHED';
+
+    public const MIN_ORDER_NOT_MET = 'COUPON_MIN_ORDER_NOT_MET';
 
     public function find(string $code, bool $lock = false): Coupon
     {
-        $query = Coupon::query()->where('code', trim($code))->active();
+        $query = Coupon::query()->where('code', trim($code));
         if ($lock) {
             $query->lockForUpdate();
         }
 
-        return $query->first() ?? throw $this->invalid();
+        $coupon = $query->first();
+        if (! $coupon || ! $coupon->is_active) {
+            throw $this->reject(self::NOT_FOUND, 'Mã giảm giá không tồn tại.');
+        }
+
+        if ($coupon->starts_at !== null && $coupon->starts_at->isFuture()) {
+            throw $this->reject(self::NOT_STARTED, 'Mã giảm giá chưa đến thời gian áp dụng (từ '.$coupon->starts_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i').').');
+        }
+
+        if ($coupon->expires_at !== null && $coupon->expires_at->isPast()) {
+            throw $this->reject(self::EXPIRED, 'Mã giảm giá đã hết hạn.');
+        }
+
+        return $coupon;
     }
 
-    /** Trả về số tiền giảm (đã kẹp trong [0, subtotal]) hoặc ném COUPON_INVALID. */
+    /** Trả về số tiền giảm (đã kẹp trong [0, subtotal]) hoặc ném lỗi COUPON_*. */
     public function discountFor(Coupon $coupon, float $subtotal, ?int $userId, ?string $phone): float
     {
         if ($coupon->usage_limit !== null && $coupon->used_count >= $coupon->usage_limit) {
-            throw $this->invalid();
+            throw $this->reject(self::USAGE_LIMIT_REACHED, 'Mã giảm giá đã hết lượt sử dụng.');
         }
 
-        if ($subtotal <= 0 || $subtotal < (float) $coupon->min_order_amount) {
-            throw $this->invalid();
+        $min = (float) $coupon->min_order_amount;
+        if ($subtotal <= 0 || $subtotal < $min) {
+            throw $this->reject(self::MIN_ORDER_NOT_MET, 'Đơn hàng chưa đạt giá trị tối thiểu '.self::vnd($min).' để dùng mã này.');
         }
 
         if ($coupon->per_customer_limit !== null && $this->usedByCustomer($coupon, $userId, $phone) >= $coupon->per_customer_limit) {
-            throw $this->invalid();
+            throw $this->reject(self::CUSTOMER_LIMIT_REACHED, 'Bạn đã dùng hết số lần cho phép của mã giảm giá này.');
         }
-
         $discount = $coupon->type === 'percent'
             ? $subtotal * (float) $coupon->value / 100
             : (float) $coupon->value;
@@ -70,8 +93,13 @@ class CouponService
             ->count();
     }
 
-    private function invalid(): DomainException
+    public static function vnd(float $amount): string
     {
-        return new DomainException(DomainException::COUPON_INVALID, self::INVALID_MESSAGE, 422);
+        return number_format($amount, 0, ',', '.').'đ';
+    }
+
+    private function reject(string $code, string $message): DomainException
+    {
+        return new DomainException($code, $message, 422);
     }
 }
