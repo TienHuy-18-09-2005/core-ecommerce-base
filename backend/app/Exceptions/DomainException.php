@@ -14,6 +14,10 @@ class DomainException extends RuntimeException
 
     public const CART_OWNER_REQUIRED = 'CART_OWNER_REQUIRED';
 
+    public const COUPON_INVALID = 'COUPON_INVALID';
+
+    public const ORDER_NOT_FOUND = 'ORDER_NOT_FOUND';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,
