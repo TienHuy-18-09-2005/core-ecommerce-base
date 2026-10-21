@@ -18,6 +18,8 @@ export function QueryProvider({ children }: { children: ReactNode }) {
           queries: {
             retry: shouldRetry,
             refetchOnWindowFocus: false,
+            // Dữ liệu được coi là mới trong 2 phút: chuyển trang không gọi lại API
+            staleTime: 2 * 60_000,
           },
           mutations: {
             retry: false,

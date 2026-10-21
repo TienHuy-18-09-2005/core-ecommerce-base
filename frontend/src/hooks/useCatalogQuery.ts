@@ -4,6 +4,7 @@ import { productService, type ProductListParams } from "../services/productServi
 export function useCategoriesQuery() {
   return useQuery({
     queryKey: ["categories"],
+    staleTime: 10 * 60_000,
     queryFn: () => productService.getCategories(),
   });
 }
@@ -11,6 +12,7 @@ export function useCategoriesQuery() {
 export function useBrandsQuery() {
   return useQuery({
     queryKey: ["brands"],
+    staleTime: 10 * 60_000,
     queryFn: () => productService.getBrands(),
   });
 }
