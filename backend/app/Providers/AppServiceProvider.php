@@ -49,11 +49,11 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('checkout', function (Request $request) {
-            return Limit::perMinute(10)->by($this->clientKey($request));
+            return Limit::perMinute(10)->by($this->cartClientKey($request));
         });
 
         RateLimiter::for('coupon-check', function (Request $request) {
-            return Limit::perMinute(10)->by($this->clientKey($request));
+            return Limit::perMinute(10)->by($this->cartClientKey($request));
         });
 
         RateLimiter::for('order-lookup', function (Request $request) {
@@ -61,7 +61,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('cart', function (Request $request) {
-            return Limit::perMinute(60)->by($this->clientKey($request));
+            return Limit::perMinute(60)->by($this->cartClientKey($request));
         });
 
         RateLimiter::for('public-read', function (Request $request) {
@@ -83,5 +83,19 @@ class AppServiceProvider extends ServiceProvider
         $userId = $request->user()?->id;
 
         return $userId ? 'user:'.$userId : 'ip:'.$request->ip();
+    }
+
+    /** User hoặc (cart token + IP) — §2.3.3. Token được băm, không dùng giá trị thô làm khoá. */
+    private function cartClientKey(Request $request): string
+    {
+        $userId = $request->user('sanctum')?->id;
+        if ($userId) {
+            return 'user:'.$userId;
+        }
+
+        $token = $request->cookie('cart_token');
+        $cart = is_string($token) && $token !== '' ? substr(hash('sha256', $token), 0, 16) : 'none';
+
+        return 'cart:'.$cart.'|ip:'.$request->ip();
     }
 }

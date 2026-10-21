@@ -182,6 +182,7 @@ class GuestCartTokenTest extends TestCase
 
         $this->withCartToken($token)
             ->withHeader('X-Session-ID', 'forged-header-value')
+            ->withHeader('Idempotency-Key', (string) Str::uuid())
             ->postJson('/api/checkout', $this->checkoutPayload())
             ->assertCreated()
             ->assertJsonPath('success', true);

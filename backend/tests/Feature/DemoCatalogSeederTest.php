@@ -59,6 +59,16 @@ class DemoCatalogSeederTest extends TestCase
         $this->assertLessThan(30, $one); // sản phẩm chưa có review bị loại
     }
 
+    public function test_seeds_demo_coupons_once(): void
+    {
+        $this->seed(DemoCatalogSeeder::class);
+        $this->seed(DemoCatalogSeeder::class);
+
+        $this->assertSame(count(DemoCatalogSeeder::DEMO_COUPONS), \App\Models\Coupon::count());
+        $this->assertSame(0, \App\Models\Coupon::where('code', 'HETHAN')->active()->count());
+        $this->assertSame(1, \App\Models\Coupon::where('code', 'GIAM10')->active()->count());
+    }
+
     public function test_never_runs_in_production_even_with_flag(): void
     {
         $this->setFlag('true');

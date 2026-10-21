@@ -10,6 +10,8 @@ class Order extends Model
 {
     protected $fillable = [
         'order_code',
+        'idempotency_key',
+        'idempotency_scope',
         'user_id',
         'coupon_id',
         'customer_name',
@@ -33,6 +35,8 @@ class Order extends Model
         'delivered_at',
         'cancelled_at',
     ];
+
+    protected $hidden = ['idempotency_scope', 'idempotency_key'];
 
     protected function casts(): array
     {

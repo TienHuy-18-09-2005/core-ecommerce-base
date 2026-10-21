@@ -2,6 +2,7 @@ import { Menu, ShoppingCart, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCategoriesQuery } from "../../../hooks/useCatalogQuery.ts";
+import { useCartDrawer } from "../../../app/useCartDrawer.ts";
 import { useCartQuery } from "../../../hooks/useCartQuery.ts";
 import { SearchAutocomplete } from "./SearchAutocomplete.tsx";
 import { featuredDepartments } from "../../../types/catalog.ts";
@@ -9,6 +10,7 @@ import { cartItemCount } from "../../../types/cart.ts";
 
 export function Header() {
   const cart = useCartQuery();
+  const drawer = useCartDrawer();
   const categories = useCategoriesQuery();
   const [menuOpen, setMenuOpen] = useState(false);
   const count = cartItemCount(cart.data);
@@ -28,15 +30,17 @@ export function Header() {
           Core Điện
         </Link>
         <SearchAutocomplete />
-        <Link
-          to="/gio-hang"
+        <button
+          type="button"
+          onClick={drawer.open}
+          aria-haspopup="dialog"
+          aria-label={`Giỏ hàng, ${cartLabel} sản phẩm`}
           className="ml-auto inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800 md:ml-0"
-          aria-live="polite"
         >
           <ShoppingCart className="h-5 w-5" aria-hidden="true" />
           Giỏ hàng
-          <span className="min-w-6 rounded-full bg-amber-500 px-2 text-center text-slate-900">{cartLabel}</span>
-        </Link>
+          <span aria-live="polite" className="min-w-6 rounded-full bg-amber-500 px-2 text-center text-slate-900">{cartLabel}</span>
+        </button>
         <Link to="/dang-nhap" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800">
           <UserRound className="h-5 w-5" aria-hidden="true" />
           Đăng nhập

@@ -2,10 +2,13 @@
 
 namespace App\DTOs\Order;
 
+use App\Support\VietnamesePhone;
+
 readonly class CreateOrderDTO
 {
     public function __construct(
         public ?int $userId,
+        public string $idempotencyKey,
         public string $customerName,
         public string $customerPhone,
         public ?string $customerEmail,
@@ -18,20 +21,24 @@ readonly class CreateOrderDTO
         public ?string $couponCode
     ) {}
 
-    public static function fromRequest($request, ?int $userId): self
+    /** Chỉ đọc từ $validated (FormRequest), không đọc input thô. */
+    public static function fromValidated(array $data, ?int $userId): self
     {
+        $coupon = isset($data['coupon_code']) ? trim((string) $data['coupon_code']) : '';
+
         return new self(
             userId: $userId,
-            customerName: $request->input('customer_name'),
-            customerPhone: $request->input('customer_phone'),
-            customerEmail: $request->input('customer_email'),
-            shippingProvince: $request->input('shipping_province'),
-            shippingDistrict: $request->input('shipping_district'),
-            shippingWard: $request->input('shipping_ward'),
-            shippingAddress: $request->input('shipping_address'),
-            paymentMethod: $request->input('payment_method', 'cod'),
-            customerNote: $request->input('customer_note'),
-            couponCode: $request->input('coupon_code')
+            idempotencyKey: $data['idempotency_key'],
+            customerName: $data['customer_name'],
+            customerPhone: VietnamesePhone::normalize($data['customer_phone']),
+            customerEmail: $data['customer_email'] ?? null,
+            shippingProvince: $data['shipping_province'],
+            shippingDistrict: $data['shipping_district'],
+            shippingWard: $data['shipping_ward'],
+            shippingAddress: $data['shipping_address'],
+            paymentMethod: $data['payment_method'],
+            customerNote: $data['customer_note'] ?? null,
+            couponCode: $coupon === '' ? null : $coupon,
         );
     }
 }

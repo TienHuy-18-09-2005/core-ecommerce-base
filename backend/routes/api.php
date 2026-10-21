@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Shop\BrandController;
 use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CategoryController;
+use App\Http\Controllers\Shop\CouponController;
 use App\Http\Controllers\Shop\OrderController;
 use App\Http\Controllers\Shop\ProductController;
 use Illuminate\Http\Request;
@@ -26,13 +27,19 @@ Route::middleware('throttle:public-read')->group(function () {
 Route::middleware('throttle:cart')->group(function () {
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart', [CartController::class, 'store']);
-    Route::put('/cart/{itemId}', [CartController::class, 'update']);
-    Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
+    Route::put('/cart/{itemId}', [CartController::class, 'update'])->whereNumber('itemId');
+    Route::delete('/cart/{itemId}', [CartController::class, 'destroy'])->whereNumber('itemId');
 });
 
 Route::post('/checkout', [OrderController::class, 'store'])->middleware('throttle:checkout');
+Route::post('/coupons/check', [CouponController::class, 'check'])->middleware('throttle:coupon-check');
+Route::post('/orders/lookup', [OrderController::class, 'lookup'])->middleware('throttle:order-lookup');
+
+Route::get('/user/orders/{order:order_code}', [OrderController::class, 'showMine'])
+    ->middleware(['auth:sanctum', 'throttle:public-read', 'can:view,order']);
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin'])->group(function () {
     Route::post('/products', [AdminProductController::class, 'store']);
-    Route::patch('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+    Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
+        ->middleware('can:update,order');
 });

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\ProductVariant;
@@ -145,9 +146,34 @@ class DemoCatalogSeeder extends Seeder
             $this->seedReviews($product, $n, $reviewers);
         }
 
+        $this->seedCoupons();
+
         // Cây danh mục/thương hiệu được cache 24h → xoá để dữ liệu mới hiện ngay
         Cache::forget('shop_active_category_tree_v2');
         Cache::forget('shop_active_brands_v2');
+    }
+
+    /** Mã giảm giá demo cho Pha 3 (checkout). Một mã đã hết hạn để thử lỗi COUPON_INVALID. */
+    public const DEMO_COUPONS = [
+        'GIAM10' => ['type' => 'percent', 'value' => 10, 'max_discount_amount' => 50000, 'min_order_amount' => 200000, 'per_customer_limit' => 3],
+        'FREESHIP30' => ['type' => 'fixed', 'value' => 30000, 'min_order_amount' => 0, 'usage_limit' => 100],
+        'HETHAN' => ['type' => 'fixed', 'value' => 20000, 'expired' => true],
+    ];
+
+    private function seedCoupons(): void
+    {
+        foreach (self::DEMO_COUPONS as $code => $c) {
+            Coupon::updateOrCreate(['code' => $code], [
+                'type' => $c['type'],
+                'value' => $c['value'],
+                'min_order_amount' => $c['min_order_amount'] ?? 0,
+                'max_discount_amount' => $c['max_discount_amount'] ?? null,
+                'usage_limit' => $c['usage_limit'] ?? null,
+                'per_customer_limit' => $c['per_customer_limit'] ?? null,
+                'expires_at' => ! empty($c['expired']) ? now()->subDay() : null,
+                'is_active' => true,
+            ]);
+        }
     }
 
     /**

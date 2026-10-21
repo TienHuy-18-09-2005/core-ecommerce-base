@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Shop\AddToCartRequest;
+use App\Http\Requests\Shop\UpdateCartItemRequest;
+use App\Services\Shop\CartPresenter;
 use App\Services\Shop\CartService;
 use App\Services\Shop\GuestCartToken;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +16,7 @@ class CartController extends Controller
     public function __construct(
         protected CartService $cartService,
         protected GuestCartToken $cartToken,
+        protected CartPresenter $presenter,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -22,7 +25,7 @@ class CartController extends Controller
         $cart = $this->cartService->getCart($owner->userId, $this->cartToken->storageKey($owner));
 
         return $this->cartToken->attach(
-            response()->json(['success' => true, 'data' => $cart]),
+            response()->json(['success' => true, 'data' => $this->presenter->present($cart)]),
             $owner
         );
     }
@@ -41,27 +44,27 @@ class CartController extends Controller
             response()->json([
                 'success' => true,
                 'message' => 'Đã thêm vào giỏ hàng',
-                'data' => $cart,
+                'data' => $this->presenter->present($cart),
             ]),
             $owner
         );
     }
 
-    public function update(Request $request, int $itemId): JsonResponse
+    public function update(UpdateCartItemRequest $request, int $itemId): JsonResponse
     {
         $owner = $this->cartToken->resolve($request);
         $cart = $this->cartService->updateItemQuantity(
             $owner->userId,
             $this->cartToken->storageKey($owner),
             $itemId,
-            (int) $request->input('quantity', 1)
+            (int) $request->validated('quantity')
         );
 
         return $this->cartToken->attach(
             response()->json([
                 'success' => true,
                 'message' => 'Đã cập nhật giỏ hàng',
-                'data' => $cart,
+                'data' => $this->presenter->present($cart),
             ]),
             $owner
         );
@@ -80,7 +83,7 @@ class CartController extends Controller
             response()->json([
                 'success' => true,
                 'message' => 'Đã xóa sản phẩm khỏi giỏ hàng',
-                'data' => $cart,
+                'data' => $this->presenter->present($cart),
             ]),
             $owner
         );

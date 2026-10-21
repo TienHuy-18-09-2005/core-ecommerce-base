@@ -54,7 +54,7 @@ describe("Header", () => {
     expect(screen.getByRole("link", { name: /Đăng nhập/ })).toBeTruthy();
 
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: /Giỏ hàng/ }).textContent).toContain("0");
+      expect(screen.getByRole("button", { name: /Giỏ hàng/ }).textContent).toContain("0");
     });
 
     const nextCart: Cart = {
@@ -65,7 +65,7 @@ describe("Header", () => {
     client.setQueryData(cartQueryKey, nextCart);
 
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: /Giỏ hàng/ }).textContent).toContain("3");
+      expect(screen.getByRole("button", { name: /Giỏ hàng/ }).textContent).toContain("3");
     });
   });
 });
