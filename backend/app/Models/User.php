@@ -63,11 +63,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify(new ResetPasswordVi($token));
+        $this->notify((new ResetPasswordVi($token))->locale('vi'));
     }
 
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new VerifyEmailVi);
+        $this->notify((new VerifyEmailVi)->locale('vi'));
     }
 }

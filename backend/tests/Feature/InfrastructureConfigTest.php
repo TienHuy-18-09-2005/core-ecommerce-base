@@ -35,6 +35,13 @@ class InfrastructureConfigTest extends TestCase
         $this->assertStringContainsString('X-Content-Type-Options "nosniff"', $nginx);
         $this->assertStringContainsString('Referrer-Policy', $nginx);
 
+        $this->assertStringContainsString('127.0.0.1:8025:8025', $compose);
+        $this->assertStringContainsString('127.0.0.1:1025:1025', $compose);
+        $this->assertStringNotContainsString('"8025:8025"', $compose);
+        $this->assertMatchesRegularExpression('/^MAIL_HOST=mailpit$/m', $env);
+        $this->assertMatchesRegularExpression('/^MAIL_PORT=1025$/m', $env);
+        $this->assertMatchesRegularExpression('/^FRONTEND_URL=/m', $env);
+
         $this->assertMatchesRegularExpression('/^APP_DEBUG=false$/m', $env);
         $this->assertMatchesRegularExpression('/^DB_CONNECTION=mysql$/m', $env);
         $this->assertMatchesRegularExpression('/^DB_HOST=mysql$/m', $env);
