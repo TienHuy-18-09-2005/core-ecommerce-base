@@ -129,7 +129,7 @@ class PasswordResetVerificationTest extends TestCase
         parse_str(parse_url(VerifyEmailVi::url($user), PHP_URL_QUERY), $q);
         $path = "/api/email/verify/{$q['id']}/{$q['hash']}?expires={$q['expires']}";
 
-        $this->getJson($path.'&signature=sai')->assertForbidden();
+        $this->getJson($path.'&signature=sai')->assertForbidden()->assertJsonPath('code', 'VERIFICATION_LINK_INVALID');
         $this->getJson("/api/email/verify/{$q['id']}/".sha1('khac@example.com')."?expires={$q['expires']}&signature={$q['signature']}")->assertForbidden();
         $this->assertFalse($user->fresh()->hasVerifiedEmail());
 
@@ -143,7 +143,7 @@ class PasswordResetVerificationTest extends TestCase
         parse_str(parse_url(VerifyEmailVi::url($user), PHP_URL_QUERY), $q);
         $this->travel(VerifyEmailVi::EXPIRE_MINUTES + 1)->minutes();
 
-        $this->getJson("/api/email/verify/{$q['id']}/{$q['hash']}?expires={$q['expires']}&signature={$q['signature']}")->assertForbidden();
+        $this->getJson("/api/email/verify/{$q['id']}/{$q['hash']}?expires={$q['expires']}&signature={$q['signature']}")->assertForbidden()->assertJsonPath('code', 'VERIFICATION_LINK_INVALID');
     }
 
     public function test_resend_requires_auth_and_is_rate_limited(): void

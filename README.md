@@ -114,6 +114,40 @@ Nếu `package-lock.json` thay đổi mà vẫn lỗi: `docker compose down && d
 docker compose down
 ```
 
+## Tài khoản: quên mật khẩu, xác thực email, Mailpit
+
+**Email dev (Mailpit).** `docker compose up -d` chạy thêm `mailpit`: SMTP `mailpit:1025` trong mạng compose, giao diện
+**http://127.0.0.1:8025** (cả hai cổng chỉ bind `127.0.0.1`). Backend gửi qua `MAIL_MAILER=smtp`, `MAIL_HOST=mailpit`,
+`MAIL_PORT=1025` (xem `backend/.env.example`). Không có email nào ra Internet. Mọi email bằng tiếng Việt. Link trong email trỏ về
+SPA theo `FRONTEND_URL` (mặc định `http://localhost:5173`), không trỏ về API.
+
+**Quên / đặt lại mật khẩu** (password broker của Laravel, token hết hạn sau 60 phút):
+- `POST /api/auth/forgot-password {email}` luôn trả **cùng một** thông điệp chung, dù email có tồn tại hay không (chống dò email).
+  Giới hạn 5 lần/phút theo email+IP.
+- Email chứa `FRONTEND_URL/dat-lai-mat-khau?token=…&email=…`, trang `/dat-lai-mat-khau` gọi
+  `POST /api/auth/reset-password {token,email,password,password_confirmation}`. Quy tắc mật khẩu giống lúc đăng ký. Token
+  dùng một lần (`422 RESET_TOKEN_INVALID` khi sai, hết hạn hoặc đã dùng). Sau khi đặt lại, mọi phiên đăng nhập khác bị huỷ:
+  Sanctum `AuthenticateSession` so hash mật khẩu, `remember_token` được xoay vòng, token API bị xoá.
+- Trang `/quen-mat-khau`. Trang đăng nhập có link "Quên mật khẩu?".
+
+**Xác thực email** (`User implements MustVerifyEmail`):
+- Đăng ký xong, hệ thống gửi email chứa link `FRONTEND_URL/xac-thuc-email?id&hash&expires&signature` (URL ký, hết hạn sau 60 phút).
+  Trang này gọi `GET /api/email/verify/{id}/{hash}?expires&signature`, không cần đăng nhập, nên mở trên máy khác vẫn được.
+  Link sai hoặc hết hạn trả `403 VERIFICATION_LINK_INVALID`.
+- Gửi lại: `POST /api/email/verification-notification` (cần đăng nhập, tối đa 3 lần/phút). Banner vàng trong shop có nút
+  "Gửi lại email".
+- Tài khoản demo do seeder tạo (admin, customer, reviewer) đã được xác thực sẵn.
+
+**Chính sách khi chưa xác thực email:**
+
+| Hành động | Chưa xác thực |
+|---|---|
+| Xem sản phẩm, giỏ hàng, đăng nhập/đăng xuất, trang tài khoản | ✅ được |
+| Đặt hàng **khi đang đăng nhập** | ❌ `403 EMAIL_NOT_VERIFIED`, nút đặt hàng bị khoá kèm hướng dẫn |
+| Đặt hàng **với tư cách khách** (không đăng nhập) | ✅ vẫn được như cũ |
+
+Lý do: đơn gắn với tài khoản phải thuộc về chủ thật của email (lịch sử đơn, thông báo). Khách vãng lai thì không gắn tài khoản.
+
 ## Ghi chú
 
 - **Không commit** file `.env` — chỉ dùng `.env.example`.

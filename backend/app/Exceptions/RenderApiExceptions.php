@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -53,6 +54,19 @@ class RenderApiExceptions
                 'message' => $e->validator->errors()->first() ?: 'Dữ liệu không hợp lệ.',
                 'errors' => $e->errors(),
             ], $e->status);
+        });
+
+        // Chữ ký URL sai/hết hạn (hiện chỉ dùng cho link xác thực email)
+        $exceptions->render(function (InvalidSignatureException $e, Request $request) {
+            if (! self::isApi($request)) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'code' => DomainException::VERIFICATION_LINK_INVALID,
+                'message' => 'Liên kết xác thực không hợp lệ hoặc đã hết hạn.',
+            ], 403);
         });
 
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
