@@ -55,6 +55,21 @@ Muốn làm sạch DB và seed lại từ đầu: `docker compose exec backend p
 - Gồm cây danh mục 3 cấp, 5 thương hiệu và 30 sản phẩm (6 sản phẩm có 2 biến thể), giá từ 15.000đ đến 1.200.000đ. Bộ dữ liệu cố định và chạy lại không bị nhân đôi.
 - `SEED_DEMO_DATA` trong `backend/.env`: để trống thì chỉ seed khi `APP_ENV=local` (docker-compose đặt sẵn `local`). Đặt `true`/`false` để bật/tắt ở môi trường không phải production.
 - **Không bao giờ seed khi `APP_ENV=production`**, kể cả khi đặt `SEED_DEMO_DATA=true`.
+- Mã giảm giá demo (Pha 3): `GIAM10` (giảm 10%, tối đa 50.000đ, đơn từ 200.000đ, 3 lần/khách), `FREESHIP30` (giảm 30.000đ, 100 lượt), `HETHAN` (đã hết hạn — để thử lỗi `COUPON_INVALID`).
+
+### Giỏ hàng & thanh toán (Pha 3)
+
+- Trang: `/gio-hang`, `/thanh-toan` (chỉ COD), `/dat-hang-thanh-cong/:code`, `/tra-cuu-don-hang` (mã đơn + SĐT).
+- API: `POST /api/checkout` (bắt buộc header `Idempotency-Key`), `POST /api/coupons/check`, `POST /api/orders/lookup`, `GET /api/user/orders/{code}` (chỉ chủ đơn).
+- Dọn giỏ khách quá 30 ngày: `php artisan carts:prune-guests` (đã lên lịch chạy hằng ngày; cần `php artisan schedule:work` hoặc cron `schedule:run`).
+
+### Chạy test backend
+
+Test dùng SQLite in-memory (`phpunit.xml`). **Không** chạy `php artisan test` bên trong container `backend` đang chạy: biến môi trường của container (`DB_CONNECTION=mysql`) sẽ ghi đè và `RefreshDatabase` sẽ **xoá DB dev**. Chạy trong container tạm:
+
+```bash
+docker run --rm --network none -v "$PWD":/var/www -w /var/www/backend core-ecommerce-base-backend php artisan test
+```
 
 ### Đổi nhánh
 
