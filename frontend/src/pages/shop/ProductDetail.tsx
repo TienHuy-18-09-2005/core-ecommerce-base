@@ -1,65 +1,64 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { ShoppingCart, ShieldCheck, Zap } from 'lucide-react';
-import { useToast } from '../../app/useToast';
 import { useAddToCartMutation } from '../../hooks/useCartQuery';
-import { ApiError, mapApiError } from '../../services/apiError';
-import { productService } from '../../services/productService';
+import { useProductDetailQuery } from '../../hooks/useCatalogQuery';
+import { ApiError } from '../../services/apiError';
 import type { Product, ProductVariant } from '../../types/product';
 import { ProductImage } from '../../components/shop/ProductImage';
+import { Breadcrumb } from '../../components/shop/catalog/Breadcrumb';
 import { formatCurrency } from '../../utils/formatCurrency';
 
+/** Task 2.9: state reset khi đổi slug (remount theo key), request cũ bị huỷ qua AbortSignal, 404 thật. */
 export const ProductDetail: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
-    const [product, setProduct] = useState<Product | null>(null);
-    const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-    const [quantity, setQuantity] = useState<number>(1);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [loadError, setLoadError] = useState<string | null>(null);
-    const { showError } = useToast();
-    const addToCart = useAddToCartMutation();
+    const query = useProductDetailQuery(slug);
 
-    useEffect(() => {
-        if (!slug) {
-            return;
+    if (query.isPending) return <div className="p-10 text-center" aria-busy="true">Đang tải thông số thiết bị điện...</div>;
+    if (query.isError) {
+        if (query.error instanceof ApiError && query.error.status === 404) {
+            return (
+                <section className="rounded-2xl bg-white p-8 text-center">
+                    <p className="text-sm font-semibold text-blue-700">404</p>
+                    <h1 className="mt-2 text-3xl font-bold text-slate-900">Không tìm thấy sản phẩm</h1>
+                    <p className="mt-3 text-slate-600">Sản phẩm này không tồn tại hoặc đã ngừng bán.</p>
+                    <Link to="/san-pham" className="mt-6 inline-flex rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white">
+                        Xem sản phẩm khác
+                    </Link>
+                </section>
+            );
         }
+        return (
+            <div role="alert" className="p-10 text-center text-red-700">
+                <p>{query.error instanceof ApiError ? query.error.message : 'Không tải được sản phẩm.'}</p>
+                <button type="button" onClick={() => query.refetch()} className="mt-3 rounded-lg bg-blue-600 px-3 py-2 font-semibold text-white">
+                    Thử lại
+                </button>
+            </div>
+        );
+    }
 
-        let active = true;
-        productService.getProductDetail(slug)
-            .then(data => {
-                if (!active) {
-                    return;
-                }
-                setLoadError(null);
-                setProduct(data);
-                const defaultVar = data.variants.find(v => v.is_default) || data.variants[0];
-                setSelectedVariant(defaultVar || null);
-                setLoading(false);
-            })
-            .catch((error: unknown) => {
-                if (!active) {
-                    return;
-                }
-                const apiError = error instanceof ApiError ? error : mapApiError(error);
-                showError(apiError);
-                setProduct(null);
-                setLoadError(
-                    apiError.status === 404 ? 'Không tìm thấy sản phẩm.' : apiError.message,
-                );
-                setLoading(false);
-            });
+    return <ProductDetailView key={query.data.slug} product={query.data} />;
+};
 
-        return () => {
-            active = false;
-        };
-    }, [slug, showError]);
+function defaultVariant(product: Product): ProductVariant | null {
+    return product.variants.find(v => v.is_default) || product.variants[0] || null;
+}
 
-    if (loading) return <div className="p-10 text-center">Đang tải thông số thiết bị điện...</div>;
-    if (loadError) return <div className="p-10 text-center text-red-500">{loadError}</div>;
-    if (!product) return <div className="p-10 text-center text-red-500">Không tìm thấy sản phẩm.</div>;
+const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
+    const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(() => defaultVariant(product));
+    const [quantity, setQuantity] = useState<number>(1);
+    const addToCart = useAddToCartMutation();
+    const category = product.categories?.[0];
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
+            <Breadcrumb items={[
+                { label: 'Trang chủ', to: '/' },
+                { label: 'Sản phẩm', to: '/san-pham' },
+                ...(category ? [{ label: category.name, to: `/san-pham?category_id=${category.id}` }] : []),
+                { label: product.name },
+            ]} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Khu vực Hình ảnh */}
                 <div>
@@ -99,7 +98,9 @@ export const ProductDetail: React.FC = () => {
                                 {product.variants.map(variant => (
                                     <button
                                         key={variant.id}
-                                        onClick={() => setSelectedVariant(variant)}
+                                        type="button"
+                                        aria-pressed={selectedVariant?.id === variant.id}
+                                        onClick={() => { setSelectedVariant(variant); setQuantity(1); }}
                                         className={`px-4 py-2 border rounded-lg text-sm font-medium transition-all ${selectedVariant?.id === variant.id
                                             ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-500/20'
                                             : 'border-gray-300 text-gray-700 hover:border-gray-400'
@@ -125,7 +126,8 @@ export const ProductDetail: React.FC = () => {
                             min="1"
                             max={selectedVariant?.stock_quantity || 1}
                             value={quantity}
-                            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                            aria-label="Số lượng"
+                            onChange={(e) => setQuantity(Math.min(Math.max(1, parseInt(e.target.value) || 1), Math.max(1, selectedVariant?.stock_quantity ?? 1)))}
                             className="w-20 border border-gray-300 rounded-lg text-center py-2"
                         />
                         <button
@@ -169,7 +171,7 @@ export const ProductDetail: React.FC = () => {
                         {Object.entries(product.specifications).map(([key, value]) => (
                             <div key={key} className="flex border-b pb-2">
                                 <span className="w-1/3 font-medium text-gray-500">{key}</span>
-                                <span className="w-2/3 text-gray-900">{value as string}</span>
+                                <span className="w-2/3 text-gray-900">{typeof value === 'string' || typeof value === 'number' ? String(value) : JSON.stringify(value)}</span>
                             </div>
                         ))}
                     </div>

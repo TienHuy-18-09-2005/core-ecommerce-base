@@ -8,6 +8,8 @@ export function useCartQuery() {
   return useQuery({
     queryKey: cartQueryKey,
     queryFn: () => cartService.getCart(),
+    // Giỏ hàng luôn lấy mới để số lượng/giá chính xác
+    staleTime: 0,
   });
 }
 

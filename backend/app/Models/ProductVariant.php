@@ -25,6 +25,9 @@ class ProductVariant extends Model
         'is_active',
     ];
 
+    // Giá vốn là dữ liệu nội bộ, không bao giờ trả ra API shop
+    protected $hidden = ['cost_price'];
+
     protected function casts(): array
     {
         return [

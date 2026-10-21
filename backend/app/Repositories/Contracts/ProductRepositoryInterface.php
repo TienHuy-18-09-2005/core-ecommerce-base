@@ -10,4 +10,6 @@ interface ProductRepositoryInterface extends BaseRepositoryInterface
 {
     public function getFilteredProducts(GetProductsDTO $dto): LengthAwarePaginator;
     public function findBySlugWithDetails(string $slug): ?Product;
+
+    public function suggest(string $term, int $limit = 8): \Illuminate\Support\Collection;
 }

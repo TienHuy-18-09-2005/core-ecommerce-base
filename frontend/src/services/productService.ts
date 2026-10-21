@@ -1,4 +1,4 @@
-import type { BrandSummary, CatalogProduct, CategoryNode, Paginated } from "../types/catalog.ts";
+import type { BrandSummary, CatalogProduct, CategoryNode, Paginated, ProductSuggestion } from "../types/catalog.ts";
 import type { Product } from "../types/product.ts";
 import { apiClient } from "./apiClient.ts";
 
@@ -10,8 +10,13 @@ interface ApiSuccess<T> {
 export type ProductListParams = Record<string, string | number | boolean | undefined>;
 
 export const productService = {
-  async getProducts(params?: ProductListParams) {
-    const response = await apiClient.get<ApiSuccess<Paginated<CatalogProduct>>>("/products", { params });
+  async getProducts(params?: ProductListParams, signal?: AbortSignal) {
+    const response = await apiClient.get<ApiSuccess<Paginated<CatalogProduct>>>("/products", { params, signal });
+    return response.data.data;
+  },
+
+  async suggest(q: string, signal?: AbortSignal) {
+    const response = await apiClient.get<ApiSuccess<ProductSuggestion[]>>("/products/suggest", { params: { q }, signal });
     return response.data.data;
   },
 
@@ -25,8 +30,8 @@ export const productService = {
     return response.data.data;
   },
 
-  async getProductDetail(slug: string): Promise<Product> {
-    const response = await apiClient.get<ApiSuccess<Product>>(`/products/${slug}`);
+  async getProductDetail(slug: string, signal?: AbortSignal): Promise<Product> {
+    const response = await apiClient.get<ApiSuccess<Product>>(`/products/${encodeURIComponent(slug)}`, { signal });
     return response.data.data;
   },
 };

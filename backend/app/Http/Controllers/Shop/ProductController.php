@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Services\Shop\ProductService;
 use App\DTOs\Catalog\GetProductsDTO;
-use Illuminate\Http\Request;
+use App\Http\Requests\Shop\ListProductsRequest;
+use App\Http\Requests\Shop\SuggestProductsRequest;
 use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
@@ -17,7 +18,7 @@ class ProductController extends Controller
         $this->productService = $productService;
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ListProductsRequest $request): JsonResponse
     {
         $dto = GetProductsDTO::fromRequest($request);
         $products = $this->productService->getCatalogProducts($dto);
@@ -25,6 +26,14 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'data' => $products
+        ]);
+    }
+
+    public function suggest(SuggestProductsRequest $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->productService->suggest($request->validated('q')),
         ]);
     }
 

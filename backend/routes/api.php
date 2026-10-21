@@ -16,6 +16,8 @@ Route::get('/user', function (Request $request) {
 
 Route::middleware('throttle:public-read')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/suggest', [ProductController::class, 'suggest'])
+        ->middleware('throttle:search-suggest');
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/brands', [BrandController::class, 'index']);

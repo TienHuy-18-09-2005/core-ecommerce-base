@@ -49,11 +49,12 @@ export interface Product {
   description?: string;
   thumbnail_url?: string;
   unit: string;
-  specifications?: Record<string, string>;
+  specifications?: Record<string, unknown> | null;
   has_variants: boolean;
   min_price?: number;
   max_price?: number;
   brand?: Brand;
   variants: ProductVariant[];
   media: ProductMedia[];
+  categories?: { id: number; name: string; slug: string }[];
 }

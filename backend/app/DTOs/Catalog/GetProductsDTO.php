@@ -13,6 +13,7 @@ readonly class GetProductsDTO
         public ?string $sortBy = 'latest',
         public int $perPage = 12,
         public ?bool $featured = null,
+        public ?int $minRating = null,
     ) {}
 
     public static function fromRequest($request): self
@@ -22,15 +23,20 @@ readonly class GetProductsDTO
             $featured = $request->boolean('is_featured');
         }
 
+        $int = fn (string $key): ?int => $request->filled($key) ? (int) $request->input($key) : null;
+        $float = fn (string $key): ?float => $request->filled($key) ? (float) $request->input($key) : null;
+        $search = $request->filled('search') ? (string) $request->input('search') : null;
+
         return new self(
-            categoryId: $request->input('category_id'),
-            brandId: $request->input('brand_id'),
-            search: $request->input('search'),
-            minPrice: $request->input('min_price'),
-            maxPrice: $request->input('max_price'),
-            sortBy: $request->input('sort_by', 'latest'),
+            categoryId: $int('category_id'),
+            brandId: $int('brand_id'),
+            search: $search,
+            minPrice: $float('min_price'),
+            maxPrice: $float('max_price'),
+            sortBy: $request->input('sort_by') ?: 'latest',
             perPage: max(1, min(48, (int) $request->input('per_page', 12))),
             featured: $featured,
+            minRating: $int('min_rating'),
         );
     }
 }

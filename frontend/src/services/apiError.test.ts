@@ -130,3 +130,27 @@ describe("mapApiError", () => {
     expect(error.message).toBe(API_MESSAGES.network);
   });
 });
+
+describe("mapApiError with the standard backend error shape", () => {
+  it("reads errors from {success:false, code, message, errors} 422 bodies", () => {
+    const error = mapApiError(
+      httpError(422, {
+        success: false,
+        code: "VALIDATION_ERROR",
+        message: "Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu.",
+        errors: { max_price: ["Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu."] },
+      }),
+    );
+    expect(error.status).toBe(422);
+    expect(error.code).toBe("VALIDATION_ERROR");
+    expect(error.fieldErrors).toEqual({ max_price: ["Giá tối đa phải lớn hơn hoặc bằng giá tối thiểu."] });
+  });
+
+  it("keeps the 429 retryAfter with the standard shape", () => {
+    const error = mapApiError(
+      httpError(429, { success: false, code: "TOO_MANY_REQUESTS", message: "Too Many Attempts." }, { "retry-after": "12" }),
+    );
+    expect(error.code).toBe("TOO_MANY_REQUESTS");
+    expect(error.retryAfter).toBe(12);
+  });
+});

@@ -25,6 +25,11 @@ class ProductService
         return $this->productRepository->getFilteredProducts($dto);
     }
 
+    public function suggest(string $term): Collection
+    {
+        return $this->productRepository->suggest($term, 8);
+    }
+
     public function getProductDetail(string $slug): ?Product
     {
         $product = $this->productRepository->findBySlugWithDetails($slug);

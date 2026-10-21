@@ -30,6 +30,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         />
         <h3 className="mt-3 line-clamp-2 text-base font-semibold text-slate-900">{product.name}</h3>
       </Link>
+      <RatingLine avg={amount(product.avg_rating)} count={product.reviews_count ?? 0} />
       <p className="mt-2 text-lg font-bold text-red-600 tabular-nums">
         {price === null ? "Liên hệ" : formatCurrency(price)}
         {product.unit ? <span className="ml-1 text-sm font-medium text-slate-500">/ {product.unit}</span> : null}
@@ -58,5 +59,18 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
         )}
       </div>
     </article>
+  );
+}
+
+function RatingLine({ avg, count }: { avg: number | null; count: number }) {
+  if (avg === null || count === 0) {
+    return <p className="mt-1 text-xs text-slate-500">Chưa có đánh giá</p>;
+  }
+  const rounded = Math.round(avg);
+  return (
+    <p className="mt-1 flex items-center gap-1 text-xs text-slate-600" aria-label={`Đánh giá ${avg.toFixed(1)} trên 5 sao, ${count} lượt`}>
+      <span aria-hidden="true" className="text-amber-500">{"★".repeat(rounded)}{"☆".repeat(5 - rounded)}</span>
+      <span aria-hidden="true">{avg.toFixed(1)} ({count})</span>
+    </p>
   );
 }
