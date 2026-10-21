@@ -78,6 +78,13 @@ export function mapApiError(error: unknown): ApiError {
   }
 
   if (status === 422) {
+    // Lỗi nghiệp vụ 422 (vd. COUPON_INVALID, STOCK_UNAVAILABLE) giữ code + message an toàn của server
+    const domainCode = readCode(body.code);
+    const domainMessage = safeServerMessage(body.message);
+    if (domainCode && domainCode !== "VALIDATION_ERROR" && domainMessage) {
+      return new ApiError(domainMessage, { status, code: domainCode, fieldErrors });
+    }
+
     return new ApiError(API_MESSAGES.validation, {
       status,
       code: "VALIDATION_ERROR",

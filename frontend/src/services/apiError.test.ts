@@ -153,4 +153,12 @@ describe("mapApiError with the standard backend error shape", () => {
     expect(error.code).toBe("TOO_MANY_REQUESTS");
     expect(error.retryAfter).toBe(12);
   });
+
+  it("keeps domain codes and safe messages on 422 business errors", () => {
+    const error = mapApiError(
+      httpError(422, { success: false, code: "COUPON_INVALID", message: "Mã giảm giá không hợp lệ." }),
+    );
+    expect(error.code).toBe("COUPON_INVALID");
+    expect(error.message).toBe("Mã giảm giá không hợp lệ.");
+  });
 });
