@@ -53,6 +53,22 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($this->clientKey($request));
         });
 
+        // Quên mật khẩu / đặt lại: 5/phút theo email + IP (§2.3.3)
+        RateLimiter::for('forgot-password', function (Request $request) {
+            $email = strtolower((string) $request->input('email'));
+
+            return Limit::perMinute(5)->by($email.'|'.$request->ip());
+        });
+
+        // Gửi lại email xác thực: 3/phút theo user
+        RateLimiter::for('verification-resend', function (Request $request) {
+            return Limit::perMinute(3)->by($this->clientKey($request));
+        });
+
+        RateLimiter::for('verify-email', function (Request $request) {
+            return Limit::perMinute(10)->by((string) $request->ip());
+        });
+
         RateLimiter::for('register', function (Request $request) {
             return Limit::perMinute(5)->by((string) $request->ip());
         });

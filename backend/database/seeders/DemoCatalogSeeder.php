@@ -88,7 +88,7 @@ class DemoCatalogSeeder extends Seeder
         for ($r = 1; $r <= self::REVIEWER_COUNT; $r++) {
             $reviewers[] = User::firstOrCreate(
                 ['email' => "demo-reviewer-{$r}@ecom.local"],
-                ['name' => "Khách đánh giá {$r}", 'password' => Hash::make(Str::random(40)), 'role' => 'customer', 'is_active' => true],
+                ['name' => "Khách đánh giá {$r}", 'password' => Hash::make(Str::random(40)), 'role' => 'customer', 'is_active' => true, 'email_verified_at' => now()],
             );
         }
 

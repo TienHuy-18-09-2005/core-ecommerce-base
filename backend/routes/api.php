@@ -3,6 +3,8 @@
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Shop\BrandController;
 use App\Http\Controllers\Shop\CartController;
@@ -18,7 +20,17 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])->middleware('throttle:forgot-password');
+    Route::post('/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:forgot-password');
 });
+
+// Xác thực email: link ký tương đối (SPA gọi lại), gửi lại giới hạn 3/phút
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->whereNumber('id')
+    ->middleware(['signed:relative', 'throttle:verify-email'])
+    ->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
+    ->middleware(['auth:sanctum', 'throttle:verification-resend']);
 
 Route::middleware(['auth:sanctum', 'throttle:account'])->prefix('user')->group(function () {
     Route::get('/', [AccountController::class, 'me']);

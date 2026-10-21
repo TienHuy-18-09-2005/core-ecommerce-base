@@ -11,6 +11,7 @@ use App\Services\Shop\CartService;
 use App\Services\Shop\GuestCartToken;
 use App\Support\UserPresenter;
 use App\Support\VietnamesePhone;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -62,6 +63,9 @@ class AuthController extends Controller
             'role' => 'customer',
             'is_active' => true,
         ]);
+
+        // Gửi email xác thực (listener SendEmailVerificationNotification của Laravel)
+        event(new Registered($user));
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();

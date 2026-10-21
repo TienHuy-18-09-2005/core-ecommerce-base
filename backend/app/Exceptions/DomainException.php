@@ -22,6 +22,12 @@ class DomainException extends RuntimeException
 
     public const WRONG_PASSWORD = 'WRONG_PASSWORD';
 
+    public const RESET_TOKEN_INVALID = 'RESET_TOKEN_INVALID';
+
+    public const EMAIL_NOT_VERIFIED = 'EMAIL_NOT_VERIFIED';
+
+    public const VERIFICATION_LINK_INVALID = 'VERIFICATION_LINK_INVALID';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,

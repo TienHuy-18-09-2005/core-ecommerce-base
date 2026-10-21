@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Shop;
 
 use App\DTOs\Order\CreateOrderDTO;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Shop\CheckoutRequest;
 use App\Http\Requests\Shop\OrderLookupRequest;
@@ -23,6 +24,18 @@ class OrderController extends Controller
     public function store(CheckoutRequest $request): JsonResponse
     {
         $owner = $this->cartToken->resolve($request, issueIfMissing: false);
+
+        // Chính sách: khách (không đăng nhập) vẫn đặt hàng được; tài khoản đã đăng nhập
+        // phải xác thực email trước khi đặt hàng bằng tài khoản.
+        $user = $request->user('sanctum');
+        if ($user && ! $user->hasVerifiedEmail()) {
+            throw new DomainException(
+                DomainException::EMAIL_NOT_VERIFIED,
+                'Vui lòng xác thực email trước khi đặt hàng bằng tài khoản.',
+                403
+            );
+        }
+
         $dto = CreateOrderDTO::fromValidated($request->validated(), $owner->userId);
         $result = $this->orderService->createOrder($dto, $this->cartToken->storageKey($owner));
 

@@ -16,6 +16,7 @@ class UserPresenter
             'phone' => $user->phone,
             'role' => $user->role,
             'avatar_url' => $user->avatar_url,
+            'email_verified' => $user->hasVerifiedEmail(),
         ];
     }
 }
