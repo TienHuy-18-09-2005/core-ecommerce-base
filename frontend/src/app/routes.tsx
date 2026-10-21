@@ -2,10 +2,13 @@ import type { RouteObject } from "react-router-dom";
 import { AdminRoute, LegacyProductRedirect } from "./routeParts.tsx";
 import { ShopLayout } from "../layouts/ShopLayout.tsx";
 import { CartPage } from "../pages/shop/CartPage.tsx";
+import { CheckoutPage } from "../pages/shop/CheckoutPage.tsx";
 import { HomePage } from "../pages/shop/HomePage.tsx";
 import { InfoPage } from "../pages/shop/InfoPage.tsx";
 import { LoginPage } from "../pages/shop/LoginPage.tsx";
 import { NotFound } from "../pages/shop/NotFound.tsx";
+import { OrderLookupPage } from "../pages/shop/OrderLookupPage.tsx";
+import { OrderSuccess } from "../pages/shop/OrderSuccess.tsx";
 import { ProductDetail } from "../pages/shop/ProductDetail.tsx";
 import { ProductList } from "../pages/shop/ProductList.tsx";
 
@@ -18,6 +21,9 @@ export const appRoutes: RouteObject[] = [
       { path: "san-pham/:slug", element: <ProductDetail /> },
       { path: "products/:slug", element: <LegacyProductRedirect /> },
       { path: "gio-hang", element: <CartPage /> },
+      { path: "thanh-toan", element: <CheckoutPage /> },
+      { path: "dat-hang-thanh-cong/:code", element: <OrderSuccess /> },
+      { path: "tra-cuu-don-hang", element: <OrderLookupPage /> },
       { path: "dang-nhap", element: <LoginPage /> },
       { path: "gioi-thieu", element: <InfoPage slug="gioi-thieu" /> },
       { path: "chinh-sach-van-chuyen", element: <InfoPage slug="chinh-sach-van-chuyen" /> },
