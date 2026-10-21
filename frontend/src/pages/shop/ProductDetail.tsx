@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ShoppingCart, ShieldCheck, Zap } from 'lucide-react';
-import { useAddToCartMutation } from '../../hooks/useCartQuery';
+import { useCartDrawer } from '../../app/useCartDrawer';
+import { ImageGallery } from '../../components/shop/ImageGallery';
+import { useAddToCartMutation, useCartQuery } from '../../hooks/useCartQuery';
 import { useProductDetailQuery } from '../../hooks/useCatalogQuery';
 import { ApiError } from '../../services/apiError';
 import type { Product, ProductVariant } from '../../types/product';
-import { ProductImage } from '../../components/shop/ProductImage';
 import { Breadcrumb } from '../../components/shop/catalog/Breadcrumb';
 import { formatCurrency } from '../../utils/formatCurrency';
 
@@ -48,7 +49,17 @@ function defaultVariant(product: Product): ProductVariant | null {
 const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(() => defaultVariant(product));
     const [quantity, setQuantity] = useState<number>(1);
-    const addToCart = useAddToCartMutation();
+    const drawer = useCartDrawer();
+    const addToCart = useAddToCartMutation({ onAdded: drawer.open });
+    const cart = useCartQuery();
+    const inCart = cart.data?.items.find(item => item.product_variant_id === selectedVariant?.id)?.quantity ?? 0;
+    const stock = selectedVariant?.stock_quantity ?? 0;
+    const remaining = Math.max(0, stock - inCart);
+    const galleryImages = [
+        { src: product.thumbnail_url, alt: product.name },
+        ...product.media.filter(m => m.media_type === 'image').map(m => ({ src: m.file_url, alt: m.alt_text || product.name })),
+        ...product.variants.map(v => ({ src: v.image_url, alt: `${product.name} - ${v.name}` })),
+    ];
     const category = product.categories?.[0];
 
     return (
@@ -62,11 +73,7 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Khu vực Hình ảnh */}
                 <div>
-                    <ProductImage
-                        src={selectedVariant?.image_url || product.thumbnail_url}
-                        alt={product.name}
-                        className="w-full h-96 object-cover rounded-xl border shadow-sm"
-                    />
+                    <ImageGallery images={galleryImages} activeSrc={selectedVariant?.image_url || product.thumbnail_url} />
                 </div>
 
                 {/* Khu vực Thông tin & Chọn biến thể */}
@@ -124,15 +131,15 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
                         <input
                             type="number"
                             min="1"
-                            max={selectedVariant?.stock_quantity || 1}
+                            max={Math.max(1, remaining)}
                             value={quantity}
                             aria-label="Số lượng"
-                            onChange={(e) => setQuantity(Math.min(Math.max(1, parseInt(e.target.value) || 1), Math.max(1, selectedVariant?.stock_quantity ?? 1)))}
+                            onChange={(e) => setQuantity(Math.min(Math.max(1, parseInt(e.target.value) || 1), Math.max(1, remaining)))}
                             className="w-20 border border-gray-300 rounded-lg text-center py-2"
                         />
                         <button
                             type="button"
-                            disabled={!selectedVariant || selectedVariant.stock_quantity <= 0 || addToCart.isPending}
+                            disabled={!selectedVariant || remaining <= 0 || quantity > remaining || addToCart.isPending}
                             onClick={() => {
                                 if (!selectedVariant) {
                                     return;
@@ -145,9 +152,14 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
                             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg flex items-center justify-center gap-2 disabled:bg-gray-300 transition-colors"
                         >
                             <ShoppingCart className="w-5 h-5" />
-                            {addToCart.isPending ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
+                            {addToCart.isPending ? 'Đang thêm...' : stock <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
                         </button>
                     </div>
+                    {inCart > 0 ? (
+                        <p className="mt-2 text-sm text-slate-600" role="status">
+                            Bạn đã có {inCart} sản phẩm này trong giỏ{remaining <= 0 ? ' — đã đạt số lượng tồn kho tối đa.' : '.'}
+                        </p>
+                    ) : null}
 
                     {/* Cam kết kỹ thuật */}
                     <div className="mt-8 border-t pt-4 grid grid-cols-2 gap-4 text-sm text-gray-500">
