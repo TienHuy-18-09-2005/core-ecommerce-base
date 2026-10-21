@@ -1,7 +1,8 @@
-import { Menu, ShoppingCart, UserRound } from "lucide-react";
+import { LogOut, Menu, ShoppingCart, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCategoriesQuery } from "../../../hooks/useCatalogQuery.ts";
+import { useAuth } from "../../../app/useAuth.ts";
 import { useCartDrawer } from "../../../app/useCartDrawer.ts";
 import { useCartQuery } from "../../../hooks/useCartQuery.ts";
 import { SearchAutocomplete } from "./SearchAutocomplete.tsx";
@@ -11,6 +12,7 @@ import { cartItemCount } from "../../../types/cart.ts";
 export function Header() {
   const cart = useCartQuery();
   const drawer = useCartDrawer();
+  const auth = useAuth();
   const categories = useCategoriesQuery();
   const [menuOpen, setMenuOpen] = useState(false);
   const count = cartItemCount(cart.data);
@@ -41,10 +43,22 @@ export function Header() {
           Giỏ hàng
           <span aria-live="polite" className="min-w-6 rounded-full bg-amber-500 px-2 text-center text-slate-900">{cartLabel}</span>
         </button>
-        <Link to="/dang-nhap" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800">
-          <UserRound className="h-5 w-5" aria-hidden="true" />
-          Đăng nhập
-        </Link>
+        {auth.user ? (
+          <>
+            <Link to="/tai-khoan" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800">
+              <UserRound className="h-5 w-5" aria-hidden="true" />
+              {auth.user.name}
+            </Link>
+            <button type="button" onClick={() => void auth.logout()} className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm text-slate-600">
+              <LogOut className="h-4 w-4" aria-hidden="true" /> Đăng xuất
+            </button>
+          </>
+        ) : (
+          <Link to="/dang-nhap" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800">
+            <UserRound className="h-5 w-5" aria-hidden="true" />
+            Đăng nhập
+          </Link>
+        )}
       </div>
       <nav aria-label="Danh mục" className="border-t border-slate-100">
         <div className="mx-auto max-w-7xl px-4 py-2">

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ErrorBoundary } from "./app/ErrorBoundary.tsx";
+import { AuthProvider } from "./app/AuthProvider.tsx";
 import { QueryProvider } from "./app/QueryProvider.tsx";
 import { ToastProvider } from "./app/Toast.tsx";
 import App from "./App.tsx";
@@ -11,7 +12,9 @@ createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <ToastProvider>
         <QueryProvider>
-          <App />
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </QueryProvider>
       </ToastProvider>
     </ErrorBoundary>
