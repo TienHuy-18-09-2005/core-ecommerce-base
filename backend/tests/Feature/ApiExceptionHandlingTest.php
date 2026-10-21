@@ -84,10 +84,10 @@ class ApiExceptionHandlingTest extends TestCase
             'quantity' => 1,
         ]);
 
-        $response->assertStatus(400)
+        $response->assertStatus(422)
             ->assertJsonPath('success', false)
             ->assertJsonPath('code', DomainException::STOCK_UNAVAILABLE)
-            ->assertJsonPath('message', 'Số lượng sản phẩm trong kho không đủ.');
+            ->assertJsonPath('message', 'Chỉ còn 0 sản phẩm trong kho.');
 
         $this->assertStringNotContainsString('SQLSTATE', $response->getContent());
         $response->assertCookie(GuestCartToken::COOKIE_NAME);
