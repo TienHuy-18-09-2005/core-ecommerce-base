@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../app/useAuth.ts";
 import { useToast } from "../../app/useToast.ts";
 import { CartSummaryBox } from "../../components/shop/cart/CartSummaryBox.tsx";
 import { Breadcrumb } from "../../components/shop/catalog/Breadcrumb.tsx";
@@ -25,7 +26,11 @@ export function CheckoutPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { showError } = useToast();
-  const [form, setForm] = useState<FormFields>(EMPTY_FORM);
+  const { user } = useAuth();
+  // Đã đăng nhập → điền sẵn thông tin liên hệ (người dùng vẫn sửa được)
+  const [form, setForm] = useState<FormFields>(() => user
+    ? { ...EMPTY_FORM, customer_name: user.name, customer_phone: user.phone ?? "", customer_email: user.email }
+    : EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
   const [couponInput, setCouponInput] = useState("");
   const [preview, setPreview] = useState<CouponPreview | null>(null);

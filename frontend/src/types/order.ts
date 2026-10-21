@@ -18,6 +18,9 @@ export interface Order {
   shipping_fee: number;
   total_amount: number;
   created_at: string | null;
+  confirmed_at?: string | null;
+  delivered_at?: string | null;
+  cancelled_at?: string | null;
   items: OrderItem[];
   customer: { name: string; phone: string; email: string | null };
   shipping: { province: string; district: string; ward: string | null; address: string | null };
