@@ -63,6 +63,13 @@ Muốn làm sạch DB và seed lại từ đầu: `docker compose exec backend p
 - API: `POST /api/checkout` (bắt buộc header `Idempotency-Key`), `POST /api/coupons/check`, `POST /api/orders/lookup`, `GET /api/user/orders/{code}` (chỉ chủ đơn).
 - Dọn giỏ khách quá 30 ngày: `php artisan carts:prune-guests` (đã lên lịch chạy hằng ngày; cần `php artisan schedule:work` hoặc cron `schedule:run`).
 
+### Tài khoản (Pha 4)
+
+- Đăng nhập bằng cookie phiên Sanctum (SPA gọi `/sanctum/csrf-cookie` trước), không dùng token. Tài khoản demo lấy từ `backend/.env` (`ADMIN_*`, `CUSTOMER_*`).
+- Trang: `/dang-nhap`, `/dang-ky`, `/tai-khoan` (tab: thông tin, lịch sử đơn, sổ địa chỉ, đổi mật khẩu), `/tai-khoan/don-hang/:code` (timeline trạng thái).
+- API: `POST /api/auth/login` (5/phút theo email+IP), `POST /api/auth/register` (5/phút), `POST /api/auth/logout`, `GET /api/user`, `PUT /api/user/profile`, `PUT /api/user/password` (cần mật khẩu cũ, 5/phút), `GET /api/user/orders`, CRUD `/api/user/addresses`.
+- Khi đăng nhập/đăng ký, giỏ khách được gộp vào giỏ tài khoản **ở server** (kẹp theo tồn kho, bỏ hàng ngừng bán). Response có `cart_adjustments` và FE hiện thông báo; cookie `cart_token` bị xoá.
+
 ### Chạy test backend
 
 Test dùng SQLite in-memory (`phpunit.xml`). **Không** chạy `php artisan test` bên trong container `backend` đang chạy: biến môi trường của container (`DB_CONNECTION=mysql`) sẽ ghi đè và `RefreshDatabase` sẽ **xoá DB dev**. Chạy trong container tạm:
