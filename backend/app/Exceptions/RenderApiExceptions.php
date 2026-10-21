@@ -115,6 +115,13 @@ class RenderApiExceptions
             if ($response->getStatusCode() >= 400) {
                 $payload['success'] = false;
                 $payload['code'] = $payload['code'] ?? self::defaultCode($response->getStatusCode());
+
+                // Thông điệp mặc định của framework (tiếng Anh, có thể lộ tên route) → thông điệp tiếng Việt chuẩn
+                $message = (string) ($payload['message'] ?? '');
+                $standard = self::defaultMessage($response->getStatusCode());
+                if ($standard !== null && ($message === '' || preg_match('/^[\x00-\x7F]*$/', $message) === 1)) {
+                    $payload['message'] = $standard;
+                }
             }
 
             if ($response->getStatusCode() >= 500) {
@@ -157,6 +164,20 @@ class RenderApiExceptions
             422 => 'VALIDATION_ERROR',
             429 => 'TOO_MANY_REQUESTS',
             default => 'REQUEST_FAILED',
+        };
+    }
+
+    /** Thông điệp tiếng Việt chuẩn cho các mã HTTP chung; mã lỗi (code) giữ nguyên. */
+    public static function defaultMessage(int $status): ?string
+    {
+        return match ($status) {
+            401 => 'Bạn chưa đăng nhập hoặc phiên đã hết hạn.',
+            403 => 'Bạn không có quyền thực hiện thao tác này.',
+            404 => 'Không tìm thấy dữ liệu.',
+            405 => 'Phương thức không được hỗ trợ cho địa chỉ này.',
+            419 => 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang.',
+            429 => 'Bạn thao tác quá nhanh. Vui lòng thử lại sau.',
+            default => null,
         };
     }
 

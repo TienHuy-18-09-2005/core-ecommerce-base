@@ -148,6 +148,12 @@ SPA theo `FRONTEND_URL` (mặc định `http://localhost:5173`), không trỏ v�
 
 Lý do: đơn gắn với tài khoản phải thuộc về chủ thật của email (lịch sử đơn, thông báo). Khách vãng lai thì không gắn tài khoản.
 
+## Ngôn ngữ
+
+Backend chạy `APP_LOCALE=vi` (fallback cũng là `vi`). Bản dịch nằm ở `backend/lang/vi/` (`validation.php` đủ mọi rule, gồm các
+rule Password, kèm tên trường tiếng Việt; `auth.php`, `passwords.php`, `pagination.php`) và `backend/lang/vi.json`. Các lỗi HTTP
+chung 401/403/404/405/419/429/500 đều trả thông điệp tiếng Việt chuẩn. Mã lỗi (`code`) giữ nguyên để frontend xử lý.
+
 ## Ghi chú
 
 - **Không commit** file `.env` — chỉ dùng `.env.example`.

@@ -33,6 +33,8 @@ services:
       # Link trong email (đặt lại mật khẩu, xác thực) trỏ về SPA
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       APP_NAME: ${APP_NAME:-Core Điện}
+      APP_LOCALE: ${APP_LOCALE:-vi}
+      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-vi}
       # Dev: mọi email đi vào Mailpit (UI http://127.0.0.1:8025), không gửi ra ngoài
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
       MAIL_HOST: ${MAIL_HOST:-mailpit}
