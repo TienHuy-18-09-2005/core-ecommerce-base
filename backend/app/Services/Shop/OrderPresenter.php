@@ -60,6 +60,9 @@ class OrderPresenter
             'shipping_fee' => (float) $order->shipping_fee,
             'total_amount' => (float) $order->total_amount,
             'created_at' => $order->created_at?->toIso8601String(),
+            'confirmed_at' => $order->confirmed_at?->toIso8601String(),
+            'delivered_at' => $order->delivered_at?->toIso8601String(),
+            'cancelled_at' => $order->cancelled_at?->toIso8601String(),
             'items' => $order->items->map(fn (OrderItem $item) => [
                 'product_name' => $item->product_name,
                 'variant_name' => $item->variant_name,

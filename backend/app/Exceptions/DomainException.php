@@ -16,6 +16,12 @@ class DomainException extends RuntimeException
 
     public const ORDER_NOT_FOUND = 'ORDER_NOT_FOUND';
 
+    public const INVALID_CREDENTIALS = 'INVALID_CREDENTIALS';
+
+    public const ACCOUNT_DISABLED = 'ACCOUNT_DISABLED';
+
+    public const WRONG_PASSWORD = 'WRONG_PASSWORD';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,

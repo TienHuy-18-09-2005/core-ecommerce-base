@@ -88,7 +88,7 @@ class SanctumSpaAuthTest extends TestCase
             ->withHeader('Origin', 'http://localhost:5173')
             ->getJson('/api/user')
             ->assertOk()
-            ->assertJsonPath('id', $user->id);
+            ->assertJsonPath('data.id', $user->id);
     }
 
     public function test_api_user_requires_authentication(): void

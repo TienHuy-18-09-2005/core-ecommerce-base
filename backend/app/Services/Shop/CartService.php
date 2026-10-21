@@ -94,7 +94,7 @@ class CartService
      * Gộp giỏ khách vào giỏ tài khoản (gọi sau session()->regenerate() khi đăng nhập — Pha 4).
      * Khoá biến thể, kẹp số lượng ≤ tồn kho, bỏ biến thể ngừng bán.
      *
-     * @return array{cart: Cart, adjustments: list<array{product_variant_id:int, requested:int, quantity:int, reason:string}>}
+     * @return array{cart: Cart, adjustments: list<array{product_variant_id:int, product_name:?string, requested:int, quantity:int, reason:string}>}
      */
     public function mergeGuestCartToUser(string $plainToken, int $userId): array
     {
@@ -126,14 +126,14 @@ class CartService
                 $requested = ($userItem?->quantity ?? 0) + $item->quantity;
 
                 if (! $variant || ! $variant->is_active || $variant->product?->status !== 'published') {
-                    $adjustments[] = ['product_variant_id' => $item->product_variant_id, 'requested' => $item->quantity, 'quantity' => 0, 'reason' => CartPresenter::WARNING_UNAVAILABLE];
+                    $adjustments[] = ['product_variant_id' => $item->product_variant_id, 'product_name' => $variant?->product?->name, 'requested' => $item->quantity, 'quantity' => 0, 'reason' => CartPresenter::WARNING_UNAVAILABLE];
 
                     continue;
                 }
 
                 $quantity = min($requested, max(0, (int) $variant->stock_quantity));
                 if ($quantity < $requested) {
-                    $adjustments[] = ['product_variant_id' => $variant->id, 'requested' => $requested, 'quantity' => $quantity, 'reason' => CartPresenter::WARNING_INSUFFICIENT_STOCK];
+                    $adjustments[] = ['product_variant_id' => $variant->id, 'product_name' => $variant->product?->name, 'requested' => $requested, 'quantity' => $quantity, 'reason' => CartPresenter::WARNING_INSUFFICIENT_STOCK];
                 }
 
                 if ($quantity <= 0) {

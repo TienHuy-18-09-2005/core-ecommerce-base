@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Shop\BrandController;
 use App\Http\Controllers\Shop\CartController;
@@ -11,9 +13,23 @@ use App\Http\Controllers\Shop\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware(['auth:sanctum', 'throttle:public-read']);
+// Pha 4: Sanctum SPA cookie auth (gọi /sanctum/csrf-cookie trước)
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+});
+
+Route::middleware(['auth:sanctum', 'throttle:account'])->prefix('user')->group(function () {
+    Route::get('/', [AccountController::class, 'me']);
+    Route::put('/profile', [AccountController::class, 'updateProfile']);
+    Route::put('/password', [AccountController::class, 'changePassword'])->middleware('throttle:password-change');
+    Route::get('/orders', [AccountController::class, 'orders']);
+    Route::get('/addresses', [AccountController::class, 'addresses']);
+    Route::post('/addresses', [AccountController::class, 'storeAddress']);
+    Route::put('/addresses/{id}', [AccountController::class, 'updateAddress'])->whereNumber('id');
+    Route::delete('/addresses/{id}', [AccountController::class, 'destroyAddress'])->whereNumber('id');
+});
 
 Route::middleware('throttle:public-read')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
