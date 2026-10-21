@@ -40,7 +40,7 @@ describe("ProductList", () => {
     expect(await screen.findByText("SP 2")).toBeTruthy();
     expect(vi.mocked(productService.getProducts).mock.calls[0]![0]).toEqual({ category_id: "2", page: "2", per_page: 12 });
     expect(await screen.findByRole("heading", { name: "Đèn LED" })).toBeTruthy();
-    expect(screen.getByRole("navigation", { name: "Breadcrumb" }).textContent).toContain("Đèn");
+    expect(screen.getByRole("navigation", { name: "Đường dẫn" }).textContent).toContain("Đèn");
 
     fireEvent.click(screen.getByLabelText("Cadivi"));
     await waitFor(() => expect(router.state.location.search).toBe("?category_id=2&brand_id=7"));
