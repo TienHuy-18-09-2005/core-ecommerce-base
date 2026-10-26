@@ -135,7 +135,7 @@ function ReviewImages({ images }: { images: string[] }) {
       {safe.map((url, i) => (
         <li key={url}>
           <a href={url} target="_blank" rel="noopener noreferrer">
-            <img src={url} alt={`Ảnh đánh giá ${i + 1}`} loading="lazy" className="h-20 w-20 rounded object-cover" />
+            <img src={url} alt={`Ảnh đánh giá ${i + 1}`} loading="lazy" decoding="async" width={80} height={80} className="h-20 w-20 rounded object-cover" />
           </a>
         </li>
       ))}

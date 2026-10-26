@@ -48,7 +48,7 @@ export default function ReviewsPage() {
               <div className="mt-2 flex gap-2">
                 {r.images.map((src) => {
                   const url = safeImageUrl(src);
-                  return url ? <a key={src} href={url} target="_blank" rel="noreferrer"><img src={url} alt="Ảnh đánh giá" className="h-14 w-14 rounded object-cover" /></a> : null;
+                  return url ? <a key={src} href={url} target="_blank" rel="noreferrer"><img src={url} alt="Ảnh đánh giá" loading="lazy" decoding="async" width={56} height={56} className="h-14 w-14 rounded object-cover" /></a> : null;
                 })}
               </div>
             )}

@@ -45,7 +45,7 @@ export default function ProductsPage() {
       <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp." columns={[
         { header: "Sản phẩm", sortKey: "name", cell: (p) => (
           <div className="flex items-center gap-3">
-            <img src={safeImageUrl(p.thumbnail_url) ?? "/product-fallback.svg"} alt="" className="h-10 w-10 rounded object-cover" />
+            <img src={safeImageUrl(p.thumbnail_url) ?? "/product-fallback.svg"} alt="" loading="lazy" decoding="async" width={40} height={40} className="h-10 w-10 rounded object-cover" />
             <div>
               <Link to={`/admin/san-pham/${p.id}`} className="font-medium text-blue-700">{p.name}</Link>
               <p className="text-xs text-slate-500">{p.brand?.name ?? "—"} · {p.categories.map((c) => c.name).join(", ") || "Chưa phân loại"}</p>

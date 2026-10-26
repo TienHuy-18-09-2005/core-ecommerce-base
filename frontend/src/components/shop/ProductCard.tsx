@@ -68,7 +68,7 @@ function RatingLine({ avg, count }: { avg: number | null; count: number }) {
   }
   const rounded = Math.round(avg);
   return (
-    <p className="mt-1 flex items-center gap-1 text-xs text-slate-600" aria-label={`Đánh giá ${avg.toFixed(1)} trên 5 sao, ${count} lượt`}>
+    <p role="img" className="mt-1 flex items-center gap-1 text-xs text-slate-600" aria-label={`Đánh giá ${avg.toFixed(1)} trên 5 sao, ${count} lượt`}>
       <span aria-hidden="true" className="text-amber-500">{"★".repeat(rounded)}{"☆".repeat(5 - rounded)}</span>
       <span aria-hidden="true">{avg.toFixed(1)} ({count})</span>
     </p>

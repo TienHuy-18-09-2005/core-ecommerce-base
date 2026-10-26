@@ -60,13 +60,13 @@ export function CartDrawer() {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-slate-900/40" aria-hidden="true" onClick={close} />
+      <div className="theme-fixed absolute inset-0 animate-fade-in bg-slate-900/40" aria-hidden="true" onClick={close} />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"
-        className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-slate-50 shadow-xl"
+        className="absolute right-0 top-0 flex h-full w-full max-w-md animate-slide-in-right flex-col bg-slate-50 shadow-xl"
       >
         <div className="flex items-center justify-between border-b bg-white px-4 py-3">
           <h2 id="cart-drawer-title" className="text-lg font-bold">Giỏ hàng</h2>

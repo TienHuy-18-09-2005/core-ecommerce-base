@@ -25,7 +25,7 @@ export function ImageGallery({ images, activeSrc }: { images: GalleryImage[]; ac
 
   return (
     <div>
-      <ProductImage src={current.src ?? undefined} alt={current.alt} className="h-96 w-full rounded-xl border object-cover shadow-sm" />
+      <ProductImage src={current.src ?? undefined} alt={current.alt} priority width={800} height={800} className="h-64 sm:h-96 w-full rounded-xl border object-cover shadow-sm" />
       {list.length > 1 ? (
         <ul className="mt-3 flex gap-2 overflow-x-auto" aria-label="Ảnh sản phẩm">
           {list.map((image, index) => (
