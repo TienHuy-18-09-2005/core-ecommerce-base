@@ -108,23 +108,35 @@ export function ReviewForm({ slug, existing, onDone, onCancel }: Props) {
       </label>
 
       <div>
-        <label className="block text-sm font-medium">
+        <span id="images-label" className="block text-sm font-medium">
           Ảnh thực tế (JPEG, PNG, WebP; tối đa {REVIEW_MAX_IMAGES} ảnh, mỗi ảnh ≤ 2MB)
-          <input
-            type="file"
-            name="images"
-            multiple
-            accept={REVIEW_IMAGE_TYPES.join(",")}
-            disabled={remaining <= 0}
-            onChange={(e) => {
-              onPickFiles(e.target.files);
-              e.target.value = "";
-            }}
-            aria-invalid={errors.images ? true : undefined}
-            aria-describedby={errors.images ? "images-error" : undefined}
-            className="mt-1 block w-full text-sm"
-          />
-        </label>
+        </span>
+        {/* Input gốc ẩn (sr-only, vẫn focus được bằng bàn phím); nút hiển thị tiếng Việt thay "Choose Files" */}
+        <div className="mt-1 flex items-center gap-3">
+          <label
+            className={`inline-flex cursor-pointer items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus-within:ring-2 focus-within:ring-blue-500 hover:bg-slate-50 ${remaining <= 0 ? "cursor-not-allowed opacity-50" : ""}`}
+          >
+            Chọn ảnh
+            <input
+              type="file"
+              name="images"
+              multiple
+              accept={REVIEW_IMAGE_TYPES.join(",")}
+              disabled={remaining <= 0}
+              onChange={(e) => {
+                onPickFiles(e.target.files);
+                e.target.value = "";
+              }}
+              aria-labelledby="images-label"
+              aria-invalid={errors.images ? true : undefined}
+              aria-describedby={`images-status${errors.images ? " images-error" : ""}`}
+              className="sr-only"
+            />
+          </label>
+          <span id="images-status" className="text-sm text-slate-500" aria-live="polite">
+            {keep.length + files.length === 0 ? "Chưa chọn ảnh nào" : `Đã chọn ${keep.length + files.length}/${REVIEW_MAX_IMAGES} ảnh`}
+          </span>
+        </div>
         {errors.images ? <span id="images-error" role="alert" className="mt-1 block text-xs text-red-700">{errors.images}</span> : null}
         <ul className="mt-2 flex flex-wrap gap-2">
           {keep.map((url) => (

@@ -19,6 +19,10 @@ export function ReviewSection({ slug }: { slug: string }) {
   const [page, setPage] = useState(1);
   const [rating, setRating] = useState<number | null>(null);
   const query = useReviewsQuery(slug, { page, rating });
+  const { user } = useAuth();
+  // Đánh giá của tôi đã hiện ở ô riêng → bỏ khỏi danh sách chung (dùng chung cache eligibility)
+  const myReviewId = useReviewEligibilityQuery(slug, user?.id).data?.review?.id;
+  const reviews = query.data?.reviews.data.filter((r) => r.id !== myReviewId) ?? [];
 
   const filter = (star: number | null) => {
     setRating(star);
@@ -49,11 +53,11 @@ export function ReviewSection({ slug }: { slug: string }) {
             </p>
           ) : null}
 
-          {query.data.reviews.data.length === 0 ? (
+          {reviews.length === 0 ? (
             <p className="mt-6 text-slate-500">{rating ? "Chưa có đánh giá nào với số sao này." : "Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này."}</p>
           ) : (
-            <ul className="mt-6 divide-y" aria-label="Danh sách đánh giá">
-              {query.data.reviews.data.map((review) => <ReviewItem key={review.id} review={review} />)}
+            <ul className="mt-6 divide-y divide-slate-200" aria-label="Danh sách đánh giá">
+              {reviews.map((review) => <ReviewItem key={review.id} review={review} />)}
             </ul>
           )}
 
@@ -115,7 +119,7 @@ function ReviewItem({ review }: { review: Review }) {
         {review.verified_purchase ? <span className="rounded bg-green-50 px-2 py-0.5 text-xs text-green-700">Đã mua hàng</span> : null}
         <span className="text-xs text-slate-500">{formatDate(review.created_at)}</span>
       </div>
-      <StarRating value={review.rating} size="sm" />
+      <StarRating value={review.rating} size="lg" />
       {/* Text thuần: React escape mọi ký tự, không dùng HTML */}
       {review.comment ? <p className="mt-1 whitespace-pre-line break-words text-slate-800">{review.comment}</p> : null}
       <ReviewImages images={review.images} />
@@ -176,7 +180,7 @@ function MyReviewBody({ slug, data }: { slug: string; data: ReviewEligibility })
     return (
       <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-4">
         <p className="text-sm font-semibold text-blue-900">Đánh giá của bạn{review.is_approved === false ? " (đang bị ẩn)" : ""}</p>
-        <StarRating value={review.rating} size="sm" />
+        <StarRating value={review.rating} size="lg" />
         {review.comment ? <p className="mt-1 whitespace-pre-line break-words">{review.comment}</p> : null}
         <ReviewImages images={review.images} />
         <div className="mt-3 flex gap-2">

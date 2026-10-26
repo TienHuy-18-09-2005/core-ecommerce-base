@@ -1,3 +1,4 @@
+import { ACCOUNT_TABS } from "../../utils/accountTabs.ts";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../app/useAuth.ts";
 import { Breadcrumb } from "../../components/shop/catalog/Breadcrumb.tsx";
@@ -6,12 +7,7 @@ import { OrdersTab } from "./account/OrdersTab.tsx";
 import { PasswordTab } from "./account/PasswordTab.tsx";
 import { ProfileTab } from "./account/ProfileTab.tsx";
 
-const TABS = [
-  { id: "thong-tin", label: "Thông tin cá nhân" },
-  { id: "don-hang", label: "Lịch sử đơn hàng" },
-  { id: "dia-chi", label: "Sổ địa chỉ" },
-  { id: "mat-khau", label: "Đổi mật khẩu" },
-] as const;
+const TABS = ACCOUNT_TABS;
 
 /** Task 4.5: tab lưu trên URL (?tab=) để back/refresh giữ đúng tab. Route bọc ProtectedRoute. */
 export function AccountPage() {

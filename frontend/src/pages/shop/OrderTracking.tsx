@@ -1,3 +1,4 @@
+import { accountTabPath } from "../../utils/accountTabs.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { Breadcrumb } from "../../components/shop/catalog/Breadcrumb.tsx";
@@ -17,13 +18,13 @@ export function OrderTracking() {
 
   return (
     <section aria-labelledby="theo-doi-don" className="mx-auto max-w-4xl space-y-4">
-      <Breadcrumb items={[{ label: "Trang chủ", to: "/" }, { label: "Tài khoản", to: "/tai-khoan?tab=don-hang" }, { label: code }]} />
+      <Breadcrumb items={[{ label: "Trang chủ", to: "/" }, { label: "Tài khoản", to: accountTabPath("don-hang") }, { label: code }]} />
       <h1 id="theo-doi-don" className="text-2xl font-bold">Theo dõi đơn hàng {code}</h1>
       {order.isPending ? <p>Đang tải đơn hàng...</p> : null}
       {order.isError ? (
         <p role="alert" className="text-red-700">
           {errorMessage(order.error, "Không tải được đơn hàng.")}{" "}
-          <Link to="/tai-khoan?tab=don-hang" className="underline">Về danh sách đơn</Link>
+          <Link to={accountTabPath("don-hang")} className="underline">Về danh sách đơn</Link>
         </p>
       ) : null}
       {order.data ? (

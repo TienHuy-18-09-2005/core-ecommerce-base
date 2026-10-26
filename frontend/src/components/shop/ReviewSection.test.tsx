@@ -90,7 +90,10 @@ describe("ReviewSection", () => {
     expect(reviewService.create).not.toHaveBeenCalled();
 
     // SVG bị chặn ngay phía client
+    expect(within(form).getByText("Chọn ảnh")).toBeTruthy();
+    expect(within(form).getByText("Chưa chọn ảnh nào")).toBeTruthy();
     const input = within(form).getByLabelText(/Ảnh thực tế/) as HTMLInputElement;
+    expect(input.type).toBe("file");
     fireEvent.change(input, { target: { files: [new File(["<svg/>"], "x.svg", { type: "image/svg+xml" })] } });
     expect(await within(form).findByText(/Chỉ nhận JPEG, PNG hoặc WebP/)).toBeTruthy();
 
@@ -107,8 +110,13 @@ describe("ReviewSection", () => {
 
   it("shows the user's own review with edit and delete", async () => {
     vi.mocked(reviewService.eligibility).mockResolvedValue({ can_review: false, reason: "REVIEW_ALREADY_EXISTS", review: review({ id: 3, comment: "Của tôi", images: [] }) });
+    vi.mocked(reviewService.list).mockResolvedValue(listing([review({ id: 3, comment: "Của tôi", images: [] }), review({ id: 4, comment: "Người khác" })]));
     setup(user);
     expect(await screen.findByText("Đánh giá của bạn")).toBeTruthy();
+    // không lặp lại đánh giá của tôi trong danh sách chung
+    const list = await screen.findByRole("list", { name: "Danh sách đánh giá" });
+    await waitFor(() => expect(within(list).queryByText("Của tôi")).toBeNull());
+    expect(within(list).getByText("Người khác")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Sửa" }));
     expect(screen.getByRole("form", { name: "Sửa đánh giá" })).toBeTruthy();
     expect((screen.getByLabelText(/Nhận xét/) as HTMLTextAreaElement).value).toBe("Của tôi");
