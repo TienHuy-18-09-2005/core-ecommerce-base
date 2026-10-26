@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isChunkLoadError } from "../utils/chunkError.ts";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -28,21 +29,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return this.props.children;
     }
 
+    const chunk = isChunkLoadError(this.state.error);
     return (
       <div
         role="alert"
         className="m-6 rounded-lg border border-red-200 bg-white p-6 text-center"
       >
-        <h2 className="text-lg font-semibold text-gray-900">Không thể hiển thị phần này</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Đã có lỗi khi hiển thị nội dung. Các phần khác của trang vẫn dùng được.
+        <h2 className="text-lg font-semibold text-slate-900">{chunk ? "Đã có phiên bản mới" : "Không thể hiển thị phần này"}</h2>
+        <p className="mt-2 text-sm text-slate-600">
+          {chunk
+            ? "Trang web vừa được cập nhật. Vui lòng tải lại trang."
+            : "Đã có lỗi khi hiển thị nội dung. Các phần khác của trang vẫn dùng được."}
         </p>
         <button
           type="button"
-          onClick={this.reset}
+          onClick={chunk ? () => window.location.reload() : this.reset}
           className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          Thử lại
+          {chunk ? "Tải lại trang" : "Thử lại"}
         </button>
       </div>
     );

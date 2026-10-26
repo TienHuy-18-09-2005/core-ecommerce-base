@@ -3,7 +3,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { ErrorBoundary } from "./ErrorBoundary.tsx";
+import { RouteError } from "./RouteError.tsx";
+import { isChunkLoadError } from "../utils/chunkError.ts";
 
 function BrokenChild({ fail }: { fail: boolean }) {
   if (fail) {
@@ -47,5 +50,32 @@ describe("ErrorBoundary", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByText("Nội dung đã hồi phục")).toBeTruthy();
     expect(screen.getByText("Khung trang")).toBeTruthy();
+  });
+
+  it("offers a reload when a lazy chunk failed to load", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    function Chunk(): never {
+      throw new TypeError("Failed to fetch dynamically imported module: /assets/ProductList-abc.js");
+    }
+    render(<ErrorBoundary><Chunk /></ErrorBoundary>);
+    expect(screen.getByRole("alert").textContent).toContain("Đã có phiên bản mới");
+    expect(screen.getByRole("button", { name: "Tải lại trang" })).toBeTruthy();
+  });
+
+  it("route errors render the Vietnamese route error screen instead of React Router's default", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    function Boom(): never {
+      throw new Error("hỏng");
+    }
+    const router = createMemoryRouter([{ path: "/", element: <Boom />, errorElement: <RouteError /> }]);
+    render(<RouterProvider router={router} />);
+    expect((await screen.findByRole("alert")).textContent).toContain("Đã có lỗi xảy ra");
+    expect(screen.getByRole("link", { name: "Về trang chủ" })).toBeTruthy();
+  });
+
+  it("detects chunk load errors across browsers", () => {
+    expect(isChunkLoadError(new TypeError("Importing a module script failed."))).toBe(true);
+    expect(isChunkLoadError(new Error("error loading dynamically imported module"))).toBe(true);
+    expect(isChunkLoadError(new Error("x is undefined"))).toBe(false);
   });
 });
