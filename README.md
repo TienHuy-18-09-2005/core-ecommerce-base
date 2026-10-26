@@ -148,6 +148,25 @@ SPA theo `FRONTEND_URL` (mặc định `http://localhost:5173`), không trỏ v�
 
 Lý do: đơn gắn với tài khoản phải thuộc về chủ thật của email (lịch sử đơn, thông báo). Khách vãng lai thì không gắn tài khoản.
 
+## Đánh giá sản phẩm (Pha 5)
+
+**Ai được đánh giá:** chỉ tài khoản đã **xác thực email** và có ít nhất một đơn **đã giao** (`status = delivered`) chứa sản phẩm đó. Mỗi tài khoản 1 đánh giá / sản phẩm (unique `product_id, user_id`), có thể sửa hoặc xoá. Đánh giá của người mua hợp lệ được **hiển thị ngay** (`is_approved = true`); admin có thể ẩn/hiện hoặc xoá.
+
+| Endpoint | Quyền | Throttle |
+|---|---|---|
+| `GET /api/products/{slug}/reviews?rating=&page=&per_page=` | công khai, chỉ review đã duyệt + phân bổ 5★…1★ | `public-read` 120/phút |
+| `GET /api/products/{slug}/reviews/eligibility` | đăng nhập | `account` |
+| `POST /api/products/{slug}/reviews` (multipart) | người mua đã nhận hàng | `review-write` 5/phút + 20/ngày |
+| `PUT /api/reviews/{id}` (multipart: POST + `_method=PUT`) | chủ đánh giá | `review-write` |
+| `DELETE /api/reviews/{id}` | chủ đánh giá hoặc admin | `review-write` |
+| `PATCH /api/admin/reviews/{id}` `{is_approved}` | admin | `admin` |
+
+Mã lỗi: `REVIEW_NOT_PURCHASED` (403), `EMAIL_NOT_VERIFIED` (403), `REVIEW_ALREADY_EXISTS` (409); sửa/xoá review của người khác → 404.
+
+- Nội dung: văn bản thuần ≤ 2000 ký tự, FE render bằng text node (không HTML). Tên người viết hiển thị rút gọn ("N. V. An"), không lộ email.
+- Ảnh: tối đa 3, chỉ JPEG/PNG/WebP (kiểm cả đuôi lẫn MIME thật), ≤ 2MB, không nhận SVG; lưu ở disk `public` với tên ngẫu nhiên 40 ký tự (`storage/app/public/reviews/YYYY/MM/`). Container backend tự chạy `storage:link`; Vite proxy `/storage` sang nginx.
+- Seeder demo: nếu có tài khoản khách (`CUSTOMER_EMAIL`), tạo đơn đã giao `DEMO-DELIVERED-1` gồm sản phẩm demo số 1 và 2 → đăng nhập bằng tài khoản đó là thử viết đánh giá được.
+
 ## Ngôn ngữ
 
 Backend chạy `APP_LOCALE=vi` (fallback cũng là `vi`). Bản dịch nằm ở `backend/lang/vi/` (`validation.php` đủ mọi rule, gồm các
