@@ -15,8 +15,8 @@ const empty: AdminCouponInput = {
 const numOrNull = (v: string) => (v === "" ? null : Number(v));
 
 export default function CouponsPage() {
-  const { values, page, set, setPage } = useListParams(["q"] as const);
-  const { data, error, isLoading } = useAdminCouponsQuery({ ...values, page });
+  const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q"] as const);
+  const { data, error, isLoading } = useAdminCouponsQuery({ ...values, ...sortParams, page });
   const { create, update, remove } = useCouponMutations();
   const toast = useToast();
   const [editing, setEditing] = useState<AdminCoupon | null>(null);
@@ -63,12 +63,12 @@ export default function CouponsPage() {
         <div className="lg:col-span-2">
           <input aria-label="Tìm mã" placeholder="Tìm mã..." className={`${inputClass} mb-3`} defaultValue={values.q}
             onKeyDown={(e) => { if (e.key === "Enter") set("q", e.currentTarget.value.trim()); }} />
-          <DataTable rows={data?.data} isLoading={isLoading} rowKey={(c) => c.id} empty="Chưa có mã giảm giá." columns={[
-            { header: "Mã", cell: (c) => <span className="font-mono font-semibold">{c.code}</span> },
-            { header: "Giảm", cell: (c) => (c.type === "percent" ? `${c.value}%${c.max_discount_amount ? ` (tối đa ${formatCurrency(c.max_discount_amount)})` : ""}` : formatCurrency(c.value)) },
-            { header: "Đã dùng", cell: (c) => `${c.used_count}${c.usage_limit !== null ? `/${c.usage_limit}` : ""}` },
-            { header: "Hiệu lực", cell: (c) => <span className="text-xs">{formatDateTime(c.starts_at)} → {formatDateTime(c.expires_at)}</span> },
-            { header: "Trạng thái", cell: (c) => (c.is_active ? "Đang bật" : "Tắt") },
+          <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(c) => c.id} empty="Chưa có mã giảm giá." columns={[
+            { header: "Mã", sortKey: "code", cell: (c) => <span className="font-mono font-semibold">{c.code}</span> },
+            { header: "Giảm", sortKey: "value", cell: (c) => (c.type === "percent" ? `${c.value}%${c.max_discount_amount ? ` (tối đa ${formatCurrency(c.max_discount_amount)})` : ""}` : formatCurrency(c.value)) },
+            { header: "Đã dùng", sortKey: "used_count", cell: (c) => `${c.used_count}${c.usage_limit !== null ? `/${c.usage_limit}` : ""}` },
+            { header: "Hiệu lực", sortKey: "expires_at", cell: (c) => <span className="text-xs">{formatDateTime(c.starts_at)} → {formatDateTime(c.expires_at)}</span> },
+            { header: "Trạng thái", sortKey: "is_active", cell: (c) => (c.is_active ? "Đang bật" : "Tắt") },
             { header: "Thao tác", cell: (c) => (
               <div className="flex gap-2">
                 <button type="button" className="text-blue-700" onClick={() => startEdit(c)}>Sửa</button>

@@ -84,6 +84,41 @@ describe("admin panel", () => {
     await waitFor(() => expect(svc.products).toHaveBeenLastCalledWith(expect.objectContaining({ status: "draft", page: 1 }), expect.anything()));
   });
 
+  it("sorts products by clicking column headers (asc → desc) and keeps sort in the URL", async () => {
+    svc.products.mockResolvedValue({ data: [], meta });
+    svc.categories.mockResolvedValue([]);
+    const router = renderAdmin("/admin/san-pham?status=draft&page=2");
+    const header = await screen.findByRole("columnheader", { name: /Giá từ/ });
+    expect(header.getAttribute("aria-sort")).toBe("none");
+    fireEvent.click(within(header).getByRole("button"));
+    await waitFor(() => expect(router.state.location.search).toBe("?status=draft&sort=price_min&direction=asc"));
+    expect(header.getAttribute("aria-sort")).toBe("ascending");
+    expect(header.textContent).toContain("▲");
+    await waitFor(() => expect(svc.products).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "price_min", direction: "asc", page: 1 }), expect.anything()));
+    fireEvent.click(within(header).getByRole("button"));
+    await waitFor(() => expect(header.getAttribute("aria-sort")).toBe("descending"));
+    expect(header.textContent).toContain("▼");
+    expect(router.state.location.search).toContain("direction=desc");
+    // cột không sắp xếp được thì không có nút
+    const actions = screen.getByRole("columnheader", { name: "Thao tác" });
+    expect(within(actions).queryByRole("button")).toBeNull();
+  });
+
+  it("restores sort from the URL on orders", async () => {
+    svc.orders.mockResolvedValue({ data: [], meta });
+    renderAdmin("/admin/don-hang?sort=total_amount&direction=desc");
+    const header = await screen.findByRole("columnheader", { name: /Tổng tiền/ });
+    expect(header.getAttribute("aria-sort")).toBe("descending");
+    await waitFor(() => expect(svc.orders).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "total_amount", direction: "desc" }), expect.anything()));
+  });
+
+  it("shows the empty settings placeholder and sidebar link", async () => {
+    renderAdmin("/admin/cai-dat");
+    expect(await screen.findByRole("heading", { name: "Cài đặt" })).toBeTruthy();
+    expect(screen.getByText(/sẽ được bổ sung/)).toBeTruthy();
+    expect(screen.getAllByRole("link", { name: "Cài đặt" }).length).toBeGreaterThan(0);
+  });
+
   it("shows server validation errors on the product form", async () => {
     svc.categories.mockResolvedValue([]);
     svc.createProduct.mockRejectedValue(new ApiError("Dữ liệu không hợp lệ.", { status: 422, code: "VALIDATION_ERROR", fieldErrors: { name: ["Vui lòng nhập tên sản phẩm."], "variants.0.sku": ["Mã SKU đã tồn tại."] } }));

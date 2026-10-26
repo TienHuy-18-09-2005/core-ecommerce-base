@@ -9,6 +9,7 @@ import CategoriesPage from "./CategoriesPage.tsx";
 import CouponsPage from "./CouponsPage.tsx";
 import ReviewsPage from "./ReviewsPage.tsx";
 
+import SettingsPage from "./SettingsPage.tsx";
 const NAV = [
   { to: "/admin", label: "Tổng quan", end: true },
   { to: "/admin/san-pham", label: "Sản phẩm" },
@@ -16,6 +17,7 @@ const NAV = [
   { to: "/admin/danh-muc", label: "Danh mục" },
   { to: "/admin/ma-giam-gia", label: "Mã giảm giá" },
   { to: "/admin/danh-gia", label: "Đánh giá" },
+  { to: "/admin/cai-dat", label: "Cài đặt" },
 ];
 
 export default function AdminApp() {
@@ -55,6 +57,7 @@ export default function AdminApp() {
             <Route path="danh-muc" element={<CategoriesPage />} />
             <Route path="ma-giam-gia" element={<CouponsPage />} />
             <Route path="danh-gia" element={<ReviewsPage />} />
+            <Route path="cai-dat" element={<SettingsPage />} />
             <Route path="*" element={<p>Không tìm thấy trang quản trị.</p>} />
           </Routes>
         </main>

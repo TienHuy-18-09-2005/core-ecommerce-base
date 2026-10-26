@@ -8,8 +8,8 @@ import { formatCurrency } from "../../utils/formatCurrency.ts";
 import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
 export default function ProductsPage() {
-  const { values, page, set, setPage } = useListParams(["q", "status", "category_id", "low_stock"] as const);
-  const { data, error, isLoading } = useAdminProductsQuery({ ...values, page });
+  const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q", "status", "category_id", "low_stock"] as const);
+  const { data, error, isLoading } = useAdminProductsQuery({ ...values, ...sortParams, page });
   const categories = useAdminCategoriesQuery();
   const { remove } = useProductMutations();
   const toast = useToast();
@@ -42,8 +42,8 @@ export default function ProductsPage() {
         </label>
       </div>
       <QueryError error={error} />
-      <DataTable rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp." columns={[
-        { header: "Sản phẩm", cell: (p) => (
+      <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp." columns={[
+        { header: "Sản phẩm", sortKey: "name", cell: (p) => (
           <div className="flex items-center gap-3">
             <img src={safeImageUrl(p.thumbnail_url) ?? "/product-fallback.svg"} alt="" className="h-10 w-10 rounded object-cover" />
             <div>
@@ -52,9 +52,9 @@ export default function ProductsPage() {
             </div>
           </div>
         ) },
-        { header: "Giá từ", cell: (p) => formatCurrency(p.price_min) },
-        { header: "Tồn kho", cell: (p) => <span className={p.stock_total <= 5 ? "font-semibold text-red-600" : ""}>{p.stock_total} ({p.variants_count} biến thể)</span> },
-        { header: "Trạng thái", cell: (p) => PRODUCT_STATUS_LABELS[p.status] ?? p.status },
+        { header: "Giá từ", sortKey: "price_min", cell: (p) => formatCurrency(p.price_min) },
+        { header: "Tồn kho", sortKey: "stock_total", cell: (p) => <span className={p.stock_total <= 5 ? "font-semibold text-red-600" : ""}>{p.stock_total} ({p.variants_count} biến thể)</span> },
+        { header: "Trạng thái", sortKey: "status", cell: (p) => PRODUCT_STATUS_LABELS[p.status] ?? p.status },
         { header: "Thao tác", cell: (p) => (
           <div className="flex gap-2">
             <Link to={`/admin/san-pham/${p.id}`} className="text-sm text-blue-700">Sửa</Link>

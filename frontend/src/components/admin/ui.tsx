@@ -13,6 +13,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
   returned: "bg-slate-200 text-slate-700",
 };
+import type { SortState } from "../../hooks/useListParams.ts";
 
 export function OrderStatusBadge({ status }: { status: string }) {
   return (
@@ -35,9 +36,13 @@ export interface Column<T> {
   header: string;
   cell: (row: T) => ReactNode;
   className?: string;
+  /** Tên trường sắp xếp phía server (whitelist backend). */
+  sortKey?: string;
 }
 
-export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không có dữ liệu." }: {
+export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không có dữ liệu.", sort, onSort }: {
+  sort?: SortState | null;
+  onSort?: (field: string) => void;
   columns: Column<T>[];
   rows: T[] | undefined;
   rowKey: (row: T) => string | number;
@@ -50,7 +55,21 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không
         <thead className="bg-slate-50">
           <tr>
             {columns.map((c) => (
-              <th key={c.header} scope="col" className={`px-4 py-3 text-left font-semibold text-slate-600 ${c.className ?? ""}`}>{c.header}</th>
+              <th
+                key={c.header}
+                scope="col"
+                aria-sort={c.sortKey && onSort ? (sort?.field === c.sortKey ? (sort.direction === "asc" ? "ascending" : "descending") : "none") : undefined}
+                className={`px-4 py-3 text-left font-semibold text-slate-600 ${c.className ?? ""}`}
+              >
+                {c.sortKey && onSort ? (
+                  <button type="button" onClick={() => onSort(c.sortKey as string)} className="inline-flex items-center gap-1 hover:text-slate-900" title={`Sắp xếp theo ${c.header.toLowerCase()}`}>
+                    {c.header}
+                    <span aria-hidden="true" className={sort?.field === c.sortKey ? "text-blue-700" : "text-slate-300"}>
+                      {sort?.field === c.sortKey ? (sort.direction === "asc" ? "▲" : "▼") : "↕"}
+                    </span>
+                  </button>
+                ) : c.header}
+              </th>
             ))}
           </tr>
         </thead>

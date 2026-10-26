@@ -8,8 +8,8 @@ import { useListParams } from "../../hooks/useListParams.ts";
 import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
 export default function ReviewsPage() {
-  const { values, page, set, setPage } = useListParams(["q", "visibility", "rating"] as const);
-  const { data, error, isLoading } = useAdminReviewsQuery({ ...values, page });
+  const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q", "visibility", "rating"] as const);
+  const { data, error, isLoading } = useAdminReviewsQuery({ ...values, ...sortParams, page });
   const { moderate, remove } = useReviewModeration();
   const toast = useToast();
 
@@ -38,8 +38,8 @@ export default function ReviewsPage() {
         </select>
       </div>
       <QueryError error={error} />
-      <DataTable rows={data?.data} isLoading={isLoading} rowKey={(r) => r.id} empty="Không có đánh giá phù hợp." columns={[
-        { header: "Đánh giá", cell: (r) => (
+      <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(r) => r.id} empty="Không có đánh giá phù hợp." columns={[
+        { header: "Đánh giá", sortKey: "rating", cell: (r) => (
           <div className="max-w-md">
             <StarRating value={r.rating} size="sm" />
             {/* Văn bản thuần — render qua text node */}
@@ -56,8 +56,8 @@ export default function ReviewsPage() {
         ) },
         { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham/${r.product.id}`} className="text-blue-700">{r.product.name}</Link> : "—") },
         { header: "Khách hàng", cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-slate-500">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-green-700">Đã mua hàng</p>}</> },
-        { header: "Ngày", cell: (r) => formatDateTime(r.created_at) },
-        { header: "Trạng thái", cell: (r) => (r.is_approved ? <span className="text-green-700">Đang hiện</span> : <span className="text-slate-500">Đang ẩn</span>) },
+        { header: "Ngày", sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
+        { header: "Trạng thái", sortKey: "is_approved", cell: (r) => (r.is_approved ? <span className="text-green-700">Đang hiện</span> : <span className="text-slate-500">Đang ẩn</span>) },
         { header: "Thao tác", cell: (r) => (
           <div className="flex flex-col gap-2">
             <button type="button" className={btnSecondary} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)}>{r.is_approved ? "Ẩn" : "Hiện"}</button>
