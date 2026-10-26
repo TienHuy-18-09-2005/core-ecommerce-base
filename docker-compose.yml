@@ -45,7 +45,7 @@ services:
     command:
       - sh
       - -c
-      - (test -f vendor/autoload.php || composer install --no-interaction --prefer-dist) && printf '%s\n' 'listen = 0.0.0.0:9000' > /usr/local/etc/php-fpm.d/zz-listen.conf && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache && chmod -R a+rwX storage bootstrap/cache && php artisan migrate --force && chmod -R a+rwX storage bootstrap/cache && exec php-fpm
+      - (test -f vendor/autoload.php || composer install --no-interaction --prefer-dist) && printf '%s\n' 'listen = 0.0.0.0:9000' > /usr/local/etc/php-fpm.d/zz-listen.conf && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache && chmod -R a+rwX storage bootstrap/cache && php artisan migrate --force && (test -e public/storage || php artisan storage:link) && chmod -R a+rwX storage bootstrap/cache && exec php-fpm
     networks:
       - ecom_network
     depends_on:

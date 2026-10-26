@@ -28,6 +28,23 @@ class DemoCatalogSeederTest extends TestCase
         $_ENV['SEED_DEMO_DATA'] = $_SERVER['SEED_DEMO_DATA'] = $value;
     }
 
+    public function test_demo_customer_gets_one_delivered_order_so_reviews_can_be_tried(): void
+    {
+        $customer = \App\Models\User::factory()->create(['email' => config('customer.email')]);
+
+        $this->seed(DemoCatalogSeeder::class);
+        $this->seed(DemoCatalogSeeder::class);
+
+        $order = \App\Models\Order::where('order_code', 'DEMO-DELIVERED-1')->sole();
+        $this->assertSame($customer->id, $order->user_id);
+        $this->assertSame('delivered', $order->status);
+        $this->assertSame(2, $order->items()->count());
+
+        $slug = Product::find($order->items()->first()->product_id)->slug;
+        $this->actingAs($customer)->getJson("/api/products/{$slug}/reviews/eligibility")
+            ->assertOk()->assertJsonPath('data.can_review', true);
+    }
+
     public function test_seeds_deterministic_catalog_and_is_idempotent(): void
     {
         $this->seed(DemoCatalogSeeder::class);

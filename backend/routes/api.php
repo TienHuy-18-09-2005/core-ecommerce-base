@@ -12,6 +12,7 @@ use App\Http\Controllers\Shop\CategoryController;
 use App\Http\Controllers\Shop\CouponController;
 use App\Http\Controllers\Shop\OrderController;
 use App\Http\Controllers\Shop\ProductController;
+use App\Http\Controllers\Shop\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,7 @@ Route::middleware('throttle:public-read')->group(function () {
     Route::get('/products/suggest', [ProductController::class, 'suggest'])
         ->middleware('throttle:search-suggest');
     Route::get('/products/{slug}', [ProductController::class, 'show']);
+    Route::get('/products/{slug}/reviews', [ReviewController::class, 'index']);
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/brands', [BrandController::class, 'index']);
 });
@@ -66,8 +68,21 @@ Route::post('/orders/lookup', [OrderController::class, 'lookup'])->middleware('t
 Route::get('/user/orders/{order:order_code}', [OrderController::class, 'showMine'])
     ->middleware(['auth:sanctum', 'throttle:public-read', 'can:view,order']);
 
+// Pha 5: đánh giá. Chỉ người mua đã nhận hàng + email đã xác thực (xem ReviewService)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/products/{slug}/reviews/eligibility', [ReviewController::class, 'eligibility'])
+        ->middleware('throttle:account');
+    Route::middleware('throttle:review-write')->group(function () {
+        Route::post('/products/{slug}/reviews', [ReviewController::class, 'store']);
+        // Multipart không gửi được bằng PUT trong PHP → FE gửi POST kèm _method=PUT
+        Route::put('/reviews/{review}', [ReviewController::class, 'update']);
+        Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+    });
+});
+
 Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin'])->group(function () {
     Route::post('/products', [AdminProductController::class, 'store']);
+    Route::patch('/reviews/{review}', [ReviewController::class, 'moderate']);
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
         ->middleware('can:update,order');
 });

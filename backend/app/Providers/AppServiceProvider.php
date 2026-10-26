@@ -98,6 +98,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by((string) $request->ip());
         });
 
+        // Viết/sửa/xoá đánh giá: 5/phút và 20/ngày theo user (chống spam)
+        RateLimiter::for('review-write', function (Request $request) {
+            $key = $this->clientKey($request);
+
+            return [
+                Limit::perMinute(5)->by('min:'.$key),
+                Limit::perDay(20)->by('day:'.$key),
+            ];
+        });
+
         RateLimiter::for('admin', function (Request $request) {
             return Limit::perMinute(60)->by($this->clientKey($request));
         });

@@ -28,6 +28,10 @@ class DomainException extends RuntimeException
 
     public const VERIFICATION_LINK_INVALID = 'VERIFICATION_LINK_INVALID';
 
+    public const REVIEW_NOT_PURCHASED = 'REVIEW_NOT_PURCHASED';
+
+    public const REVIEW_ALREADY_EXISTS = 'REVIEW_ALREADY_EXISTS';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,

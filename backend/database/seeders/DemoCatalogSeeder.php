@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Coupon;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\ProductVariant;
@@ -147,6 +149,7 @@ class DemoCatalogSeeder extends Seeder
         }
 
         $this->seedCoupons();
+        $this->seedDeliveredOrderForCustomer();
 
         // Cây danh mục/thương hiệu được cache 24h → xoá để dữ liệu mới hiện ngay
         Cache::forget('shop_active_category_tree_v2');
@@ -205,6 +208,43 @@ class DemoCatalogSeeder extends Seeder
                 ['product_id' => $product->id, 'user_id' => $reviewers[count($reviewers) - 1]->id],
                 ['rating' => 1, 'comment' => 'Đánh giá chờ duyệt.', 'is_approved' => false],
             );
+        }
+    }
+
+    /**
+     * Pha 5: tài khoản khách demo (nếu đã cấu hình) có 1 đơn ĐÃ GIAO chứa sản phẩm demo số 1
+     * và 2 → đăng nhập là thử được chức năng viết đánh giá (chỉ người đã mua mới được đánh giá).
+     */
+    private function seedDeliveredOrderForCustomer(): void
+    {
+        $email = config('customer.email');
+        $customer = $email ? User::where('email', $email)->first() : null;
+        if (! $customer) {
+            return;
+        }
+
+        $variants = ProductVariant::with('product:id,name,thumbnail_url')->whereIn('sku', ['DEMO-1-A', 'DEMO-2-A'])->get();
+        if ($variants->isEmpty()) {
+            return;
+        }
+
+        $subtotal = (int) $variants->sum('price');
+        $order = Order::updateOrCreate(['order_code' => 'DEMO-DELIVERED-1'], [
+            'user_id' => $customer->id,
+            'customer_name' => $customer->name,
+            'customer_phone' => '0900000000',
+            'shipping_province' => 'Hà Nội', 'shipping_district' => 'Ba Đình', 'shipping_ward' => 'Điện Biên',
+            'shipping_address' => '1 Phố Demo',
+            'subtotal' => $subtotal, 'shipping_fee' => 30000, 'total_amount' => $subtotal + 30000,
+            'status' => 'delivered', 'payment_status' => 'paid',
+            'confirmed_at' => now()->subDays(5), 'delivered_at' => now()->subDays(2),
+        ]);
+        foreach ($variants as $v) {
+            OrderItem::updateOrCreate(['order_id' => $order->id, 'product_variant_id' => $v->id], [
+                'product_id' => $v->product_id, 'product_name' => $v->product->name, 'variant_name' => $v->name,
+                'sku' => $v->sku, 'thumbnail_url' => $v->product->thumbnail_url,
+                'unit_price' => $v->price, 'quantity' => 1, 'line_total' => $v->price,
+            ]);
         }
     }
 }

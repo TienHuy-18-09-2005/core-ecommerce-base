@@ -122,8 +122,8 @@ class CatalogFilterApiTest extends TestCase
 
     private function review(Product $product, int $rating, bool $approved = true): void
     {
-        static $user = null;
-        $user ??= \App\Models\User::factory()->create();
+        // Mỗi user chỉ 1 review / sản phẩm (unique) → mỗi review một user
+        $user = \App\Models\User::factory()->create();
         \App\Models\ProductReview::create([
             'product_id' => $product->id, 'user_id' => $user->id, 'rating' => $rating, 'is_approved' => $approved,
         ]);
