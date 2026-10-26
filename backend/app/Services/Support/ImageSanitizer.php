@@ -9,7 +9,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Mã hoá lại mọi ảnh (JPEG/PNG/WebP) bằng GD để bỏ toàn bộ metadata (EXIF/GPS/ICC/dữ liệu chèn sau ảnh),
- * xoay theo EXIF Orientation trước khi bỏ. Fail closed: ảnh nào không mã hoá lại được → 422, không lưu file gốc.
+ * xoay theo EXIF Orientation trước khi bỏ. Pha 7.3: khi GD hỗ trợ WebP, mọi ảnh được lưu dạng
+ * WebP (nhẹ hơn JPEG/PNG ~25–35%, giữ kênh alpha). Fail closed: ảnh nào không mã hoá lại được → 422, không lưu file gốc.
  */
 class ImageSanitizer
 {
@@ -51,7 +52,7 @@ class ImageSanitizer
             throw ValidationException::withMessages([$field => self::INVALID_MESSAGE]);
         }
 
-        return [$ext, $bytes];
+        return [self::webpSupported() ? 'webp' : $ext, $bytes];
     }
 
     private function put(string $dir, string $ext, string $bytes): string
@@ -77,7 +78,7 @@ class ImageSanitizer
             $img = $this->applyOrientation($img, $source);
         }
         ob_start();
-        $ok = match ($mime) {
+        $ok = self::webpSupported() ? imagepalettetotruecolor($img) && imagesavealpha($img, true) && imagewebp($img, null, 82) : match ($mime) {
             'image/jpeg' => imagejpeg($img, null, 85),
             'image/png' => imagesavealpha($img, true) && imagepng($img, null, 6),
             'image/webp' => imagesavealpha($img, true) && imagewebp($img, null, 85),
@@ -86,6 +87,11 @@ class ImageSanitizer
         imagedestroy($img);
 
         return $ok && $out ? $out : null;
+    }
+
+    public static function webpSupported(): bool
+    {
+        return function_exists('imagewebp') && (gd_info()['WebP Support'] ?? false);
     }
 
     private function applyOrientation(\GdImage $img, string $source): \GdImage

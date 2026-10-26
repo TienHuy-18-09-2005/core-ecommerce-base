@@ -159,6 +159,9 @@ class AdminPanelTest extends TestCase
         $this->assertArrayNotHasKey('GPSLatitude', @exif_read_data($stored) ?: []);
         [$w, $h] = getimagesize($stored);
         $this->assertSame([20, 40], [$w, $h]);
+        // Pha 7.3: ảnh tải lên được lưu dạng WebP
+        $this->assertStringEndsWith('.webp', $path);
+        $this->assertSame('image/webp', getimagesize($stored)['mime']);
 
         $broken = UploadedFile::fake()->createWithContent('x.jpg', file_get_contents(base_path('tests/Fixtures/reviews/noscan.jpg')));
         $this->asSpa($this->admin)->post('/api/admin/products/images', ['image' => $broken], ['Accept' => 'application/json'])
