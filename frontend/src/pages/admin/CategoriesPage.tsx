@@ -1,0 +1,96 @@
+import { useState, type FormEvent } from "react";
+import { btnDanger, btnPrimary, btnSecondary, flattenTree, inputClass } from "../../utils/adminFormat.ts";
+import { useToast } from "../../app/useToast.ts";
+import { PageHeader, QueryError } from "../../components/admin/ui.tsx";
+import { useAdminCategoriesQuery, useCategoryMutations } from "../../hooks/useAdminQuery.ts";
+import type { AdminCategory, AdminCategoryInput } from "../../types/admin.ts";
+import { firstFieldErrors } from "../../utils/fieldErrors.ts";
+
+const empty: AdminCategoryInput = { name: "", slug: "", parent_id: null, description: "", image_url: null, is_active: true, sort_order: 0 };
+
+export default function CategoriesPage() {
+  const { data, error, isLoading } = useAdminCategoriesQuery();
+  const { create, update, remove } = useCategoryMutations();
+  const toast = useToast();
+  const [editing, setEditing] = useState<AdminCategory | null>(null);
+  const [form, setForm] = useState<AdminCategoryInput>(empty);
+  const active = editing ? update : create;
+  const errors = firstFieldErrors(active.error);
+  const tree = flattenTree(data ?? []);
+
+  const startEdit = (c: AdminCategory | null) => {
+    create.reset();
+    update.reset();
+    setEditing(c);
+    setForm(c ? { name: c.name, slug: c.slug, parent_id: c.parent_id, description: c.description ?? "", image_url: c.image_url, is_active: c.is_active, sort_order: c.sort_order } : empty);
+  };
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const input = { ...form, slug: form.slug || null };
+    const done = { onSuccess: () => { toast.showSuccess(editing ? "Đã lưu danh mục." : "Đã thêm danh mục."); startEdit(null); }, onError: toast.showError };
+    if (editing) {
+      update.mutate({ id: editing.id, input }, done);
+    } else {
+      create.mutate(input, done);
+    }
+  };
+
+  const onDelete = (c: AdminCategory) => {
+    if (window.confirm(`Xoá danh mục "${c.name}"?`)) {
+      remove.mutate(c.id, { onSuccess: () => toast.showSuccess("Đã xoá danh mục."), onError: toast.showError });
+    }
+  };
+
+  return (
+    <>
+      <PageHeader title="Danh mục" />
+      <QueryError error={error} />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <section className="rounded-xl border border-slate-200 bg-white lg:col-span-2">
+          {isLoading && <p className="p-4">Đang tải...</p>}
+          <ul className="divide-y divide-slate-100">
+            {tree.map(({ cat, depth }) => (
+              <li key={cat.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm" style={{ paddingLeft: 16 + depth * 24 }}>
+                <div>
+                  <span className="font-medium">{depth > 0 && "└ "}{cat.name}</span>
+                  {!cat.is_active && <span className="ml-2 rounded bg-slate-200 px-1.5 text-xs">Ẩn</span>}
+                  <p className="text-xs text-slate-500">/{cat.slug} · {cat.products_count} sản phẩm · {cat.children_count} danh mục con</p>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" className="text-blue-700" onClick={() => startEdit(cat)}>Sửa</button>
+                  <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(cat)}>Xoá</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 text-sm">
+          <h2 className="font-semibold">{editing ? `Sửa: ${editing.name}` : "Thêm danh mục"}</h2>
+          <label className="block"><span className="mb-1 block font-medium">Tên danh mục</span>
+            <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            {errors.name && <span role="alert" className="text-xs text-red-600">{errors.name}</span>}</label>
+          <label className="block"><span className="mb-1 block font-medium">Slug (để trống sẽ tự tạo)</span>
+            <input className={inputClass} value={form.slug ?? ""} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+            {errors.slug && <span role="alert" className="text-xs text-red-600">{errors.slug}</span>}</label>
+          <label className="block"><span className="mb-1 block font-medium">Danh mục cha</span>
+            <select className={inputClass} value={form.parent_id ?? ""} onChange={(e) => setForm({ ...form, parent_id: e.target.value ? Number(e.target.value) : null })}>
+              <option value="">— Gốc —</option>
+              {tree.filter(({ cat }) => cat.id !== editing?.id).map(({ cat, depth }) => <option key={cat.id} value={cat.id}>{"— ".repeat(depth)}{cat.name}</option>)}
+            </select>
+            {errors.parent_id && <span role="alert" className="text-xs text-red-600">{errors.parent_id}</span>}</label>
+          <label className="block"><span className="mb-1 block font-medium">Mô tả</span>
+            <textarea className={inputClass} rows={2} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
+          <label className="block"><span className="mb-1 block font-medium">Thứ tự</span>
+            <input type="number" className={inputClass} value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} /></label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />Hiển thị trên shop</label>
+          <div className="flex gap-2">
+            <button type="submit" className={btnPrimary} disabled={active.isPending}>{editing ? "Lưu" : "Thêm"}</button>
+            {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Huỷ</button>}
+          </div>
+        </form>
+      </div>
+    </>
+  );
+}

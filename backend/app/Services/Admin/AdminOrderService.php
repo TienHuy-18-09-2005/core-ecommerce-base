@@ -32,7 +32,7 @@ class AdminOrderService
         'shipping' => 'Đang giao',
         'delivered' => 'Đã giao',
         'cancelled' => 'Đã huỷ',
-        'returned' => 'Hoàn trả',
+        'returned' => 'Đã trả hàng',
     ];
 
     public function __construct(private AuditLogger $audit, private OrderPresenter $presenter) {}

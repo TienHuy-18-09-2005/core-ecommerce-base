@@ -63,8 +63,11 @@ describe("shop routes", () => {
     expect(await screen.findByRole("heading", { name: "Không tìm thấy trang" })).toBeTruthy();
   });
 
-  it("lazy-loads the admin screen", async () => {
-    renderAt("/admin");
-    expect(await screen.findByRole("heading", { name: "Khu vực quản trị" })).toBeTruthy();
+  it("sends a guest from /admin to the login page", async () => {
+    const router = renderAt("/admin");
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe("/dang-nhap");
+    });
+    expect(router.state.location.search).toContain("redirect=%2Fadmin");
   });
 });
