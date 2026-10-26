@@ -89,3 +89,43 @@ export function updateFilters(current: CatalogFilters, patch: Partial<CatalogFil
 export function toApiParams(filters: CatalogFilters) {
   return { ...Object.fromEntries(toSearchParams(filters)), per_page: PER_PAGE };
 }
+
+export type FilterPatch = Pick<CatalogFilters, "category_id" | "brand_id" | "search" | "min_price" | "max_price" | "min_rating">;
+
+/** Toàn bộ bộ lọc về rỗng (giữ sort). */
+export const EMPTY_FILTERS: FilterPatch = {
+  category_id: undefined, brand_id: undefined, search: undefined,
+  min_price: undefined, max_price: undefined, min_rating: undefined,
+};
+
+export function pickFilters(f: CatalogFilters): FilterPatch {
+  const { category_id, brand_id, search, min_price, max_price, min_rating } = f;
+  return { category_id, brand_id, search, min_price, max_price, min_rating };
+}
+
+export interface FilterChip {
+  key: string;
+  label: string;
+  patch: Partial<FilterPatch>;
+}
+
+const vnd = (n: number) => n.toLocaleString("vi-VN");
+
+/** Chip bộ lọc đang áp dụng; số chip = số bộ lọc hiển thị trên nút "Bộ lọc". */
+export function activeFilterChips(
+  f: CatalogFilters,
+  names: { category?: string; brand?: string } = {},
+): FilterChip[] {
+  const chips: FilterChip[] = [];
+  if (f.search) chips.push({ key: "search", label: `“${f.search}”`, patch: { search: undefined } });
+  if (f.category_id !== undefined) chips.push({ key: "category", label: names.category ?? "Danh mục", patch: { category_id: undefined } });
+  if (f.brand_id !== undefined) chips.push({ key: "brand", label: names.brand ?? "Thương hiệu", patch: { brand_id: undefined } });
+  if (f.min_price !== undefined || f.max_price !== undefined) {
+    const label = f.min_price !== undefined && f.max_price !== undefined
+      ? `${vnd(f.min_price)} – ${vnd(f.max_price)} ₫`
+      : f.min_price !== undefined ? `Từ ${vnd(f.min_price)} ₫` : `Đến ${vnd(f.max_price!)} ₫`;
+    chips.push({ key: "price", label, patch: { min_price: undefined, max_price: undefined } });
+  }
+  if (f.min_rating !== undefined) chips.push({ key: "rating", label: `Từ ${f.min_rating} sao`, patch: { min_rating: undefined } });
+  return chips;
+}

@@ -1,7 +1,9 @@
 import { Seo } from "../../components/common/Seo.tsx";
-import { useCallback, useEffect, useMemo } from "react";
+import { SlidersHorizontal, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Breadcrumb, type Crumb } from "../../components/shop/catalog/Breadcrumb.tsx";
+import { FilterDrawer } from "../../components/shop/catalog/FilterDrawer.tsx";
 import { FilterPanel } from "../../components/shop/catalog/FilterPanel.tsx";
 import { Pagination } from "../../components/shop/catalog/Pagination.tsx";
 import { ProductGrid, ProductGridSkeleton } from "../../components/shop/catalog/ProductGrid.tsx";
@@ -9,6 +11,7 @@ import { useBrandsQuery, useCategoriesQuery, useProductsQuery } from "../../hook
 import { findCategoryPath } from "../../utils/categoryTree.ts";
 import {
   SORT_OPTIONS,
+  activeFilterChips,
   parseCatalogParams,
   toApiParams,
   toSearchParams,
@@ -24,6 +27,7 @@ export function ProductList() {
   const products = useProductsQuery(apiParams);
   const categories = useCategoriesQuery();
   const brands = useBrandsQuery();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Lọc → thêm entry lịch sử (back/forward giữ filter)
   const change = useCallback(
@@ -50,6 +54,11 @@ export function ProductList() {
   categoryPath.forEach((c) => crumbs.push({ label: c.name, to: `/san-pham?category_id=${c.id}` }));
   if (filters.search) crumbs.push({ label: `Tìm “${filters.search}”` });
 
+  const chips = activeFilterChips(filters, {
+    category: categoryPath.at(-1)?.name,
+    brand: brands.data?.find((b) => b.id === filters.brand_id)?.name,
+  });
+
   const title = filters.search ? `Kết quả cho “${filters.search}”` : (categoryPath.at(-1)?.name ?? "Sản phẩm");
 
   return (
@@ -60,7 +69,8 @@ export function ProductList() {
         noindex={Boolean(filters.search)}
       />
       <Breadcrumb items={crumbs} />
-      <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
+        <div className="hidden lg:block">
         <FilterPanel
           filters={filters}
           categories={categories.data ?? []}
@@ -69,9 +79,27 @@ export function ProductList() {
           onSearch={search}
           onReset={() => setParams(new URLSearchParams())}
         />
+        </div>
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h1 id="danh-sach-san-pham" className="text-2xl font-bold text-slate-900">{title}</h1>
+            <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={drawerOpen}
+              aria-controls="bo-loc-drawer"
+              className="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 lg:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              Bộ lọc
+              {chips.length > 0 ? (
+                <span className="rounded-full bg-blue-600 px-1.5 text-xs font-semibold text-white">
+                  {chips.length}<span className="sr-only"> đang áp dụng</span>
+                </span>
+              ) : null}
+            </button>
             <label className="flex items-center gap-2 text-sm text-slate-700">
               Sắp xếp:
               <select
@@ -84,7 +112,25 @@ export function ProductList() {
                 ))}
               </select>
             </label>
+            </div>
           </div>
+          {chips.length > 0 ? (
+            <ul aria-label="Bộ lọc đang áp dụng" className="mb-3 flex flex-wrap gap-2 lg:hidden">
+              {chips.map((c) => (
+                <li key={c.key}>
+                  <button
+                    type="button"
+                    onClick={() => change(c.patch)}
+                    aria-label={`Bỏ lọc ${c.label}`}
+                    className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs text-blue-800"
+                  >
+                    {c.label}
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <p className="mb-3 min-h-5 text-sm text-slate-600">{data ? `${data.total} sản phẩm` : "\u00a0"}</p>
           <h2 className="sr-only">Danh sách sản phẩm</h2>
 
@@ -113,6 +159,18 @@ export function ProductList() {
           ) : null}
         </div>
       </div>
+      {drawerOpen ? (
+        <FilterDrawer
+          filters={filters}
+          categories={categories.data ?? []}
+          brands={brands.data ?? []}
+          onClose={() => setDrawerOpen(false)}
+          onApply={(p) => {
+            setDrawerOpen(false);
+            change(p);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

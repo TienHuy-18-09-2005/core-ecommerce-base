@@ -13,7 +13,7 @@ function amount(value: number | string | null | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function ProductCard({ product }: { product: CatalogProduct }) {
+export function ProductCard({ product, priority = false }: { product: CatalogProduct; priority?: boolean }) {
   const addToCart = useAddToCartMutation();
   const price = amount(product.default_variant_price) ?? amount(product.min_price);
   const compare = amount(product.default_compare_at_price);
@@ -24,6 +24,7 @@ export function ProductCard({ product }: { product: CatalogProduct }) {
     <article className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <Link to={`/san-pham/${product.slug}`} className="block">
         <ProductImage
+          priority={priority}
           src={product.thumbnail_url}
           alt=""
           className="aspect-square w-full rounded-lg bg-slate-100 object-cover"

@@ -11,12 +11,14 @@ interface Props {
   onChange: (patch: Partial<CatalogFilters>) => void;
   onSearch: (value: string | undefined) => void;
   onReset: () => void;
+  /** Trong drawer: bỏ khung/nút xoá riêng (drawer có thanh hành động). */
+  embedded?: boolean;
 }
 
 /** Bộ lọc: CHỈ category_id, brand_id, search, min_price, max_price (task 2.2). Lọc rating dựa trên review đã duyệt. */
-export function FilterPanel({ filters, categories, brands, onChange, onSearch, onReset }: Props) {
+export function FilterPanel({ filters, categories, brands, onChange, onSearch, onReset, embedded = false }: Props) {
   return (
-    <aside aria-label="Bộ lọc" className="space-y-5 rounded-xl bg-white p-4">
+    <aside aria-label="Bộ lọc" className={embedded ? "space-y-5" : "space-y-5 rounded-xl bg-white p-4"}>
       <SearchBar value={filters.search} onSearch={onSearch} />
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-800">Danh mục</h2>
@@ -73,9 +75,9 @@ export function FilterPanel({ filters, categories, brands, onChange, onSearch, o
           </button>
         ) : null}
       </section>
-      <button type="button" onClick={onReset} className="w-full rounded border border-slate-300 px-3 py-1 text-sm text-slate-700">
+      {embedded ? null : (<button type="button" onClick={onReset} className="w-full rounded border border-slate-300 px-3 py-1 text-sm text-slate-700">
         Xoá bộ lọc
-      </button>
+      </button>)}
     </aside>
   );
 }

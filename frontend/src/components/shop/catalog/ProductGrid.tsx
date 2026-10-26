@@ -15,9 +15,10 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
 export function ProductGrid({ products, dimmed }: { products: CatalogProduct[]; dimmed?: boolean }) {
   return (
     <ul className={`grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 ${dimmed ? "opacity-60" : ""}`} aria-busy={dimmed || undefined}>
-      {products.map((product) => (
+      {products.map((product, i) => (
         <li key={product.id}>
-          <ProductCard product={product} />
+          {/* Hàng đầu nằm trong màn hình đầu (mobile) → tải sớm cho LCP */}
+          <ProductCard product={product} priority={i < 2} />
         </li>
       ))}
     </ul>

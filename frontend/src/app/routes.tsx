@@ -6,6 +6,16 @@ import { ShopLayout } from "../layouts/ShopLayout.tsx";
 import { ProtectedRoute } from "../components/common/ProtectedRoute.tsx";
 import { HomePage } from "../pages/shop/HomePage.tsx";
 import { DEFAULT_DESCRIPTION } from "../utils/seo.ts";
+import { productsQueryOptions } from "../hooks/useCatalogQuery.ts";
+import { parseCatalogParams, toApiParams } from "../utils/catalogParams.ts";
+import { appQueryClient } from "./queryClient.ts";
+
+/** Gọi API danh sách song song với tải chunk trang (không chặn điều hướng) → LCP sớm hơn. */
+function prefetchProducts({ request }: { request: Request }) {
+  const params = toApiParams(parseCatalogParams(new URL(request.url).searchParams));
+  void appQueryClient.prefetchQuery(productsQueryOptions(params));
+  return null;
+}
 
 /**
  * Tách mã theo trang (Pha 7.2): trang chủ + layout tải ngay, các trang còn lại
@@ -48,7 +58,7 @@ export const appRoutes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           { index: true, handle: { seo: { description: DEFAULT_DESCRIPTION } }, element: <HomePage /> },
-          { path: "san-pham", handle: { seo: "page" }, lazy: page(() => import("../pages/shop/ProductList.tsx"), (m) => m.ProductList) },
+          { path: "san-pham", handle: { seo: "page" }, loader: prefetchProducts, lazy: page(() => import("../pages/shop/ProductList.tsx"), (m) => m.ProductList) },
           { path: "san-pham/:slug", handle: { seo: "page" }, lazy: page(() => import("../pages/shop/ProductDetail.tsx"), (m) => m.ProductDetail) },
           { path: "products/:slug", element: <LegacyProductRedirect /> },
           { path: "gio-hang", handle: { seo: { title: "Giỏ hàng", description: "Xem và chỉnh sửa giỏ hàng thiết bị điện của bạn.", noindex: true } }, lazy: page(() => import("../pages/shop/CartPage.tsx"), (m) => m.CartPage) },

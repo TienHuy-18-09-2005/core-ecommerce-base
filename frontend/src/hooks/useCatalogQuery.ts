@@ -17,13 +17,14 @@ export function useBrandsQuery() {
   });
 }
 
+export const productsQueryOptions = (params: ProductListParams) => ({
+  queryKey: ["products", params] as const,
+  // signal: huỷ request cũ khi filter đổi
+  queryFn: ({ signal }: { signal: AbortSignal }) => productService.getProducts(params, signal),
+});
+
 export function useProductsQuery(params: ProductListParams) {
-  return useQuery({
-    queryKey: ["products", params],
-    // signal: huỷ request cũ khi filter đổi
-    queryFn: ({ signal }) => productService.getProducts(params, signal),
-    placeholderData: keepPreviousData,
-  });
+  return useQuery({ ...productsQueryOptions(params), placeholderData: keepPreviousData });
 }
 
 export function useProductDetailQuery(slug: string | undefined) {
