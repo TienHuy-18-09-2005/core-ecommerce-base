@@ -162,10 +162,11 @@ class ProductReviewTest extends TestCase
     public function test_image_that_cannot_be_reencoded_is_rejected_fail_closed(): void
     {
         $user = $this->buyer();
-        $broken = UploadedFile::fake()->createWithContent('x.jpg', file_get_contents(base_path('tests/Fixtures/reviews/broken.jpg')));
+        $broken = UploadedFile::fake()->createWithContent('x.jpg', file_get_contents(base_path('tests/Fixtures/reviews/noscan.jpg')));
         $res = $this->actingAs($user)->spa()->post('/api/products/den-led/reviews', ['rating' => 5, 'images' => [$this->fixture('jpg'), $broken]], ['Accept' => 'application/json'])
             ->assertStatus(422)->assertJsonValidationErrors('images.1');
-        $this->assertCount(1, $res->json('errors')['images.1']);
+        // noscan.jpg qua được mime/đuôi/kích thước/dimensions (header SOF hợp lệ) nhưng GD không giải mã được
+        $this->assertSame(['Ảnh không hợp lệ hoặc bị hỏng, vui lòng chọn ảnh JPEG, PNG hoặc WebP khác.'], $res->json('errors')['images.1']);
         $this->assertDatabaseCount('product_reviews', 0);
         $this->assertSame([], Storage::disk('public')->allFiles());
     }

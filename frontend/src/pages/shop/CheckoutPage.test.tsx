@@ -102,6 +102,8 @@ describe("CheckoutPage", () => {
     // Form giữ nguyên dữ liệu sau lỗi
     expect((document.querySelector('[name="customer_name"]') as HTMLInputElement).value).toBe("Nguyễn A");
 
+    // chờ nút bật lại (mutation reset có thể trễ một tick) rồi mới bấm lại → tránh flaky
+    await waitFor(() => expect(screen.getByRole("button", { name: "ĐẶT HÀNG NGAY" })).toHaveProperty("disabled", false));
     fireEvent.click(screen.getByRole("button", { name: "ĐẶT HÀNG NGAY" }));
     await screen.findByRole("heading", { name: "Đặt hàng thành công!" });
 
