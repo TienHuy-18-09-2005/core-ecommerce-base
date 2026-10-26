@@ -19,8 +19,14 @@ class ListAdminOrdersRequest extends FormRequest
             'q' => ['nullable', 'string', 'max:100'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            ...\App\Support\AdminSort::rules(['id', 'order_code', 'customer_name', 'total_amount', 'status', 'created_at']),
             'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return \App\Support\AdminSort::messages();
     }
 }

@@ -31,7 +31,7 @@ class ReviewController extends Controller
                 ->orWhereHas('user', fn ($u) => $u->where('name', 'like', $term)->orWhere('email', 'like', $term)));
         }
 
-        return $this->paginated($q->orderByDesc('id')->paginate($f['per_page'] ?? 20), fn (ProductReview $r) => $this->present($r));
+        return $this->paginated(\App\Support\AdminSort::apply($q, $f, ['id' => 'id', 'rating' => 'rating', 'is_approved' => 'is_approved', 'created_at' => 'created_at'])->paginate($f['per_page'] ?? 20), fn (ProductReview $r) => $this->present($r));
     }
 
     public function moderate(ModerateReviewRequest $request, ProductReview $review): JsonResponse

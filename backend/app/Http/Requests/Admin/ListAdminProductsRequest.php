@@ -18,9 +18,14 @@ class ListAdminProductsRequest extends FormRequest
             'status' => ['nullable', 'in:draft,published,archived'],
             'category_id' => ['nullable', 'integer'],
             'low_stock' => ['nullable', 'boolean'],
-            'sort' => ['nullable', 'in:newest,oldest,name,stock'],
+            ...\App\Support\AdminSort::rules(['newest', 'oldest', 'stock', 'id', 'name', 'price_min', 'stock_total', 'status', 'updated_at']),
             'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return \App\Support\AdminSort::messages();
     }
 }

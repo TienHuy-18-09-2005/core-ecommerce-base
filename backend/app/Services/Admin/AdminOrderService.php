@@ -60,7 +60,7 @@ class AdminOrderService
             $q->where('created_at', '<=', $f['to'].' 23:59:59');
         }
 
-        return $q->orderByDesc('id')->paginate($f['per_page'] ?? 20);
+        return \App\Support\AdminSort::apply($q, $f, ['id' => 'id', 'order_code' => 'order_code', 'customer_name' => 'customer_name', 'total_amount' => 'total_amount', 'status' => 'status', 'created_at' => 'created_at'])->paginate($f['per_page'] ?? 20);
     }
 
     public function summary(Order $order): array

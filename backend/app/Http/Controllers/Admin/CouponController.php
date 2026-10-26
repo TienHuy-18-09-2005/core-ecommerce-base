@@ -9,20 +9,24 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Services\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Requests\Admin\ListAdminCouponsRequest;
+use App\Support\AdminSort;
 
 class CouponController extends Controller
 {
     private const FIELDS = ['code', 'type', 'value', 'min_order_amount', 'max_discount_amount', 'usage_limit', 'per_customer_limit', 'starts_at', 'expires_at', 'is_active'];
 
+    private const SORTABLE = ['id', 'code', 'value', 'used_count', 'expires_at', 'is_active'];
+
     public function __construct(private AuditLogger $audit) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(ListAdminCouponsRequest $request): JsonResponse
     {
-        $q = trim((string) $request->query('q', ''));
-        $page = Coupon::query()
-            ->when($q !== '', fn ($w) => $w->where('code', 'like', '%'.addcslashes(mb_substr($q, 0, 50), '%_\\').'%'))
-            ->orderByDesc('id')->paginate(20);
+        $f = $request->validated();
+        $q = trim((string) ($f['q'] ?? ''));
+        $query = Coupon::query()
+            ->when($q !== '', fn ($w) => $w->where('code', 'like', '%'.addcslashes($q, '%_\\').'%'));
+        $page = AdminSort::apply($query, $f, array_combine(self::SORTABLE, self::SORTABLE))->paginate(20);
 
         return $this->paginated($page, fn (Coupon $c) => $this->present($c));
     }

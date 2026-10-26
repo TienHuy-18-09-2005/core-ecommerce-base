@@ -39,12 +39,12 @@ class AdminProductService
         if (! empty($f['low_stock'])) {
             $q->whereHas('variants', fn ($v) => $v->where('is_active', true)->where('stock_quantity', '<=', self::LOW_STOCK));
         }
-        match ($f['sort'] ?? 'newest') {
-            'oldest' => $q->orderBy('id'),
-            'name' => $q->orderBy('name'),
-            'stock' => $q->orderBy('stock_total')->orderBy('id'),
-            default => $q->orderByDesc('id'),
-        };
+        // Giá trị cũ newest/oldest/stock vẫn nhận để không phá hợp đồng
+        $legacy = ['newest' => ['id', 'desc'], 'oldest' => ['id', 'asc'], 'stock' => ['stock_total', 'asc']];
+        if (isset($legacy[$f['sort'] ?? ''])) {
+            [$f['sort'], $f['direction']] = [$legacy[$f['sort']][0], $f['direction'] ?? $legacy[$f['sort']][1]];
+        }
+        \App\Support\AdminSort::apply($q, $f, ['id' => 'id', 'name' => 'name', 'price_min' => 'price_min', 'stock_total' => 'stock_total', 'status' => 'status', 'updated_at' => 'updated_at']);
 
         return $q->paginate($f['per_page'] ?? 20);
     }
