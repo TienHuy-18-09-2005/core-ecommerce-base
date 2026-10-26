@@ -32,6 +32,12 @@ class DomainException extends RuntimeException
 
     public const REVIEW_ALREADY_EXISTS = 'REVIEW_ALREADY_EXISTS';
 
+    public const INVALID_STATUS_TRANSITION = 'INVALID_STATUS_TRANSITION';
+
+    public const CATEGORY_IN_USE = 'CATEGORY_IN_USE';
+
+    public const COUPON_IN_USE = 'COUPON_IN_USE';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,

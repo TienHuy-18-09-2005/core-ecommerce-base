@@ -17,6 +17,17 @@ class OrderPolicy
             : Response::denyAsNotFound('Không tìm thấy dữ liệu.');
     }
 
+    public function viewAny(User $user): bool
+    {
+        return Gate::forUser($user)->allows('admin');
+    }
+
+    /** Admin xem chi tiết đơn (khác view() của khách). */
+    public function manage(User $user, Order $order): bool
+    {
+        return Gate::forUser($user)->allows('admin');
+    }
+
     public function update(User $user, Order $order): bool
     {
         return Gate::forUser($user)->allows('admin');

@@ -24,4 +24,14 @@ class ProductReviewPolicy
             ? Response::allow()
             : Response::denyAsNotFound('Không tìm thấy dữ liệu.');
     }
+
+    public function viewAny(User $user): bool
+    {
+        return Gate::forUser($user)->allows('admin');
+    }
+
+    public function moderate(User $user, ProductReview $review): bool
+    {
+        return Gate::forUser($user)->allows('admin');
+    }
 }

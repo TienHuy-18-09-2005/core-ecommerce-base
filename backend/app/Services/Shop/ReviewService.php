@@ -12,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\Support\ImageSanitizer;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -208,89 +209,12 @@ class ReviewService
     }
 
     /**
-     * Mã hoá lại mọi ảnh (JPEG/PNG/WebP) bằng GD để bỏ toàn bộ metadata (EXIF/GPS/ICC/dữ liệu chèn sau ảnh),
-     * xoay theo EXIF Orientation trước khi bỏ. Fail closed: ảnh nào không mã hoá lại được → 422, không lưu file gốc.
-     *
      * @param  array<int, UploadedFile>  $files
      * @return array<int, string>
      */
     private function storeImages(array $files): array
     {
-        $encoded = [];
-        foreach (array_values($files) as $i => $file) {
-            $mime = $file->getMimeType();
-            $ext = match ($mime) {
-                'image/jpeg' => 'jpg',
-                'image/png' => 'png',
-                'image/webp' => 'webp',
-                default => null,
-            };
-            $bytes = $ext === null ? null : $this->reencode($file->getRealPath(), $mime);
-            if ($bytes === null) {
-                throw ValidationException::withMessages([
-                    "images.$i" => 'Ảnh không hợp lệ hoặc bị hỏng, vui lòng chọn ảnh JPEG, PNG hoặc WebP khác.',
-                ]);
-            }
-            $encoded[] = [$ext, $bytes];
-        }
-
-        $paths = [];
-        foreach ($encoded as [$ext, $bytes]) {
-            $path = self::DIR.'/'.now()->format('Y/m').'/'.Str::random(40).'.'.$ext;
-            Storage::disk(self::DISK)->put($path, $bytes);
-            $paths[] = $path;
-        }
-
-        return $paths;
-    }
-
-    private function reencode(string $source, string $mime): ?string
-    {
-        $img = match ($mime) {
-            'image/jpeg' => function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($source) : false,
-            'image/png' => function_exists('imagecreatefrompng') ? @imagecreatefrompng($source) : false,
-            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($source) : false,
-            default => false,
-        };
-        if (! $img) {
-            return null;
-        }
-        if ($mime === 'image/jpeg') {
-            $img = $this->applyOrientation($img, $source);
-        }
-        ob_start();
-        $ok = match ($mime) {
-            'image/jpeg' => imagejpeg($img, null, 85),
-            'image/png' => imagesavealpha($img, true) && imagepng($img, null, 6),
-            'image/webp' => imagesavealpha($img, true) && imagewebp($img, null, 85),
-        };
-        $out = ob_get_clean();
-        imagedestroy($img);
-
-        return $ok && $out ? $out : null;
-    }
-
-    private function applyOrientation(\GdImage $img, string $source): \GdImage
-    {
-        $o = function_exists('exif_read_data') ? (int) (@exif_read_data($source)['Orientation'] ?? 1) : 1;
-        if (in_array($o, [2, 4, 5, 7], true)) {
-            imageflip($img, IMG_FLIP_HORIZONTAL);
-        }
-        $angle = match ($o) {
-            3, 4 => 180,
-            5, 6 => 270, // imagerotate quay ngược chiều kim đồng hồ
-            7, 8 => 90,
-            default => 0,
-        };
-        if ($angle) {
-            $rot = imagerotate($img, $angle, 0);
-            if ($rot) {
-                imagedestroy($img);
-                $img = $rot;
-            }
-        }
-
-        return $img;
+        return app(ImageSanitizer::class)->storeMany($files, self::DIR);
     }
 
     /** @param array<int, string> $paths */
