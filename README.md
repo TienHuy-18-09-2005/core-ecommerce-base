@@ -167,6 +167,29 @@ Mã lỗi: `REVIEW_NOT_PURCHASED` (403), `EMAIL_NOT_VERIFIED` (403), `REVIEW_ALR
 - Ảnh: tối đa 3, chỉ JPEG/PNG/WebP, **mọi ảnh được mã hoá lại bằng GD** (xoay theo EXIF Orientation rồi bỏ toàn bộ EXIF/GPS; ảnh không mã hoá lại được → 422, không lưu file gốc) (kiểm cả đuôi lẫn MIME thật), ≤ 2MB, không nhận SVG; lưu ở disk `public` với tên ngẫu nhiên 40 ký tự (`storage/app/public/reviews/YYYY/MM/`). Container backend tự chạy `storage:link`; Vite proxy `/storage` sang nginx.
 - Seeder demo: nếu có tài khoản khách (`CUSTOMER_EMAIL`), tạo đơn đã giao `DEMO-DELIVERED-1` gồm sản phẩm demo số 1 và 2 → đăng nhập bằng tài khoản đó là thử viết đánh giá được.
 
+## Trang quản trị (Pha 6)
+
+Vào `http://localhost:5173/admin` bằng tài khoản admin (dev: `admin@ecom.local` / `AdminDev123!`). Khách chưa đăng nhập bị chuyển về `/dang-nhap?redirect=/admin`; tài khoản không phải admin thấy màn hình "Không có quyền truy cập". Mã admin là **bundle riêng** (lazy `AdminApp`), khách hàng không tải. Việc chặn ở frontend chỉ để hiển thị, quyền thật nằm ở server.
+
+**Bảo mật phía server:** mọi route `/api/admin/*` đi qua `auth:sanctum` + `can:admin` + `throttle:admin` (60/phút; upload ảnh `admin-upload` 20/phút), và mỗi route có thêm Policy riêng (`can:update,product`, `can:manage,order`, `can:moderate,review`…). Dữ liệu vào được kiểm bằng FormRequest (thông báo tiếng Việt), lỗi trả theo envelope chuẩn `{success:false, code, message, errors?}`. Mọi thao tác ghi đều được lưu vào bảng `admin_audit_logs` (ai làm, lúc nào, thay đổi gì).
+
+| Trang | API | Ghi chú |
+|---|---|---|
+| Tổng quan | `GET /api/admin/dashboard` | doanh thu hôm nay/14 ngày (bỏ đơn huỷ/trả), đơn chờ, biến thể tồn ≤ 5, đánh giá đang ẩn, biểu đồ cột 14 ngày |
+| Sản phẩm | `GET/POST /admin/products`, `GET/PUT/DELETE /admin/products/{id}`, `POST /admin/products/images` | lọc q/SKU, trạng thái, danh mục, sắp hết; biến thể đồng bộ theo `id` (bỏ khỏi danh sách = xoá mềm), SKU duy nhất kể cả bản đã xoá; thông số dạng cặp khoá–giá trị; ảnh upload được mã hoá lại bằng GD (≤ 5MB, ≤ 6000px) |
+| Đơn hàng | `GET /admin/orders`, `GET /admin/orders/{id}`, `PATCH /admin/orders/{id}/status` | lọc trạng thái/thanh toán/khoảng ngày/q; chỉ hiển thị các bước chuyển hợp lệ; lịch sử xử lý lấy từ audit log |
+| Danh mục | `GET/POST/PUT/DELETE /admin/categories` | dạng cây; chặn vòng lặp cha–con (422); xoá danh mục còn con/sản phẩm → 409 `CATEGORY_IN_USE` |
+| Mã giảm giá | `GET/POST/PUT/DELETE /admin/coupons` | mã tự viết hoa; phần trăm ≤ 100; `usage_limit` ≥ số lượt đã dùng; xoá mã đã dùng → 409 `COUPON_IN_USE` (hãy tắt mã) |
+| Đánh giá | `GET /admin/reviews`, `PATCH/DELETE /admin/reviews/{id}` | lọc đang hiện/đang ẩn, số sao, q; ẩn/hiện/xoá (xoá kèm ảnh) |
+
+**Luồng trạng thái đơn:** `pending → confirmed | cancelled`, `confirmed → packing | cancelled`, `packing → shipping | cancelled`, `shipping → delivered | returned`, `delivered → returned`. Bước không hợp lệ trả 409 `INVALID_STATUS_TRANSITION`. Khi đổi trạng thái, đơn được khoá dòng (`lockForUpdate`). **Huỷ đơn** sẽ hoàn tồn kho (khoá biến thể theo thứ tự id để tránh deadlock với checkout) và trả lại 1 lượt dùng mã giảm giá. **Trả hàng không tự cộng kho**, vì hàng trả về cần kiểm tra trước. `scripts/concurrency-test.sh` kiểm cả trường hợp huỷ song song và huỷ chen giữa lúc checkout.
+
+**Mô tả sản phẩm (HTML):** server lọc bằng HTMLPurifier theo allowlist (p, br, strong/b, em/i, u, s, ul/ol/li, h2–h4, blockquote, a[href,title], table). Chỉ cho phép link `http`/`https`/`mailto`, link được gắn `target="_blank"` và `rel="nofollow noreferrer noopener"`; `<script>`, `on*=` và `javascript:` bị loại bỏ. URL ảnh chỉ chấp nhận `/storage/...` hoặc http(s).
+
+**Xoá sản phẩm** là xoá mềm (cả biến thể), nên đơn cũ vẫn giữ nguyên ảnh chụp tên/giá.
+
+**Chưa làm:** trang cài đặt cửa hàng, quản lý thương hiệu và quản lý người dùng/phân quyền chi tiết (hiện chỉ có vai trò `admin`), xuất CSV và trình soạn thảo WYSIWYG (hiện nhập HTML thô vào textarea).
+
 ## Ngôn ngữ
 
 Backend chạy `APP_LOCALE=vi` (fallback cũng là `vi`). Bản dịch nằm ở `backend/lang/vi/` (`validation.php` đủ mọi rule, gồm các
