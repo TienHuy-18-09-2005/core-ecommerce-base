@@ -3,7 +3,7 @@ import { footerLinks, shopContact } from "./shopContact.ts";
 
 export function Footer() {
   return (
-    <footer className="mt-12 border-t border-slate-200 bg-slate-900 text-slate-100">
+    <footer className="theme-fixed mt-12 border-t border-slate-200 bg-slate-900 text-slate-100">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <p className="text-lg font-bold">Core Điện</p>

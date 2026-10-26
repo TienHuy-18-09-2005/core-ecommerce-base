@@ -2,11 +2,26 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Chống nháy theme (FOUC): chạy trước khi CSS/React render.
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var dark = saved === "dark" || (saved !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1d4ed8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
     <link rel="preconnect" href="https://fonts.bunny.net" />
-    <link href="https://fonts.bunny.net/css?family=be-vietnam-pro:400,600,700" rel="stylesheet" />
-    <title>Core Điện — Thiết bị điện</title>
+    <link href="https://fonts.bunny.net/css?family=be-vietnam-pro:400,600,700&display=swap" rel="stylesheet" />
+    <!-- Mặc định cho trình thu thập không chạy JS; React 19 <Seo> thay thế khi khởi động -->
+    <title data-static-seo>Core Điện — Thiết bị điện chính hãng</title>
+    <meta data-static-seo name="description" content="Core Điện — cửa hàng thiết bị điện chính hãng: đèn LED, dây cáp, công tắc, ổ cắm. Giao nhanh, đổi trả dễ dàng." />
   </head>
   <body>
     <div id="root"></div>

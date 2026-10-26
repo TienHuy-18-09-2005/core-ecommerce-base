@@ -72,7 +72,7 @@ export function BannerSlider() {
     <section
       aria-roledescription="carousel"
       aria-labelledby={labelId}
-      className={`relative overflow-hidden rounded-2xl text-white ${slide.tone}`}
+      className={`theme-fixed relative overflow-hidden rounded-2xl text-white ${slide.tone}`}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={() => setHoverPaused(false)}
       onFocus={() => setHoverPaused(true)}

@@ -1,10 +1,109 @@
 @import "tailwindcss";
 
+/* Dark mode bằng biến CSS (Pha 7.4): lớp .dark trên <html> do script inline trong
+   index.html đặt trước khi render (không nháy). Thay vì rải `dark:` khắp nơi, ta
+   đảo thang màu slate/gray của Tailwind v4 (vốn là biến CSS) và các bề mặt trắng. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-slide-in-right: slide-in-right 0.25s ease-out both;
+  --animate-pop: pop 0.3s ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
 :root {
+  --app-bg: #f8fafc;
+  --app-fg: #0f172a;
+  --app-surface: #ffffff;
+  --app-surface-hover: #f1f5f9;
   color-scheme: light;
   font-family: "Be Vietnam Pro", system-ui, "Segoe UI", sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--app-bg);
+  color: var(--app-fg);
+}
+
+:root.dark {
+  --app-bg: #0b1120;
+  --app-fg: #e2e8f0;
+  --app-surface: #111827;
+  --app-surface-hover: #1e293b;
+  color-scheme: dark;
+
+  --color-slate-50: #0b1120;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #334155;
+  --color-slate-300: #475569;
+  --color-slate-400: #64748b;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #cbd5e1;
+  --color-slate-700: #e2e8f0;
+  --color-slate-800: #f1f5f9;
+  --color-slate-900: #f8fafc;
+  --color-slate-950: #ffffff;
+  --color-gray-50: #0b1120;
+  --color-gray-100: #1e293b;
+  --color-gray-200: #334155;
+  --color-gray-300: #475569;
+  --color-gray-400: #64748b;
+  --color-gray-500: #94a3b8;
+  --color-gray-600: #cbd5e1;
+  --color-gray-700: #e2e8f0;
+  --color-gray-800: #f1f5f9;
+  --color-gray-900: #f8fafc;
+  /* nền nhạt của thông báo → tông tối, chữ đậm → sáng hơn */
+  --color-blue-50: #172554;
+  --color-blue-100: #1e3a8a;
+  --color-blue-700: #93c5fd;
+  --color-blue-800: #bfdbfe;
+  --color-red-50: #450a0a;
+  --color-red-100: #7f1d1d;
+  --color-red-200: #991b1b;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-green-50: #052e16;
+  --color-green-100: #14532d;
+  --color-green-700: #86efac;
+  --color-amber-50: #451a03;
+  --color-amber-100: #78350f;
+  --color-amber-700: #fcd34d;
+  --color-amber-800: #fde68a;
+}
+
+/* Bề mặt trắng → nền thẻ tối; chữ trắng trên nút màu giữ nguyên. */
+.dark .bg-white { background-color: var(--app-surface); }
+.dark .hover\:bg-white:hover { background-color: var(--app-surface-hover); }
+.dark .bg-slate-900.text-white,
+.dark .bg-slate-800.text-white { background-color: #2563eb; }
+.dark img { filter: brightness(0.92); }
+
+
+/* Vùng nền tối cố định (footer, sidebar admin, banner, overlay): giữ bảng màu gốc. */
+.dark .theme-fixed {
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
 }
 
 body {
@@ -18,4 +117,16 @@ body {
 :focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
+}
+
+/* Pha 7.6: tôn trọng người dùng giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

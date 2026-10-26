@@ -19,7 +19,7 @@ function sourceFiles(directory: string): string[] {
       continue;
     }
 
-    if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith(".test.ts")) {
+    if (/\.(ts|tsx)$/.test(entry) && !/\.test\.tsx?$/.test(entry)) {
       files.push(fullPath);
     }
   }
@@ -33,13 +33,29 @@ const hasCompose = existsSync(composePath);
 
 describe("frontend client boundaries", () => {
   it("does not store auth or the cart in the browser, or send a session header", () => {
+    // Ngoại lệ duy nhất: utils/theme.ts lưu lựa chọn giao diện (sáng/tối), không phải dữ liệu nhạy cảm.
+    const themeFile = path.join(frontendRoot, "src/utils/theme.ts");
     const source = sourceFiles(path.join(frontendRoot, "src"))
+      .filter((file) => file !== themeFile)
       .map((file) => readFileSync(file, "utf8"))
       .join("\n");
 
     expect(source).not.toMatch(/localStorage/);
+    const theme = readFileSync(themeFile, "utf8");
+    expect([...theme.matchAll(/localStorage\.(\w+)\(([^,)]*)/g)].map((m) => `${m[1]}(${m[2]})`).sort()).toEqual(
+      ["getItem(THEME_KEY)", "removeItem(THEME_KEY)", "setItem(THEME_KEY)"],
+    );
     expect(source).not.toMatch(/sessionStorage/);
     expect(source).not.toMatch(/X-Session-ID/);
+  });
+
+  it("index.html applies the saved theme before CSS/React (no flash)", () => {
+    const html = readFileSync(path.join(frontendRoot, "index.html"), "utf8");
+    const head = html.slice(0, html.indexOf("</head>"));
+    const inline = head.indexOf('localStorage.getItem("theme")');
+    expect(inline).toBeGreaterThan(-1);
+    expect(inline).toBeLessThan(head.indexOf("stylesheet"));
+    expect(head).toContain("prefers-color-scheme: dark");
   });
 
   it("does not put secrets in VITE_ variables", () => {
