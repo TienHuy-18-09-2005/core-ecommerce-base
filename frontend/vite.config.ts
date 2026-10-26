@@ -3,7 +3,9 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnv, type Connect, type Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
+import { pwaOptions } from "./src/pwa/pwaConfig.ts";
 import { resolveDevProxyTarget } from "./devProxyTarget.ts";
 import { legacyProductLocation } from "./src/utils/legacyProductLocation.ts";
 
@@ -54,7 +56,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     appType: "spa",
-    plugins: [react(), tailwindcss(), legacyProductRedirect()],
+    plugins: [react(), tailwindcss(), legacyProductRedirect(), VitePWA(pwaOptions)],
 
     resolve: {
       alias: {

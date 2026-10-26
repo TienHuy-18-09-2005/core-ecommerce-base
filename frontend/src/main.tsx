@@ -6,6 +6,9 @@ import { QueryProvider } from "./app/QueryProvider.tsx";
 import { ToastProvider } from "./app/Toast.tsx";
 import App from "./App.tsx";
 import "./index.css";
+import { registerServiceWorker } from "./pwa/registerSW.ts";
+
+registerServiceWorker();
 
 // React 19 <Seo> quản lý <title>/<meta>; bỏ bản tĩnh trong index.html để không trùng.
 document.querySelectorAll("head [data-static-seo]").forEach((el) => el.remove());

@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /admin
+Disallow: /tai-khoan
+Disallow: /thanh-toan
+Allow: /

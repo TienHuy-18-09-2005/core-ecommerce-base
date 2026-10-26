@@ -5,6 +5,7 @@ import { EmailVerificationBanner } from "../components/shop/EmailVerificationBan
 import { CartDrawer } from "../components/shop/cart/CartDrawer.tsx";
 import { Footer } from "../components/shop/Footer.tsx";
 import { Header } from "../components/shop/Header/Header.tsx";
+import { InstallPrompt } from "../components/common/InstallPrompt.tsx";
 import { RouteSeo } from "../components/common/Seo.tsx";
 import { useCrossTabSync } from "../hooks/useCrossTabSync.ts";
 
@@ -32,6 +33,7 @@ export function ShopLayout() {
           </div>
         </main>
         <Footer />
+        <InstallPrompt />
         <CartDrawer />
       </div>
     </CartDrawerProvider>
