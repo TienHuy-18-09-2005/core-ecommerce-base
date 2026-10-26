@@ -1,3 +1,4 @@
+import { Seo } from '../../components/common/Seo';
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ShoppingCart, ShieldCheck, Zap } from 'lucide-react';
@@ -16,11 +17,12 @@ export const ProductDetail: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const query = useProductDetailQuery(slug);
 
-    if (query.isPending) return <div className="p-10 text-center" aria-busy="true">Đang tải thông số thiết bị điện...</div>;
+    if (query.isPending) return <div className="p-10 text-center" aria-busy="true"><Seo title="Đang tải sản phẩm" />Đang tải thông số thiết bị điện...</div>;
     if (query.isError) {
         if (query.error instanceof ApiError && query.error.status === 404) {
             return (
                 <section className="rounded-2xl bg-white p-8 text-center">
+                    <Seo title="Không tìm thấy sản phẩm" noindex />
                     <p className="text-sm font-semibold text-blue-700">404</p>
                     <h1 className="mt-2 text-3xl font-bold text-slate-900">Không tìm thấy sản phẩm</h1>
                     <p className="mt-3 text-slate-600">Sản phẩm này không tồn tại hoặc đã ngừng bán.</p>
@@ -32,6 +34,7 @@ export const ProductDetail: React.FC = () => {
         }
         return (
             <div role="alert" className="p-10 text-center text-red-700">
+                <Seo title="Lỗi tải sản phẩm" noindex />
                 <p>{query.error instanceof ApiError ? query.error.message : 'Không tải được sản phẩm.'}</p>
                 <button type="button" onClick={() => query.refetch()} className="mt-3 rounded-lg bg-blue-600 px-3 py-2 font-semibold text-white">
                     Thử lại
@@ -65,6 +68,7 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
+            <Seo title={product.name} description={product.short_description || product.description || `${product.name} chính hãng tại Core Điện.`} image={product.thumbnail_url} type="product" />
             <Breadcrumb items={[
                 { label: 'Trang chủ', to: '/' },
                 { label: 'Sản phẩm', to: '/san-pham' },

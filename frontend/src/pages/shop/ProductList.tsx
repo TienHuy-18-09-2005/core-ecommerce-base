@@ -1,3 +1,4 @@
+import { Seo } from "../../components/common/Seo.tsx";
 import { useCallback, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Breadcrumb, type Crumb } from "../../components/shop/catalog/Breadcrumb.tsx";
@@ -53,6 +54,11 @@ export function ProductList() {
 
   return (
     <section aria-labelledby="danh-sach-san-pham">
+      <Seo
+        title={filters.page > 1 ? `${title} - Trang ${filters.page}` : title}
+        description={filters.search ? `Kết quả tìm kiếm “${filters.search}” tại Core Điện.` : `Mua ${title.toLowerCase()} chính hãng tại Core Điện: giá tốt, giao nhanh, đổi trả dễ dàng.`}
+        noindex={Boolean(filters.search)}
+      />
       <Breadcrumb items={crumbs} />
       <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
         <FilterPanel
@@ -79,7 +85,8 @@ export function ProductList() {
               </select>
             </label>
           </div>
-          {data ? <p className="mb-3 text-sm text-slate-600">{data.total} sản phẩm</p> : null}
+          <p className="mb-3 min-h-5 text-sm text-slate-600">{data ? `${data.total} sản phẩm` : "\u00a0"}</p>
+          <h2 className="sr-only">Danh sách sản phẩm</h2>
 
           {products.isPending ? <ProductGridSkeleton /> : null}
           {products.isError && !data ? (
