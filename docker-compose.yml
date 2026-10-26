@@ -56,14 +56,14 @@ services:
       mailpit:
         condition: service_started
 
-  # Hộp thư dev: SMTP 1025, giao diện web 8025 — chỉ bind 127.0.0.1
+  # Hộp thư dev: backend gửi SMTP nội bộ tới mailpit:1025 (không mở cổng ra máy host,
+  # tránh xung đột cổng 1025 trên Windows). Giao diện web: 127.0.0.1:${MAILPIT_UI_PORT:-8025}
   mailpit:
     image: axllent/mailpit:latest
     container_name: ecom_mailpit
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8025:8025"
-      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
     environment:
       MP_MAX_MESSAGES: 500
     networks:
