@@ -164,7 +164,7 @@ Lý do: đơn gắn với tài khoản phải thuộc về chủ thật của em
 Mã lỗi: `REVIEW_NOT_PURCHASED` (403), `EMAIL_NOT_VERIFIED` (403), `REVIEW_ALREADY_EXISTS` (409); sửa/xoá review của người khác → 404.
 
 - Nội dung: văn bản thuần ≤ 2000 ký tự, FE render bằng text node (không HTML). Tên người viết hiển thị rút gọn ("N. V. An"), không lộ email.
-- Ảnh: tối đa 3, chỉ JPEG/PNG/WebP (kiểm cả đuôi lẫn MIME thật), ≤ 2MB, không nhận SVG; lưu ở disk `public` với tên ngẫu nhiên 40 ký tự (`storage/app/public/reviews/YYYY/MM/`). Container backend tự chạy `storage:link`; Vite proxy `/storage` sang nginx.
+- Ảnh: tối đa 3, chỉ JPEG/PNG/WebP, **mọi ảnh được mã hoá lại bằng GD** (xoay theo EXIF Orientation rồi bỏ toàn bộ EXIF/GPS; ảnh không mã hoá lại được → 422, không lưu file gốc) (kiểm cả đuôi lẫn MIME thật), ≤ 2MB, không nhận SVG; lưu ở disk `public` với tên ngẫu nhiên 40 ký tự (`storage/app/public/reviews/YYYY/MM/`). Container backend tự chạy `storage:link`; Vite proxy `/storage` sang nginx.
 - Seeder demo: nếu có tài khoản khách (`CUSTOMER_EMAIL`), tạo đơn đã giao `DEMO-DELIVERED-1` gồm sản phẩm demo số 1 và 2 → đăng nhập bằng tài khoản đó là thử viết đánh giá được.
 
 ## Ngôn ngữ

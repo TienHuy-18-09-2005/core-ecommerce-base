@@ -131,6 +131,53 @@ class ProductReviewTest extends TestCase
         }
     }
 
+    public function test_uploaded_images_are_reencoded_without_exif_gps_and_rotated_by_orientation(): void
+    {
+        $src = base_path('tests/Fixtures/reviews/gps.jpg');
+        $this->assertArrayHasKey('GPSLatitude', exif_read_data($src, 'GPS') ?: [], 'fixture phải có GPS');
+
+        $user = $this->buyer();
+        $res = $this->actingAs($user)->spa()->post('/api/products/den-led/reviews', [
+            'rating' => 5,
+            'images' => [UploadedFile::fake()->createWithContent('gps.jpg', file_get_contents($src)), $this->fixture('webp')],
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        [$jpgUrl, $webpUrl] = $res->json('data.images');
+        $bytes = Storage::disk('public')->get(substr($jpgUrl, strlen('/storage/')));
+        $this->assertStringNotContainsString('Exif', $bytes);
+        $this->assertStringNotContainsString('SecretCam', $bytes);
+        $tmp = tempnam(sys_get_temp_dir(), 'rv');
+        file_put_contents($tmp, $bytes);
+        $exif = @exif_read_data($tmp) ?: [];
+        $this->assertArrayNotHasKey('GPSLatitude', $exif);
+        $this->assertArrayNotHasKey('Make', $exif);
+        // gốc 40x20 với Orientation=6 → đã xoay thành 20x40
+        $this->assertSame([20, 40], array_slice(getimagesize($tmp), 0, 2));
+        unlink($tmp);
+
+        $webp = Storage::disk('public')->get(substr($webpUrl, strlen('/storage/')));
+        $this->assertStringNotContainsString('EXIF', $webp);
+    }
+
+    public function test_image_that_cannot_be_reencoded_is_rejected_fail_closed(): void
+    {
+        $user = $this->buyer();
+        $broken = UploadedFile::fake()->createWithContent('x.jpg', file_get_contents(base_path('tests/Fixtures/reviews/broken.jpg')));
+        $res = $this->actingAs($user)->spa()->post('/api/products/den-led/reviews', ['rating' => 5, 'images' => [$this->fixture('jpg'), $broken]], ['Accept' => 'application/json'])
+            ->assertStatus(422)->assertJsonValidationErrors('images.1');
+        $this->assertCount(1, $res->json('errors')['images.1']);
+        $this->assertDatabaseCount('product_reviews', 0);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    public function test_invalid_image_has_a_single_error_message(): void
+    {
+        $user = $this->buyer();
+        $res = $this->actingAs($user)->spa()->post('/api/products/den-led/reviews', ['rating' => 5, 'images' => [$this->fixture('gif')]], ['Accept' => 'application/json'])
+            ->assertStatus(422);
+        $this->assertCount(1, $res->json('errors')['images.0']);
+    }
+
     public function test_svg_oversized_too_many_and_disguised_files_are_rejected(): void
     {
         $user = $this->buyer();

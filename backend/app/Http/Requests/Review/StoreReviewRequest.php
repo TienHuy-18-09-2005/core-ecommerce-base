@@ -21,6 +21,7 @@ class StoreReviewRequest extends FormRequest
             'images' => ['nullable', 'array', 'max:'.self::MAX_IMAGES],
             // mimes kiểm theo phần mở rộng, mimetypes kiểm nội dung (finfo) → không nhận SVG/HTML đổi đuôi
             'images.*' => [
+                'bail',
                 'file',
                 'mimes:jpg,jpeg,png,webp',
                 'mimetypes:image/jpeg,image/png,image/webp',
