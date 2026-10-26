@@ -10,6 +10,7 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\Admin\AdminOrderService;
 use App\Services\Shop\CouponService;
 use App\Services\Shop\OrderService;
 use Illuminate\Support\Facades\Artisan;
@@ -112,6 +113,41 @@ class CheckoutConcurrencyTest extends TestCase
         $this->assertSame(9, $variant->fresh()->stock_quantity);
     }
 
+    public function test_parallel_admin_cancels_restock_and_release_coupon_exactly_once(): void
+    {
+        $variant = $this->makeVariant(stock: 5);
+        Coupon::create(['code' => 'CXL', 'type' => 'fixed', 'value' => 1000]);
+        $order = Order::where('order_code', $this->checkout($this->guestCart($variant, 3), coupon: 'CXL')['order_code'])->firstOrFail();
+        $this->assertSame(2, $variant->fresh()->stock_quantity);
+        $this->assertSame(1, Coupon::where('code', 'CXL')->value('used_count'));
+
+        $results = $this->race(array_fill(0, 6, fn () => $this->cancel($order->id)));
+
+        $this->assertNoUnexpectedErrors($results);
+        $this->assertCount(1, array_filter($results, fn ($r) => $r['ok']));
+        $this->assertCount(5, array_filter($results, fn ($r) => $r['code'] === DomainException::INVALID_STATUS_TRANSITION));
+        $this->assertSame(5, $variant->fresh()->stock_quantity);
+        $this->assertSame(0, Coupon::where('code', 'CXL')->value('used_count'));
+    }
+
+    public function test_admin_cancel_racing_with_checkouts_on_same_variant_keeps_stock_consistent(): void
+    {
+        $variant = $this->makeVariant(stock: 3);
+        $order = Order::where('order_code', $this->checkout($this->guestCart($variant, 3))['order_code'])->firstOrFail();
+        $this->assertSame(0, $variant->fresh()->stock_quantity);
+        $carts = array_map(fn () => $this->guestCart($variant, 1), range(1, 6));
+
+        $jobs = array_merge([fn () => $this->cancel($order->id)], array_map(fn ($h) => fn () => $this->checkout($h), $carts));
+        $results = $this->race($jobs);
+
+        $this->assertNoUnexpectedErrors($results);
+        $this->assertTrue($results[0]['ok']);
+        $sold = count(array_filter(array_slice($results, 1), fn ($r) => $r['ok']));
+        $this->assertLessThanOrEqual(3, $sold);
+        // Bảo toàn: tồn kho = 3 (hoàn lại) - số đơn mới thành công; không âm
+        $this->assertSame(3 - $sold, $variant->fresh()->stock_quantity);
+    }
+
     // ---------- harness ----------
 
     /**
@@ -196,6 +232,13 @@ class CheckoutConcurrencyTest extends TestCase
         $result = app(OrderService::class)->createOrder($dto, $sessionHash);
 
         return ['ok' => true, 'order_code' => $result['order']->order_code];
+    }
+
+    private function cancel(int $orderId): array
+    {
+        app(AdminOrderService::class)->updateOrderStatus($orderId, 'cancelled', cancelReason: 'race');
+
+        return ['ok' => true];
     }
 
     private function assertNoUnexpectedErrors(array $results): void

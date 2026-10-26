@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\Account\AccountController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -80,9 +84,34 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
+// Mọi route admin: đăng nhập + Gate admin + throttle; thêm policy theo từng tài nguyên.
 Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin'])->group(function () {
-    Route::post('/products', [AdminProductController::class, 'store']);
-    Route::patch('/reviews/{review}', [ReviewController::class, 'moderate']);
+    Route::get('/dashboard', AdminDashboardController::class);
+
+    Route::get('/products', [AdminProductController::class, 'index'])->middleware('can:viewAny,App\Models\Product');
+    Route::post('/products', [AdminProductController::class, 'store'])->middleware('can:create,App\Models\Product');
+    Route::post('/products/images', [AdminProductController::class, 'uploadImage'])
+        ->middleware(['can:create,App\Models\Product', 'throttle:admin-upload']);
+    Route::get('/products/{product}', [AdminProductController::class, 'show'])->middleware('can:view,product');
+    Route::put('/products/{product}', [AdminProductController::class, 'update'])->middleware('can:update,product');
+    Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->middleware('can:delete,product');
+
+    Route::get('/categories', [AdminCategoryController::class, 'index'])->middleware('can:viewAny,App\Models\Category');
+    Route::post('/categories', [AdminCategoryController::class, 'store'])->middleware('can:create,App\Models\Category');
+    Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])->middleware('can:update,category');
+    Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])->middleware('can:delete,category');
+
+    Route::get('/coupons', [AdminCouponController::class, 'index'])->middleware('can:viewAny,App\Models\Coupon');
+    Route::post('/coupons', [AdminCouponController::class, 'store'])->middleware('can:create,App\Models\Coupon');
+    Route::put('/coupons/{coupon}', [AdminCouponController::class, 'update'])->middleware('can:update,coupon');
+    Route::delete('/coupons/{coupon}', [AdminCouponController::class, 'destroy'])->middleware('can:delete,coupon');
+
+    Route::get('/orders', [AdminOrderController::class, 'index'])->middleware('can:viewAny,App\Models\Order');
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->middleware('can:manage,order');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
         ->middleware('can:update,order');
+
+    Route::get('/reviews', [AdminReviewController::class, 'index'])->middleware('can:viewAny,App\Models\ProductReview');
+    Route::patch('/reviews/{review}', [AdminReviewController::class, 'moderate'])->middleware('can:moderate,review');
+    Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('can:moderate,review');
 });

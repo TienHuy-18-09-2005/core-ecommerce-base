@@ -16,6 +16,7 @@ class UpdateOrderStatusRequest extends FormRequest
         return [
             'status' => ['required', 'in:pending,confirmed,packing,shipping,delivered,cancelled,returned'],
             'admin_note' => ['nullable', 'string', 'max:5000'],
+            'cancel_reason' => ['nullable', 'string', 'max:255'],
         ];
     }
 }
