@@ -190,6 +190,23 @@ Vào `http://localhost:5173/admin` bằng tài khoản admin (dev: `admin@ecom.l
 
 **Chưa làm:** trang cài đặt cửa hàng, quản lý thương hiệu và quản lý người dùng/phân quyền chi tiết (hiện chỉ có vai trò `admin`), xuất CSV và trình soạn thảo WYSIWYG (hiện nhập HTML thô vào textarea).
 
+## Tối ưu & PWA (Pha 7)
+
+- **SEO**: mỗi trang tự khai báo `<title>`, `description`, `canonical`, Open Graph/Twitter bằng metadata gốc của React 19 (`components/common/Seo.tsx`, `handle.seo` trong `app/routes.tsx`). Trang tìm kiếm, tài khoản, thanh toán, quản trị: `noindex`. Có `public/robots.txt`.
+- **Tách mã**: mọi trang (trừ Trang chủ) tải theo route `lazy`; bundle chính ~269 kB (trước: 520 kB). Lỗi tải chunk sau khi deploy hiện thông báo “Đã có phiên bản mới” và nút tải lại.
+- **Ảnh**: ảnh tải lên được chuyển sang WebP ở backend; `loading="lazy"`, `width/height`, khung placeholder; ảnh chính trang chi tiết dùng `fetchpriority="high"`.
+- **Chế độ tối**: biến CSS, nút Sáng/Tối/Hệ thống ở header; lưu lựa chọn (`localStorage["theme"]`, chỉ lưu giá trị giao diện), theo `prefers-color-scheme`, script inline trong `index.html` nên không nháy.
+- **Hiệu ứng**: CSS thuần (không thêm thư viện), tắt khi `prefers-reduced-motion`.
+- **PWA** (`src/pwa/pwaConfig.ts`): chỉ precache tài nguyên tĩnh; `/api/*`, `/sanctum/*` luôn `NetworkOnly`, không bao giờ cache phản hồi API/đăng nhập; `/api`, `/sanctum`, `/storage`, `/admin` không dùng navigateFallback. Service worker chỉ đăng ký ở bản build production. Có banner “Cài ứng dụng”.
+- **404** tiếng Việt với ô tìm kiếm và liên kết gợi ý.
+
+Lighthouse (`vite preview`, mobile/desktop):
+
+| Trang | Perf | A11y | BP | SEO |
+|---|---|---|---|---|
+| `/` trước → sau | 93/100 → 91/100 | 96 → 100 | 96 → 96 | 83 → 100 |
+| `/san-pham` trước → sau | 68/99 → 93/99 | 95 → 100 | 96 → 96 | 83 → 100 |
+
 ## Ngôn ngữ
 
 Backend chạy `APP_LOCALE=vi` (fallback cũng là `vi`). Bản dịch nằm ở `backend/lang/vi/` (`validation.php` đủ mọi rule, gồm các
