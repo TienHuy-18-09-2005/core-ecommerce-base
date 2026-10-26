@@ -70,6 +70,8 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": proxyOptions(proxyTarget),
         "/sanctum": proxyOptions(proxyTarget),
+        // Ảnh đánh giá (storage:link) do nginx phục vụ
+        "/storage": proxyOptions(proxyTarget),
       },
     },
 

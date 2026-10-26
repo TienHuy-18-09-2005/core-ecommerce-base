@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ShoppingCart, ShieldCheck, Zap } from 'lucide-react';
 import { useCartDrawer } from '../../app/useCartDrawer';
 import { ImageGallery } from '../../components/shop/ImageGallery';
+import { ReviewSection } from '../../components/shop/ReviewSection';
 import { useAddToCartMutation, useCartQuery } from '../../hooks/useCartQuery';
 import { useProductDetailQuery } from '../../hooks/useCatalogQuery';
 import { ApiError } from '../../services/apiError';
@@ -189,6 +190,9 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
                     </div>
                 </div>
             )}
+
+            {/* Pha 5: đánh giá bên dưới thông số kỹ thuật */}
+            <ReviewSection slug={product.slug} />
         </div>
     );
 };

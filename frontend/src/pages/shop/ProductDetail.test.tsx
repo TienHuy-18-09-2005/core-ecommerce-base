@@ -12,6 +12,16 @@ import { ProductDetail } from "./ProductDetail.tsx";
 vi.mock("../../services/productService.ts", () => ({
   productService: { getCategories: vi.fn(), getBrands: vi.fn(), getProducts: vi.fn(), getProductDetail: vi.fn() },
 }));
+vi.mock("../../services/reviewService.ts", async (orig) => ({
+  ...(await orig<typeof import("../../services/reviewService.ts")>()),
+  reviewService: {
+    list: vi.fn().mockResolvedValue({
+      summary: { average: null, count: 0, distribution: { "5": 0, "4": 0, "3": 0, "2": 0, "1": 0 } },
+      reviews: { data: [], current_page: 1, last_page: 1, total: 0 },
+    }),
+    eligibility: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(),
+  },
+}));
 vi.mock("../../services/cartService.ts", () => ({ cartService: { getCart: vi.fn(), addToCart: vi.fn() } }));
 
 const variant = (id: number, name: string, isDefault: boolean) => ({
@@ -47,6 +57,10 @@ describe("ProductDetail", () => {
     expect(screen.getByRole("button", { name: "20W" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("<script>x</script>")).toBeTruthy();
     expect(document.querySelector("script, img[src='x']")).toBeNull();
+    // 5.5: khu đánh giá nằm dưới thông số kỹ thuật
+    const reviews = await screen.findByRole("heading", { name: "Đánh giá sản phẩm" });
+    const specs = screen.getByText("Thông số kỹ thuật chi tiết");
+    expect(specs.compareDocumentPosition(reviews) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     await router.navigate("/san-pham/b");
     await screen.findByRole("heading", { name: "Đèn B" });
