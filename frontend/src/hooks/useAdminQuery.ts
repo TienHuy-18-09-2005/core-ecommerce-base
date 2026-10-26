@@ -1,0 +1,96 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { adminService, cleanParams, type QueryParams } from "../services/adminService.ts";
+import type { AdminCategoryInput, AdminCouponInput, AdminProductInput } from "../types/admin.ts";
+
+export const adminKeys = {
+  all: ["admin"] as const,
+  dashboard: ["admin", "dashboard"] as const,
+  products: (p: QueryParams) => ["admin", "products", cleanParams(p)] as const,
+  product: (id: number) => ["admin", "product", id] as const,
+  categories: ["admin", "categories"] as const,
+  coupons: (p: QueryParams) => ["admin", "coupons", cleanParams(p)] as const,
+  orders: (p: QueryParams) => ["admin", "orders", cleanParams(p)] as const,
+  order: (id: number) => ["admin", "order", id] as const,
+  reviews: (p: QueryParams) => ["admin", "reviews", cleanParams(p)] as const,
+};
+
+export const useDashboardQuery = () => useQuery({ queryKey: adminKeys.dashboard, queryFn: ({ signal }) => adminService.dashboard(signal) });
+
+export const useAdminProductsQuery = (p: QueryParams) =>
+  useQuery({ queryKey: adminKeys.products(p), queryFn: ({ signal }) => adminService.products(p, signal), placeholderData: keepPreviousData });
+
+export const useAdminProductQuery = (id: number | null) =>
+  useQuery({ queryKey: adminKeys.product(id ?? 0), queryFn: ({ signal }) => adminService.product(id as number, signal), enabled: id !== null });
+
+export const useAdminCategoriesQuery = () =>
+  useQuery({ queryKey: adminKeys.categories, queryFn: ({ signal }) => adminService.categories(signal) });
+
+export const useAdminCouponsQuery = (p: QueryParams) =>
+  useQuery({ queryKey: adminKeys.coupons(p), queryFn: ({ signal }) => adminService.coupons(p, signal), placeholderData: keepPreviousData });
+
+export const useAdminOrdersQuery = (p: QueryParams) =>
+  useQuery({ queryKey: adminKeys.orders(p), queryFn: ({ signal }) => adminService.orders(p, signal), placeholderData: keepPreviousData });
+
+export const useAdminOrderQuery = (id: number) =>
+  useQuery({ queryKey: adminKeys.order(id), queryFn: ({ signal }) => adminService.order(id, signal) });
+
+export const useAdminReviewsQuery = (p: QueryParams) =>
+  useQuery({ queryKey: adminKeys.reviews(p), queryFn: ({ signal }) => adminService.reviews(p, signal), placeholderData: keepPreviousData });
+
+/** Mọi thao tác ghi làm mới toàn bộ cache admin (dữ liệu nhỏ, đơn giản & đúng) + catalog shop. */
+function useInvalidateAdmin() {
+  const client = useQueryClient();
+  return async () => {
+    await Promise.all([
+      client.invalidateQueries({ queryKey: adminKeys.all }),
+      client.invalidateQueries({ queryKey: ["products"] }),
+      client.invalidateQueries({ queryKey: ["product"] }),
+      client.invalidateQueries({ queryKey: ["categories"] }),
+      client.invalidateQueries({ queryKey: ["reviews"] }),
+    ]);
+  };
+}
+
+export function useProductMutations() {
+  const onSuccess = useInvalidateAdmin();
+  return {
+    create: useMutation({ mutationFn: (input: AdminProductInput) => adminService.createProduct(input), onSuccess }),
+    update: useMutation({ mutationFn: ({ id, input }: { id: number; input: AdminProductInput }) => adminService.updateProduct(id, input), onSuccess }),
+    remove: useMutation({ mutationFn: (id: number) => adminService.deleteProduct(id), onSuccess }),
+    upload: useMutation({ mutationFn: (file: File) => adminService.uploadImage(file) }),
+  };
+}
+
+export function useCategoryMutations() {
+  const onSuccess = useInvalidateAdmin();
+  return {
+    create: useMutation({ mutationFn: (input: AdminCategoryInput) => adminService.createCategory(input), onSuccess }),
+    update: useMutation({ mutationFn: ({ id, input }: { id: number; input: AdminCategoryInput }) => adminService.updateCategory(id, input), onSuccess }),
+    remove: useMutation({ mutationFn: (id: number) => adminService.deleteCategory(id), onSuccess }),
+  };
+}
+
+export function useCouponMutations() {
+  const onSuccess = useInvalidateAdmin();
+  return {
+    create: useMutation({ mutationFn: (input: AdminCouponInput) => adminService.createCoupon(input), onSuccess }),
+    update: useMutation({ mutationFn: ({ id, input }: { id: number; input: AdminCouponInput }) => adminService.updateCoupon(id, input), onSuccess }),
+    remove: useMutation({ mutationFn: (id: number) => adminService.deleteCoupon(id), onSuccess }),
+  };
+}
+
+export function useOrderStatusMutation(id: number) {
+  const onSuccess = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: (body: { status: string; admin_note?: string; cancel_reason?: string }) => adminService.updateOrderStatus(id, body),
+    onSuccess,
+  });
+}
+
+export function useReviewModeration() {
+  const onSuccess = useInvalidateAdmin();
+  return {
+    moderate: useMutation({ mutationFn: ({ id, approved }: { id: number; approved: boolean }) => adminService.moderateReview(id, approved), onSuccess }),
+    remove: useMutation({ mutationFn: (id: number) => adminService.deleteReview(id), onSuccess }),
+  };
+}
