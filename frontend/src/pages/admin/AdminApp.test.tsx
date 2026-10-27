@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { seriousViolations } from "../../components/admin/axeTestUtils.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
@@ -78,6 +79,7 @@ describe("admin panel", () => {
     svc.categories.mockResolvedValue([]);
     const router = renderAdmin("/admin/san-pham");
     expect(await screen.findByRole("link", { name: "Bóng đèn" })).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
     fireEvent.change(screen.getByLabelText("Trạng thái"), { target: { value: "draft" } });
     await waitFor(() => expect(router.state.location.search).toBe("?status=draft"));
     await waitFor(() => expect(svc.products).toHaveBeenLastCalledWith(expect.objectContaining({ status: "draft", page: 1 }), expect.anything()));
@@ -107,6 +109,7 @@ describe("admin panel", () => {
     svc.orders.mockResolvedValue({ data: [], meta });
     renderAdmin("/admin/don-hang?sort=total_amount&direction=desc");
     const header = await screen.findByRole("columnheader", { name: /Tổng tiền/ });
+    expect(await seriousViolations()).toEqual([]);
     expect(header.getAttribute("aria-sort")).toBe("descending");
     await waitFor(() => expect(svc.orders).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "total_amount", direction: "desc" }), expect.anything()));
   });
@@ -124,6 +127,7 @@ describe("admin panel", () => {
     renderAdmin("/admin/san-pham/moi");
     fireEvent.click(await screen.findByRole("button", { name: "Lưu" }));
     expect(await screen.findByText("Vui lòng nhập tên sản phẩm.")).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
     expect(screen.getByText("Mã SKU đã tồn tại.")).toBeTruthy();
   });
 
@@ -132,6 +136,7 @@ describe("admin panel", () => {
     svc.updateOrderStatus.mockResolvedValue({ ...order, status: "confirmed" } as never);
     renderAdmin("/admin/don-hang/7");
     const select = await screen.findByLabelText("Trạng thái mới");
+    expect(await seriousViolations()).toEqual([]);
     const options = within(select).getAllByRole("option").map((o) => o.textContent);
     expect(options).toEqual(["— Chọn —", "Đã xác nhận", "Đã hủy"]);
     fireEvent.change(select, { target: { value: "confirmed" } });
@@ -162,6 +167,7 @@ describe("admin panel", () => {
     svc.deleteReview.mockResolvedValue();
     renderAdmin("/admin/danh-gia");
     expect(await screen.findByText("<img src=x onerror=alert(1)>Tốt")).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
     expect(document.querySelector("img[src='x']")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Ẩn" }));
     await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledWith(1, false));
@@ -189,6 +195,7 @@ describe("admin panel", () => {
     fireEvent.click(within(items[0]).getByRole("button", { name: "Xóa" }));
     fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Xóa" }));
     expect(await screen.findByText("Danh mục còn danh mục con hoặc sản phẩm.")).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
   });
 
   it("creates a coupon", async () => {
@@ -196,6 +203,7 @@ describe("admin panel", () => {
     svc.createCoupon.mockResolvedValue({} as never);
     renderAdmin("/admin/ma-giam-gia");
     fireEvent.change(await screen.findByLabelText("Mã"), { target: { value: "giam10" } });
+    expect(await seriousViolations()).toEqual([]);
     fireEvent.change(screen.getByLabelText("Loại"), { target: { value: "percent" } });
     fireEvent.change(screen.getByLabelText("Giá trị"), { target: { value: "10" } });
     fireEvent.click(screen.getByRole("button", { name: "Tạo mã" }));

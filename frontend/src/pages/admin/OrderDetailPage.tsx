@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { btnPrimary, btnSecondary, formatDateTime, inputClass } from "../../utils/adminFormat.ts";
+import { FormField } from "../../components/admin/form/FormField.tsx";
 import { useToast } from "../../app/useToast.ts";
 import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
 import { PaymentStatusBadge } from "../../components/admin/Badge.tsx";
@@ -108,25 +109,20 @@ export default function OrderDetailPage() {
               <p className="text-sm text-admin-muted">Đơn đã ở trạng thái cuối, không thể chuyển tiếp.</p>
             ) : (
               <form onSubmit={(e) => void onSubmit(e)} className="space-y-3 text-sm" noValidate>
-                <label className="block">
-                  <span className="mb-1 block font-medium">Trạng thái mới</span>
-                  <select className={inputClass} value={status} onChange={(e) => setStatus(e.target.value)}>
+                <FormField label="Trạng thái mới" error={errors.status} required>
+            <select className={inputClass} value={status} onChange={(e) => setStatus(e.target.value)}>
                     <option value="">— Chọn —</option>
                     {order.allowed_transitions.map((s) => <option key={s} value={s}>{ORDER_STATUS_LABELS[s] ?? s}</option>)}
                   </select>
-                  {errors.status && <span role="alert" className="text-xs text-admin-danger">{errors.status}</span>}
-                </label>
+          </FormField>
                 {status === "cancelled" && (
-                  <label className="block">
-                    <span className="mb-1 block font-medium">Lý do hủy</span>
-                    <input className={inputClass} value={reason} onChange={(e) => setReason(e.target.value)} />
-                    {errors.cancel_reason && <span role="alert" className="text-xs text-admin-danger">{errors.cancel_reason}</span>}
-                  </label>
+                  <FormField label="Lý do hủy" error={errors.cancel_reason} required>
+            <input className={inputClass} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </FormField>
                 )}
-                <label className="block">
-                  <span className="mb-1 block font-medium">Ghi chú nội bộ</span>
-                  <textarea className={inputClass} rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
-                </label>
+                <FormField label="Ghi chú nội bộ">
+            <textarea className={inputClass} rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+          </FormField>
                 <button type="submit" className={btnPrimary} disabled={!status || mutation.isPending}>{mutation.isPending ? "Đang cập nhật..." : "Cập nhật"}</button>
               </form>
             )}

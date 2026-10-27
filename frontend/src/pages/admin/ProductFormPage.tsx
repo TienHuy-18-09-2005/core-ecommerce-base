@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PRODUCT_STATUS_LABELS, btnDanger, btnPrimary, btnSecondary, inputClass } from "../../utils/adminFormat.ts";
+import { CheckboxField, FormField, useSaveShortcut, useUnsavedChanges } from "../../components/admin/form/FormField.tsx";
 import { useToast } from "../../app/useToast.ts";
 import { SkeletonBlock } from "../../components/admin/feedback.tsx";
 import { PageHeader, QueryError } from "../../components/admin/ui.tsx";
@@ -29,15 +30,6 @@ function toInput(p: AdminProduct): AdminProductInput {
   return { ...rest, specifications: p.specifications ?? {} };
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
-  return (
-    <label className="block text-sm">
-      <span className="mb-1 block font-medium text-admin-fg-soft">{label}</span>
-      {children}
-      {error && <span role="alert" className="mt-1 block text-xs text-admin-danger">{error}</span>}
-    </label>
-  );
-}
 
 const numOrNull = (v: string) => (v === "" ? null : Number(v));
 
@@ -66,6 +58,9 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
   const navigate = useNavigate();
   const saving = create.isPending || update.isPending;
   const errors = firstFieldErrors(id ? update.error : create.error);
+  const formRef = useRef<HTMLFormElement>(null);
+  const unsaved = useUnsavedChanges({ form, specs });
+  useSaveShortcut(formRef);
 
   const patch = (p: Partial<AdminProductInput>) => setForm((f) => ({ ...f, ...p }));
   const patchVariant = (i: number, p: Partial<AdminVariant>) =>
@@ -86,17 +81,18 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
       specifications: Object.fromEntries(specs.filter((s) => s.key.trim()).map((s) => [s.key.trim(), s.value.trim()])),
     };
     if (id) {
-      update.mutate({ id, input: payload }, { onSuccess: () => toast.showSuccess("Đã lưu sản phẩm."), onError: toast.showError });
+      update.mutate({ id, input: payload }, { onSuccess: () => { unsaved.markClean(); toast.showSuccess("Đã lưu sản phẩm."); }, onError: toast.showError });
     } else {
       create.mutate(payload, {
-        onSuccess: (p) => { toast.showSuccess("Đã tạo sản phẩm."); navigate(`/admin/san-pham/${p.id}`, { replace: true }); },
+        onSuccess: (p) => { unsaved.markClean(); toast.showSuccess("Đã tạo sản phẩm."); navigate(`/admin/san-pham/${p.id}`, { replace: true }); },
         onError: toast.showError,
       });
     }
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate>
+    <form ref={formRef} onSubmit={onSubmit} noValidate>
+      {unsaved.prompt}
       <PageHeader title={id ? "Sửa sản phẩm" : "Thêm sản phẩm"} actions={
         <div className="flex gap-2">
           {slug && form.status === "published" && <a className={btnSecondary} href={`/san-pham/${slug}`} target="_blank" rel="noreferrer">Xem trên shop</a>}
@@ -108,18 +104,18 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <section className="space-y-4 rounded-xl border border-admin-border bg-admin-surface p-5">
-            <Field label="Tên sản phẩm" error={errors.name}>
+            <FormField label="Tên sản phẩm" error={errors.name} required>
               <input className={inputClass} value={form.name} onChange={(e) => patch({ name: e.target.value })} />
-            </Field>
-            <Field label="Slug (để trống sẽ tự tạo)" error={errors.slug}>
+            </FormField>
+            <FormField label="Slug" hint="Để trống sẽ tự tạo từ tên." error={errors.slug}>
               <input className={inputClass} value={form.slug ?? ""} onChange={(e) => patch({ slug: e.target.value })} />
-            </Field>
-            <Field label="Mô tả ngắn" error={errors.short_description}>
+            </FormField>
+            <FormField label="Mô tả ngắn" error={errors.short_description}>
               <textarea className={inputClass} rows={2} value={form.short_description ?? ""} onChange={(e) => patch({ short_description: e.target.value })} />
-            </Field>
-            <Field label="Mô tả chi tiết (HTML cơ bản: p, strong, em, ul/ol, h2–h4, a, table — máy chủ tự lọc thẻ không an toàn)" error={errors.description}>
+            </FormField>
+            <FormField label="Mô tả chi tiết" hint="HTML cơ bản: p, strong, em, ul/ol, h2–h4, a, table — máy chủ tự lọc thẻ không an toàn." error={errors.description}>
               <textarea className={`${inputClass} font-mono`} rows={8} value={form.description ?? ""} onChange={(e) => patch({ description: e.target.value })} />
-            </Field>
+            </FormField>
           </section>
 
           <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
@@ -132,16 +128,16 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
               {form.variants.map((v, i) => (
                 <fieldset key={v.id ?? `new-${i}`} className="grid gap-3 rounded-lg border border-admin-border p-3 sm:grid-cols-4">
                   <legend className="px-1 text-xs text-admin-muted">Biến thể #{i + 1}{v.id ? ` (id ${v.id})` : " (mới)"}</legend>
-                  <Field label="SKU" error={errors[`variants.${i}.sku`]}><input className={inputClass} value={v.sku} onChange={(e) => patchVariant(i, { sku: e.target.value })} /></Field>
-                  <Field label="Tên biến thể" error={errors[`variants.${i}.name`]}><input className={inputClass} value={v.name} onChange={(e) => patchVariant(i, { name: e.target.value })} /></Field>
-                  <Field label="Giá bán" error={errors[`variants.${i}.price`]}><input type="number" min={0} className={inputClass} value={v.price} onChange={(e) => patchVariant(i, { price: Number(e.target.value) })} /></Field>
-                  <Field label="Giá gốc" error={errors[`variants.${i}.compare_at_price`]}><input type="number" min={0} className={inputClass} value={v.compare_at_price ?? ""} onChange={(e) => patchVariant(i, { compare_at_price: numOrNull(e.target.value) })} /></Field>
-                  <Field label="Giá vốn" error={errors[`variants.${i}.cost_price`]}><input type="number" min={0} className={inputClass} value={v.cost_price ?? ""} onChange={(e) => patchVariant(i, { cost_price: numOrNull(e.target.value) })} /></Field>
-                  <Field label="Tồn kho" error={errors[`variants.${i}.stock_quantity`]}><input type="number" min={0} className={inputClass} value={v.stock_quantity} onChange={(e) => patchVariant(i, { stock_quantity: Number(e.target.value) })} /></Field>
-                  <Field label="Khối lượng (g)" error={errors[`variants.${i}.weight_grams`]}><input type="number" min={0} className={inputClass} value={v.weight_grams} onChange={(e) => patchVariant(i, { weight_grams: Number(e.target.value) })} /></Field>
+                  <FormField label="SKU" error={errors[`variants.${i}.sku`]} required><input className={inputClass} value={v.sku} onChange={(e) => patchVariant(i, { sku: e.target.value })} /></FormField>
+                  <FormField label="Tên biến thể" error={errors[`variants.${i}.name`]} required><input className={inputClass} value={v.name} onChange={(e) => patchVariant(i, { name: e.target.value })} /></FormField>
+                  <FormField label="Giá bán" error={errors[`variants.${i}.price`]} required><input type="number" min={0} className={inputClass} value={v.price} onChange={(e) => patchVariant(i, { price: Number(e.target.value) })} /></FormField>
+                  <FormField label="Giá gốc" error={errors[`variants.${i}.compare_at_price`]}><input type="number" min={0} className={inputClass} value={v.compare_at_price ?? ""} onChange={(e) => patchVariant(i, { compare_at_price: numOrNull(e.target.value) })} /></FormField>
+                  <FormField label="Giá vốn" error={errors[`variants.${i}.cost_price`]}><input type="number" min={0} className={inputClass} value={v.cost_price ?? ""} onChange={(e) => patchVariant(i, { cost_price: numOrNull(e.target.value) })} /></FormField>
+                  <FormField label="Tồn kho" error={errors[`variants.${i}.stock_quantity`]}><input type="number" min={0} className={inputClass} value={v.stock_quantity} onChange={(e) => patchVariant(i, { stock_quantity: Number(e.target.value) })} /></FormField>
+                  <FormField label="Khối lượng (g)" error={errors[`variants.${i}.weight_grams`]}><input type="number" min={0} className={inputClass} value={v.weight_grams} onChange={(e) => patchVariant(i, { weight_grams: Number(e.target.value) })} /></FormField>
                   <div className="flex flex-col justify-end gap-1 text-sm">
-                    <label className="flex items-center gap-2"><input type="radio" name="default-variant" checked={v.is_default} onChange={() => patchVariant(i, { is_default: true })} />Mặc định</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" checked={v.is_active} onChange={(e) => patchVariant(i, { is_active: e.target.checked })} />Đang bán</label>
+                    <CheckboxField label="Mặc định"><input type="radio" name="default-variant" checked={v.is_default} onChange={() => patchVariant(i, { is_default: true })} /></CheckboxField>
+                    <CheckboxField label="Đang bán"><input type="checkbox" checked={v.is_active} onChange={(e) => patchVariant(i, { is_active: e.target.checked })} /></CheckboxField>
                     {form.variants.length > 1 && (
                       <button type="button" className={btnDanger} onClick={() => patch({ variants: form.variants.filter((_, j) => j !== i) })}>Bỏ biến thể</button>
                     )}
@@ -192,18 +188,18 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
 
         <div className="space-y-6">
           <section className="space-y-4 rounded-xl border border-admin-border bg-admin-surface p-5">
-            <Field label="Trạng thái" error={errors.status}>
+            <FormField label="Trạng thái" error={errors.status} required>
               <select className={inputClass} value={form.status} onChange={(e) => patch({ status: e.target.value as AdminProductInput["status"] })}>
                 {Object.entries(PRODUCT_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-            </Field>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_featured} onChange={(e) => patch({ is_featured: e.target.checked })} />Sản phẩm nổi bật</label>
-            <Field label="Thương hiệu" error={errors.brand_id}>
+            </FormField>
+            <CheckboxField label="Sản phẩm nổi bật"><input type="checkbox" checked={form.is_featured} onChange={(e) => patch({ is_featured: e.target.checked })} /></CheckboxField>
+            <FormField label="Thương hiệu" error={errors.brand_id}>
               <select className={inputClass} value={form.brand_id ?? ""} onChange={(e) => patch({ brand_id: numOrNull(e.target.value) })}>
                 <option value="">— Không —</option>
                 {brands.data?.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-            </Field>
+            </FormField>
             <fieldset>
               <legend className="mb-1 text-sm font-medium text-admin-fg-soft">Danh mục</legend>
               {errors.category_ids && <p role="alert" className="text-xs text-admin-danger">{errors.category_ids}</p>}
@@ -217,23 +213,23 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
                 ))}
               </div>
             </fieldset>
-            <Field label="Đơn vị" error={errors.unit}><input className={inputClass} value={form.unit ?? ""} onChange={(e) => patch({ unit: e.target.value })} /></Field>
+            <FormField label="Đơn vị" error={errors.unit}><input className={inputClass} value={form.unit ?? ""} onChange={(e) => patch({ unit: e.target.value })} /></FormField>
           </section>
 
           <section className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="font-semibold">Ảnh đại diện</h2>
             {form.thumbnail_url && <img src={safeImageUrl(form.thumbnail_url) ?? "/product-fallback.svg"} alt="Ảnh đại diện" className="h-40 w-full rounded object-cover" />}
-            <Field label="URL ảnh" error={errors.thumbnail_url}>
+            <FormField label="URL ảnh" error={errors.thumbnail_url}>
               <input className={inputClass} value={form.thumbnail_url ?? ""} onChange={(e) => patch({ thumbnail_url: e.target.value || null })} />
-            </Field>
+            </FormField>
             <input type="file" aria-label="Tải ảnh đại diện" accept="image/jpeg,image/png,image/webp" disabled={upload.isPending}
               onChange={(e) => { uploadTo(e.target.files?.[0], (url) => patch({ thumbnail_url: url })); e.target.value = ""; }} />
           </section>
 
           <section className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="font-semibold">SEO</h2>
-            <Field label="Meta title" error={errors.meta_title}><input className={inputClass} value={form.meta_title ?? ""} onChange={(e) => patch({ meta_title: e.target.value })} /></Field>
-            <Field label="Meta description" error={errors.meta_description}><textarea className={inputClass} rows={3} value={form.meta_description ?? ""} onChange={(e) => patch({ meta_description: e.target.value })} /></Field>
+            <FormField label="Meta title" error={errors.meta_title}><input className={inputClass} value={form.meta_title ?? ""} onChange={(e) => patch({ meta_title: e.target.value })} /></FormField>
+            <FormField label="Meta description" error={errors.meta_description}><textarea className={inputClass} rows={3} value={form.meta_description ?? ""} onChange={(e) => patch({ meta_description: e.target.value })} /></FormField>
           </section>
         </div>
       </div>

@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { btnDanger, btnPrimary, btnSecondary, formatDateTime, inputClass, toLocalInput } from "../../utils/adminFormat.ts";
+import { CheckboxField, FormField, useSaveShortcut, useUnsavedChanges } from "../../components/admin/form/FormField.tsx";
 import { useToast } from "../../app/useToast.ts";
 import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
 import { DataTable, PageHeader, Pagination, QueryError } from "../../components/admin/ui.tsx";
@@ -25,6 +26,9 @@ export default function CouponsPage() {
   const [form, setForm] = useState<AdminCouponInput>(empty);
   const active = editing ? update : create;
   const errors = firstFieldErrors(active.error);
+  const formRef = useRef<HTMLFormElement>(null);
+  const unsaved = useUnsavedChanges(form);
+  useSaveShortcut(formRef);
 
   const startEdit = (c: AdminCoupon | null) => {
     create.reset();
@@ -32,9 +36,12 @@ export default function CouponsPage() {
     setEditing(c);
     if (c) {
       const { id: _id, used_count: _u, ...rest } = c;
-      setForm({ ...rest, starts_at: toLocalInput(c.starts_at), expires_at: toLocalInput(c.expires_at) });
+      const next = { ...rest, starts_at: toLocalInput(c.starts_at), expires_at: toLocalInput(c.expires_at) };
+      setForm(next);
+      unsaved.markClean(next);
     } else {
       setForm(empty);
+      unsaved.markClean(empty);
     }
   };
 
@@ -55,10 +62,10 @@ export default function CouponsPage() {
     }
   };
 
-  const err = (k: string) => errors[k] && <span role="alert" className="text-xs text-admin-danger">{errors[k]}</span>;
 
   return (
     <>
+      {unsaved.prompt}
       <PageHeader title="Mã giảm giá" />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <div className="grid gap-6 lg:grid-cols-3">
@@ -81,31 +88,40 @@ export default function CouponsPage() {
           <Pagination meta={data?.meta} onPage={setPage} />
         </div>
 
-        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
+        <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
           <h2 className="font-semibold">{editing ? `Sửa mã ${editing.code}` : "Tạo mã giảm giá"}</h2>
-          <label className="block"><span className="mb-1 block font-medium">Mã</span>
-            <input className={`${inputClass} uppercase`} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />{err("code")}</label>
+          <FormField label="Mã" error={errors.code} required>
+            <input className={`${inputClass} uppercase`} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+          </FormField>
           <div className="grid grid-cols-2 gap-3">
-            <label className="block"><span className="mb-1 block font-medium">Loại</span>
-              <select className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as AdminCouponInput["type"] })}>
+            <FormField label="Loại" required>
+            <select className={inputClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as AdminCouponInput["type"] })}>
                 <option value="fixed">Số tiền</option><option value="percent">Phần trăm</option>
-              </select></label>
-            <label className="block"><span className="mb-1 block font-medium">Giá trị</span>
-              <input type="number" min={0} className={inputClass} value={form.value} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} />{err("value")}</label>
-            <label className="block"><span className="mb-1 block font-medium">Đơn tối thiểu</span>
-              <input type="number" min={0} className={inputClass} value={form.min_order_amount} onChange={(e) => setForm({ ...form, min_order_amount: Number(e.target.value) })} />{err("min_order_amount")}</label>
-            <label className="block"><span className="mb-1 block font-medium">Giảm tối đa</span>
-              <input type="number" min={0} className={inputClass} value={form.max_discount_amount ?? ""} onChange={(e) => setForm({ ...form, max_discount_amount: numOrNull(e.target.value) })} />{err("max_discount_amount")}</label>
-            <label className="block"><span className="mb-1 block font-medium">Tổng lượt dùng</span>
-              <input type="number" min={1} className={inputClass} value={form.usage_limit ?? ""} onChange={(e) => setForm({ ...form, usage_limit: numOrNull(e.target.value) })} />{err("usage_limit")}</label>
-            <label className="block"><span className="mb-1 block font-medium">Lượt / khách</span>
-              <input type="number" min={1} className={inputClass} value={form.per_customer_limit ?? ""} onChange={(e) => setForm({ ...form, per_customer_limit: numOrNull(e.target.value) })} />{err("per_customer_limit")}</label>
+              </select>
+          </FormField>
+            <FormField label="Giá trị" error={errors.value} required>
+            <input type="number" min={0} className={inputClass} value={form.value} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} />
+          </FormField>
+            <FormField label="Đơn tối thiểu" error={errors.min_order_amount}>
+            <input type="number" min={0} className={inputClass} value={form.min_order_amount} onChange={(e) => setForm({ ...form, min_order_amount: Number(e.target.value) })} />
+          </FormField>
+            <FormField label="Giảm tối đa" hint="Chỉ áp dụng cho loại phần trăm. Để trống nếu không giới hạn." error={errors.max_discount_amount}>
+            <input type="number" min={0} className={inputClass} value={form.max_discount_amount ?? ""} onChange={(e) => setForm({ ...form, max_discount_amount: numOrNull(e.target.value) })} />
+          </FormField>
+            <FormField label="Tổng lượt dùng" hint="Để trống nếu không giới hạn." error={errors.usage_limit}>
+            <input type="number" min={1} className={inputClass} value={form.usage_limit ?? ""} onChange={(e) => setForm({ ...form, usage_limit: numOrNull(e.target.value) })} />
+          </FormField>
+            <FormField label="Lượt / khách" hint="Để trống nếu không giới hạn." error={errors.per_customer_limit}>
+            <input type="number" min={1} className={inputClass} value={form.per_customer_limit ?? ""} onChange={(e) => setForm({ ...form, per_customer_limit: numOrNull(e.target.value) })} />
+          </FormField>
           </div>
-          <label className="block"><span className="mb-1 block font-medium">Bắt đầu</span>
-            <input type="datetime-local" className={inputClass} value={form.starts_at ?? ""} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} />{err("starts_at")}</label>
-          <label className="block"><span className="mb-1 block font-medium">Hết hạn</span>
-            <input type="datetime-local" className={inputClass} value={form.expires_at ?? ""} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} />{err("expires_at")}</label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />Đang bật</label>
+          <FormField label="Bắt đầu" error={errors.starts_at}>
+            <input type="datetime-local" className={inputClass} value={form.starts_at ?? ""} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} />
+          </FormField>
+          <FormField label="Hết hạn" error={errors.expires_at}>
+            <input type="datetime-local" className={inputClass} value={form.expires_at ?? ""} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} />
+          </FormField>
+          <CheckboxField label="Đang bật"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /></CheckboxField>
           <div className="flex gap-2">
             <button type="submit" className={btnPrimary} disabled={active.isPending}>{editing ? "Lưu" : "Tạo mã"}</button>
             {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Hủy</button>}

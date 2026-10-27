@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { btnDanger, btnPrimary, btnSecondary, flattenTree, inputClass } from "../../utils/adminFormat.ts";
+import { CheckboxField, FormField, useSaveShortcut, useUnsavedChanges } from "../../components/admin/form/FormField.tsx";
 import { useToast } from "../../app/useToast.ts";
 import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
 import { SkeletonBlock, EmptyState } from "../../components/admin/feedback.tsx";
@@ -19,13 +20,18 @@ export default function CategoriesPage() {
   const [form, setForm] = useState<AdminCategoryInput>(empty);
   const active = editing ? update : create;
   const errors = firstFieldErrors(active.error);
+  const formRef = useRef<HTMLFormElement>(null);
+  const unsaved = useUnsavedChanges(form);
+  useSaveShortcut(formRef);
   const tree = flattenTree(data ?? []);
 
   const startEdit = (c: AdminCategory | null) => {
     create.reset();
     update.reset();
     setEditing(c);
-    setForm(c ? { name: c.name, slug: c.slug, parent_id: c.parent_id, description: c.description ?? "", image_url: c.image_url, is_active: c.is_active, sort_order: c.sort_order } : empty);
+    const next = c ? { name: c.name, slug: c.slug, parent_id: c.parent_id, description: c.description ?? "", image_url: c.image_url, is_active: c.is_active, sort_order: c.sort_order } : empty;
+    setForm(next);
+    unsaved.markClean(next);
   };
 
   const onSubmit = (e: FormEvent) => {
@@ -47,6 +53,7 @@ export default function CategoriesPage() {
 
   return (
     <>
+      {unsaved.prompt}
       <PageHeader title="Danh mục" />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <div className="grid gap-6 lg:grid-cols-3">
@@ -70,25 +77,27 @@ export default function CategoriesPage() {
           </ul>
         </section>
 
-        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
+        <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
           <h2 className="font-semibold">{editing ? `Sửa: ${editing.name}` : "Thêm danh mục"}</h2>
-          <label className="block"><span className="mb-1 block font-medium">Tên danh mục</span>
+          <FormField label="Tên danh mục" error={errors.name} required>
             <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            {errors.name && <span role="alert" className="text-xs text-admin-danger">{errors.name}</span>}</label>
-          <label className="block"><span className="mb-1 block font-medium">Slug (để trống sẽ tự tạo)</span>
+          </FormField>
+          <FormField label="Slug" hint="Để trống sẽ tự tạo từ tên." error={errors.slug}>
             <input className={inputClass} value={form.slug ?? ""} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            {errors.slug && <span role="alert" className="text-xs text-admin-danger">{errors.slug}</span>}</label>
-          <label className="block"><span className="mb-1 block font-medium">Danh mục cha</span>
+          </FormField>
+          <FormField label="Danh mục cha" error={errors.parent_id}>
             <select className={inputClass} value={form.parent_id ?? ""} onChange={(e) => setForm({ ...form, parent_id: e.target.value ? Number(e.target.value) : null })}>
               <option value="">— Gốc —</option>
               {tree.filter(({ cat }) => cat.id !== editing?.id).map(({ cat, depth }) => <option key={cat.id} value={cat.id}>{"— ".repeat(depth)}{cat.name}</option>)}
             </select>
-            {errors.parent_id && <span role="alert" className="text-xs text-admin-danger">{errors.parent_id}</span>}</label>
-          <label className="block"><span className="mb-1 block font-medium">Mô tả</span>
-            <textarea className={inputClass} rows={2} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-          <label className="block"><span className="mb-1 block font-medium">Thứ tự</span>
-            <input type="number" className={inputClass} value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} /></label>
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />Hiển thị trên shop</label>
+          </FormField>
+          <FormField label="Mô tả">
+            <textarea className={inputClass} rows={2} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          </FormField>
+          <FormField label="Thứ tự">
+            <input type="number" className={inputClass} value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
+          </FormField>
+          <CheckboxField label="Hiển thị trên shop"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /></CheckboxField>
           <div className="flex gap-2">
             <button type="submit" className={btnPrimary} disabled={active.isPending}>{editing ? "Lưu" : "Thêm"}</button>
             {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Hủy</button>}

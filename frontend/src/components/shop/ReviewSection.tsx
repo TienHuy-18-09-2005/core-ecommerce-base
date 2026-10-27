@@ -8,6 +8,7 @@ import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 import type { Review, ReviewEligibility, ReviewSummary, StarKey } from "../../types/review.ts";
 import { StarRating } from "../common/StarRating.tsx";
 import { ReviewForm } from "./ReviewForm.tsx";
+import { ConfirmModal } from "../admin/overlay/Modal.tsx";
 
 const STARS: StarKey[] = ["5", "4", "3", "2", "1"];
 
@@ -169,6 +170,7 @@ function MyReview({ slug }: { slug: string }) {
 
 function MyReviewBody({ slug, data }: { slug: string; data: ReviewEligibility }) {
   const [mode, setMode] = useState<"idle" | "write" | "edit">("idle");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { remove } = useReviewMutations(slug);
   const { showSuccess, showError } = useToast();
 
@@ -188,15 +190,15 @@ function MyReviewBody({ slug, data }: { slug: string; data: ReviewEligibility })
           <button
             type="button"
             disabled={remove.isPending}
-            onClick={() => {
-              if (!window.confirm("Xóa đánh giá này?")) return;
-              remove.mutate(review.id, { onSuccess: () => showSuccess("Đã xóa đánh giá."), onError: showError });
-            }}
+            onClick={() => setConfirmDelete(true)}
             className="rounded-lg border border-red-200 bg-white px-3 py-1 text-sm text-red-700"
           >
             Xóa
           </button>
         </div>
+        <ConfirmModal open={confirmDelete} danger title="Xóa đánh giá này?" message="Đánh giá sẽ bị xóa và không thể khôi phục." confirmLabel="Xóa"
+          onCancel={() => setConfirmDelete(false)}
+          onConfirm={() => { setConfirmDelete(false); remove.mutate(review.id, { onSuccess: () => showSuccess("Đã xóa đánh giá."), onError: showError }); }} />
       </div>
     );
   }
