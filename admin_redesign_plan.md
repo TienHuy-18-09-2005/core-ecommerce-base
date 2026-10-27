@@ -28,7 +28,7 @@
 | **Nhân viên nội dung/kho** | Quản lý catalog | Thêm/sửa sản phẩm, biến thể, ảnh, thông số kỹ thuật, tồn kho, danh mục, thương hiệu |
 | **Kiểm duyệt** | Chăm sóc uy tín | Ẩn/hiện/xoá đánh giá, xem ảnh đánh giá |
 
-> Hiện hệ thống chỉ có 1 vai trò `admin` (Gate `admin` = role admin + is_active). Phân quyền chi tiết (staff/editor) là **câu hỏi mở** (mục 12).
+> Đã chốt: 2 vai trò **Quản trị viên** (`admin`) và **Nhân viên** (`staff`) — xem mục 4.6.
 
 JTBD ưu tiên: (1) "Khi có đơn mới, tôi muốn thấy ngay và xác nhận nhanh"; (2) "Khi nhập hàng mới, tôi muốn tạo sản phẩm có nhiều biến thể trong một lần"; (3) "Khi khách phàn nàn, tôi muốn tìm đơn theo SĐT/mã đơn trong vài giây"; (4) "Cuối ngày, tôi muốn biết doanh thu và hàng nào sắp hết".
 
@@ -61,7 +61,7 @@ JTBD ưu tiên: (1) "Khi có đơn mới, tôi muốn thấy ngay và xác nhậ
 
 ### 4.1 Sidebar theo nhóm (thu gọn được, nhớ trạng thái trong `localStorage`)
 ```
-⚡ Core Admin
+⚡ Đồ Điện Siêu Xịn · Quản trị
 ──────────────
 TỔNG QUAN
   ▸ Bảng điều khiển            /admin
@@ -92,6 +92,22 @@ Sinh tự động từ cấu hình route (`adminRoutes.ts`: path, nhãn, nhóm, 
 
 ### 4.4 Tìm kiếm toàn cục (Command palette)
 Ctrl/⌘+K → hộp thoại: nhóm kết quả "Đơn hàng" (mã đơn, SĐT), "Sản phẩm" (tên, SKU), "Người dùng" (email) + "Lệnh nhanh" (Tạo sản phẩm, Tạo mã giảm giá). Debounce 250 ms, điều hướng bằng phím ↑↓ Enter.
+
+### 4.6 Vai trò & phân quyền (đã chốt: Admin + Nhân viên)
+| Màn hình / thao tác | Quản trị viên | Nhân viên |
+|---|---|---|
+| Bảng điều khiển | ✅ đầy đủ | ✅ (ẩn doanh thu tổng hợp — **cần xác nhận**) |
+| Đơn hàng: xem, đổi trạng thái, in phiếu, ghi chú | ✅ | ✅ |
+| Đơn hàng: hủy đơn đã xác nhận | ✅ | ✅ (bắt buộc lý do) |
+| Sản phẩm, danh mục, thương hiệu: thêm/sửa | ✅ | ✅ |
+| Sản phẩm, danh mục, thương hiệu: xóa | ✅ | ❌ |
+| Mã giảm giá | ✅ | 👁 chỉ xem |
+| Đánh giá: ẩn/hiện | ✅ | ✅ ; xóa ❌ |
+| Người dùng | ✅ | ❌ |
+| Nhật ký thao tác | ✅ | ❌ |
+| Cài đặt | ✅ | ❌ (chỉ đổi mật khẩu của mình) |
+
+Kỹ thuật: thêm `role = staff`; Gate `admin-area` (admin|staff + is_active) cho `/api/admin/*`, Gate `admin` giữ cho phần chỉ-admin; Policy kiểm tra theo vai trò; frontend ẩn menu theo quyền nhưng **server luôn là nơi chặn**. `admin:create` có thêm `--role=staff` ở pha phân quyền.
 
 ### 4.5 Lối vào từ cửa hàng
 - Menu tài khoản ở header shop: mục **"Trang quản trị"** chỉ hiện khi `user.role === 'admin'`.
@@ -135,7 +151,7 @@ Mặc định "Vừa" (hàng bảng 48px); tùy chọn "Gọn" (36px) lưu theo 
 | **Trạng thái trống/tải/lỗi** | `EmptyState` (icon + câu + nút hành động, vd "Chưa có mã giảm giá nào. [+ Tạo mã]"), `Skeleton`, `ErrorState` ("Không tải được dữ liệu. [Thử lại]") — không lộ lỗi kỹ thuật |
 | **Badge** | Đơn: Chờ xác nhận (amber), Đã xác nhận (blue), Đóng gói (indigo), Đang giao (cyan), Đã giao (emerald), Đã hủy (red), Trả hàng (slate). Thanh toán: Chưa thanh toán (amber), Đã thanh toán (emerald), Hoàn tiền (slate), Thất bại (red). Luôn có chữ, không chỉ màu |
 | **KPI Card** | Giá trị, so sánh kỳ trước (▲/▼ %), sparkline, link tới danh sách đã lọc |
-| **Chart** | Thư viện nhẹ (đề xuất `recharts` lazy hoặc SVG tự viết có trục, tooltip, bảng dữ liệu ẩn cho trình đọc màn hình) |
+| **Chart** | **Recharts** (đã chốt), lazy-load theo trang; luôn kèm bảng dữ liệu ẩn cho trình đọc màn hình |
 | **RichTextEditor** | Tiptap (StarterKit + Link + Image + Table) lazy-load; xuất HTML, **server vẫn sanitize** (theo v2) |
 
 ### 5.6 Ngôn ngữ
@@ -158,9 +174,14 @@ Bảng điều khiển                     [Hôm nay ▾ | 7 ngày | 14 ngày | 
 ```
 Dữ liệu sẵn có: `stats.*`, `revenue_series` (14 ngày), `recent_orders`, `low_stock`. Cần thêm: tham số `range`, giá trị kỳ trước, top sản phẩm bán chạy, mã sắp hết hạn.
 
+### 6.1b Thông báo đơn mới (đã chốt)
+- Cơ chế: polling nhẹ `GET /admin/orders/latest-id` mỗi 30 s (dừng khi tab ẩn). **Chỉ khi có đơn mới hơn đơn đã thấy** mới hiện toast "Có 2 đơn hàng mới — [Xem]" + phát **âm thanh nhẹ** (file ngắn < 20 KB, âm lượng thấp).
+- Có nút bật/tắt âm thanh ở topbar (lưu `localStorage`); trình duyệt chặn autoplay → hiển thị gợi ý "Bấm để bật âm thanh thông báo" lần đầu.
+- Không thông báo lặp khi tải lại trang (lưu id đơn cuối đã thấy).
+
 ### 6.2 Đơn hàng — danh sách `/admin/don-hang`
 ```
-Đơn hàng                                                 [⤓ Xuất CSV]
+Đơn hàng                                   [⤓ Xuất CSV — để pha sau]
 [Tất cả 120][Chờ xác nhận 5][Đã xác nhận][Đóng gói][Đang giao][Đã giao][Đã hủy]
 [🔍 Mã đơn, tên, SĐT]  [Thanh toán ▾] [Phương thức ▾] [Ngày: từ–đến]  [Xem đã lưu ▾]
 ☐ | Mã đơn | Khách / SĐT | SL | Tổng | Thanh toán | Trạng thái | Ngày đặt | ⋯
@@ -171,7 +192,7 @@ Bulk chỉ cho chuyển trạng thái hợp lệ theo state machine backend; k�
 ### 6.3 Chi tiết đơn `/admin/don-hang/:id`
 ```
 ← Đơn hàng / DH-0012   [Chờ xác nhận]  [Thanh toán: COD – Chưa thanh toán]
-                                       [In phiếu] [Hủy đơn] [Xác nhận đơn ▶]
+                                       [🖨 In phiếu giao hàng] [Hủy đơn] [Xác nhận đơn ▶]
 ┌ Sản phẩm (ảnh, tên, biến thể, SKU, SL, đơn giá, thành tiền) ┐ ┌ Khách hàng ──┐
 │ Tạm tính / Giảm giá (mã GIAM10) / Phí ship / Tổng cộng       │ │ tên, SĐT, email│
 └─────────────────────────────────────────────────────────────┘ │ Địa chỉ giao  │
@@ -181,6 +202,7 @@ Bulk chỉ cho chuyển trạng thái hợp lệ theo state machine backend; k�
 │ ○ Đóng gói  ○ Đang giao  ○ Đã giao                          │ └───────────────┘
 └─────────────────────────────────────────────────────────────┘
 ```
+**In phiếu giao hàng (đã chốt, làm ngay ở pha Đơn hàng):** trang `/admin/don-hang/:id/in` khổ A5/A4 với CSS `@media print`: tên, SĐT, địa chỉ cửa hàng (từ Cài đặt), mã đơn + mã vạch/QR, người nhận, sản phẩm, tổng tiền, số tiền thu hộ COD, ghi chú. In nhiều đơn từ bulk action.
 Nút hành động chính = bước kế tiếp hợp lệ; "Hủy đơn" mở modal bắt buộc nhập lý do (`cancel_reason` đã có). Timeline lấy từ lịch sử trạng thái/audit log (cần kiểm tra API show đã trả lịch sử chưa → mục 9).
 
 ### 6.4 Sản phẩm — danh sách `/admin/san-pham`
@@ -224,8 +246,15 @@ Bảng: Tên | Email (✓ đã xác thực) | SĐT | Vai trò | Trạng thái (H
 ### 6.11 Nhật ký thao tác `/admin/nhat-ky` (mới)
 Bảng chỉ đọc: Thời gian | Người thực hiện | Hành động | Đối tượng (link) | Chi tiết (xem diff trước/sau trong drawer). Lọc theo người, loại đối tượng, khoảng ngày.
 
-### 6.12 Cài đặt `/admin/cai-dat` — đề xuất phạm vi (giữ trống cho tới khi chốt)
-Các nhóm có thể làm: (a) Thông tin cửa hàng (tên, hotline, địa chỉ, email — hiện nằm cứng ở `shopContact.ts`); (b) Vận chuyển (phí ship, ngưỡng miễn phí); (c) Tồn kho (ngưỡng "sắp hết"); (d) Hồ sơ admin (đổi tên, mật khẩu). Cần bảng `settings` key–value + cache Redis.
+### 6.12 Cài đặt `/admin/cai-dat` — phạm vi đã chốt (chỉ Quản trị viên)
+```
+Cài đặt   [Thông tin cửa hàng][Cấu hình chung][Tài khoản]
+Thông tin cửa hàng: Tên cửa hàng *, Số điện thoại *, Địa chỉ *  → in trên phiếu giao hàng / hóa đơn
+Cấu hình chung:     Phí vận chuyển mặc định (₫) *, Ngưỡng miễn phí vận chuyển (₫)
+Tài khoản:          Mật khẩu hiện tại *, Mật khẩu mới *, Nhập lại *   [Đổi mật khẩu]
+```
+- Bảng `settings` key–value + cache Redis; checkout đọc phí ship/ngưỡng từ đây thay cho config cứng; `shopContact.ts` đọc từ API công khai `GET /settings/public`.
+- Đổi mật khẩu dùng lại `changePassword` của tài khoản (đã có), đăng xuất các phiên khác.
 
 ## 7. Truy cập (a11y) & responsive
 - Mọi thao tác dùng được bằng bàn phím; thứ tự focus hợp lý; vòng focus rõ (`ring-2 ring-blue-500`); "Bỏ qua tới nội dung".
@@ -266,44 +295,54 @@ Các nhóm có thể làm: (a) Thông tin cửa hàng (tên, hotline, địa ch�
 
 Mọi API mới theo chuẩn hiện có: FormRequest `validated()`, Policy, lỗi chuẩn, ghi audit log, test Feature trên SQLite container (không đụng DB dev).
 
-## 10. Lộ trình triển khai (mỗi bước ≈ 1 commit trên nhánh `Luke`)
+## 10. Lộ trình triển khai (mỗi bước ≈ 1 commit trên nhánh `Luke`) — đã sắp lại theo quyết định
+
+Thứ tự: **Nền tảng R0–R3 → Đơn hàng (R4) → Sản phẩm (R5) → phần còn lại.**
 
 | Pha | Tên | Nội dung | Tiêu chí nghiệm thu | Ước lượng |
 |---|---|---|---|---|
-| **R0** | Lối vào & dọn dẹp | Link "Trang quản trị" ở menu tài khoản shop (chỉ admin), chuyển tới `/admin` sau đăng nhập; thống nhất "Xóa"/"Hủy"; trang 404 admin đúng giao diện | Admin đăng nhập tự vào `/admin`; user thường không thấy link; grep không còn "Xoá" | 0,5 ngày |
-| **R1** | Nền tảng design system | Token sáng/tối, `adminRoutes.ts`, AdminLayout mới (sidebar nhóm, rail, drawer mobile, topbar, breadcrumb) | Đủ 3 breakpoint; dark mode không còn màu cứng; test vitest điều hướng | 1,5 ngày |
-| **R2** | Bộ component | Modal xác nhận (thay `window.confirm`), Drawer, Toast, Skeleton, EmptyState, ErrorState, Badge đơn/thanh toán, FormField v2 | Không còn `window.confirm`; axe không lỗi nghiêm trọng | 1,5 ngày |
-| **R3** | DataTable v2 | Lọc chip, chọn nhiều + bulk bar, ẩn cột, xem đã lưu, đồng bộ URL, mật độ | Áp vào Sản phẩm & Đánh giá; test chọn/bulk | 2 ngày |
-| **R4** | Đơn hàng | Tab trạng thái có đếm, lọc ngày/thanh toán, bulk đổi trạng thái, CSV, chi tiết có timeline + ghi chú + modal hủy (kèm API) | Xác nhận đơn ≤ 3 click; bulk trả lỗi từng đơn; test Feature API | 2,5 ngày |
-| **R5** | Trình soạn sản phẩm | Tab + panel phụ, Tiptap (lazy, sanitize server), biến thể bảng sửa trực tiếp, sửa lỗi hoán đổi SKU, ảnh kéo thả, cảnh báo rời trang, nhân bản; shop hiển thị mô tả | Hoán đổi SKU 2 biến thể lưu thành công (có test); HTML độc bị loại | 3 ngày |
-| **R6** | Bảng điều khiển | KPI so sánh kỳ, chọn khoảng ngày, biểu đồ có trục/tooltip/bảng ẩn, "Việc cần làm" | Lighthouse a11y ≥ 95; số liệu khớp API | 1,5 ngày |
-| **R7** | Catalog phụ | Cây danh mục kéo thả + API reorder; màn hình & API Thương hiệu | Đổi thứ tự lưu được; CRUD thương hiệu có test | 2 ngày |
-| **R8** | Khuyến mãi & đánh giá | Mã giảm giá trong drawer, lượt dùng, nhân bản, xem trước; đánh giá dạng thẻ, lightbox, bulk, hoàn tác | Test bulk moderate; hoàn tác hoạt động | 1,5 ngày |
-| **R9** | Người dùng & nhật ký | API + màn hình Người dùng (khóa/vai trò, chặn tự khóa), Nhật ký thao tác có diff | Không tự khóa được chính mình (test); nhật ký lọc được | 2,5 ngày |
-| **R10** | Tìm kiếm toàn cục | API `/admin/search` + command palette Ctrl+K | Phím tắt, điều hướng bàn phím, < 300 ms | 1 ngày |
-| **R11** | Cài đặt (tùy chọn) | Theo phạm vi được chốt ở câu hỏi mở | Do người dùng duyệt | 1–2 ngày |
-| **R12** | Hoàn thiện | Rà a11y, tablet thực tế, Lighthouse, kích thước chunk, cập nhật tài liệu | Đạt chỉ số mục 1 | 1 ngày |
+| **R0** | Lối vào & dọn dẹp | Link "Trang quản trị" (chỉ admin), chuyển tới `/admin` sau đăng nhập (tôn trọng `?redirect=`); lệnh `php artisan admin:create`; đổi thương hiệu thành "Đồ Điện Siêu Xịn"; thống nhất "Xóa"/"Hủy"; trang 404 admin | Admin tự vào `/admin`; khách không thấy link; không còn "Xoá/Huỷ", "Core Điện"; test lệnh | 0,5–1 ngày |
+| **R1** | Nền tảng design system | Token sáng/tối, `adminRoutes.ts`, AdminLayout mới (sidebar nhóm, rail tablet, topbar, breadcrumb) | Desktop tối ưu, tablet tốt; dark mode không còn màu cứng | 1,5 ngày |
+| **R2** | Bộ component | Modal xác nhận, Drawer, Toast, Skeleton, EmptyState, ErrorState, Badge, FormField v2 | Không còn `window.confirm`; axe không lỗi nghiêm trọng | 1,5 ngày |
+| **R3** | DataTable v2 | Lọc chip, chọn nhiều + bulk bar, ẩn cột, xem đã lưu, URL, mật độ | Test chọn/bulk | 2 ngày |
+| **R4** | ⭐ Đơn hàng | Tab có đếm, lọc ngày/thanh toán, bulk đổi trạng thái, chi tiết + timeline + ghi chú + modal hủy, **in phiếu giao hàng** (đơn lẻ & nhiều đơn), **thông báo đơn mới + âm thanh nhẹ** | Xác nhận đơn ≤ 3 click; phiếu in đúng khổ; âm thanh chỉ khi có đơn mới | 3,5 ngày |
+| **R5** | ⭐ Sản phẩm | Trình soạn tab, **Tiptap**, biến thể sửa trực tiếp, sửa lỗi hoán đổi SKU, ảnh kéo thả, cảnh báo rời trang, nhân bản; shop hiển thị mô tả | Hoán đổi SKU thành công (test); HTML độc bị loại | 3 ngày |
+| **R6** | Vai trò Nhân viên | Role `staff`, Gate/Policy theo bảng 4.6, menu theo quyền, `admin:create --role=staff` | Test API: staff bị 403 ở Người dùng/Nhật ký/Cài đặt/xóa | 1,5 ngày |
+| **R7** | Cài đặt | Thông tin cửa hàng, phí ship & ngưỡng miễn phí (checkout dùng), đổi mật khẩu admin | Phiếu giao hàng & checkout lấy từ cài đặt | 1,5 ngày |
+| **R8** | Bảng điều khiển | KPI so kỳ, khoảng ngày, **Recharts**, "Việc cần làm" | Lighthouse a11y ≥ 95 | 1,5 ngày |
+| **R9** | Catalog phụ | Cây danh mục kéo thả + API reorder; Thương hiệu | CRUD thương hiệu có test | 2 ngày |
+| **R10** | Khuyến mãi & đánh giá | Coupon drawer, lượt dùng, nhân bản; đánh giá thẻ, lightbox, bulk, hoàn tác | Test bulk moderate | 1,5 ngày |
+| **R11** | Người dùng & nhật ký | Khóa/vai trò (chặn tự khóa), nhật ký có diff | Test chặn tự khóa | 2,5 ngày |
+| **R12** | Tìm kiếm toàn cục + Xuất CSV | `/admin/search` + Ctrl+K; **xuất CSV đơn hàng (đã dời về đây)** | < 300 ms; CSV mở đúng tiếng Việt (UTF-8 BOM) | 1,5 ngày |
+| **R13** | Hoàn thiện | Rà a11y, tablet, Lighthouse, chunk | Đạt chỉ số mục 1 | 1 ngày |
 
-Tổng ước lượng: ~21–23 ngày công. R0 có thể làm ngay; R1→R3 là tiền đề cho các pha sau; R4–R10 tách độc lập.
+API bổ sung so với mục 9: `GET /admin/orders/latest-id` 🆕 (thông báo), `GET /admin/orders/{id}/print` hoặc dùng `show` ✅, `GET|PUT /admin/settings` 🆕, `GET /settings/public` 🆕.
+
+Tổng ước lượng: ~25 ngày công.
 
 ## 11. Rủi ro
 | Rủi ro | Giảm thiểu |
 |---|---|
-| Thay layout làm hỏng test `AdminApp.test.tsx` hiện có | Cập nhật test cùng commit; giữ nguyên URL |
-| Tiptap/recharts làm phình bundle | Lazy-load, đo kích thước chunk mỗi pha |
-| Rich text gây XSS | Sanitize phía server (HTMLPurifier hoặc tương đương) + test payload độc |
-| Bulk action đổi trạng thái sai hàng loạt | Modal xác nhận nêu số lượng, chỉ cho chuyển hợp lệ, ghi audit log |
-| Quản lý người dùng có thể khóa nhầm admin | Policy chặn tự khóa & admin cuối cùng |
-| Dữ liệu cũ (mô tả HTML thô) hiển thị khác trong Tiptap | Chuyển đổi khi mở, không ghi đè cho tới khi người dùng lưu |
+| Thay layout làm hỏng test hiện có | Cập nhật test cùng commit; giữ nguyên URL |
+| Tiptap/Recharts làm phình bundle | Lazy-load, đo chunk mỗi pha |
+| Rich text gây XSS | Sanitize phía server + test payload độc |
+| Bulk đổi trạng thái sai | Modal xác nhận, chỉ chuyển hợp lệ, audit log |
+| Trình duyệt chặn âm thanh tự phát | Yêu cầu một lần bấm bật âm thanh; luôn có toast |
+| Nhân viên vượt quyền | Chặn ở server (Policy), test 403 cho từng API |
+| Đổi phí ship ảnh hưởng đơn đang thanh toán | Phí chốt tại thời điểm đặt đơn (đã lưu trong order) |
 
-## 12. Câu hỏi mở cần bạn quyết định
-1. **Phân quyền:** chỉ giữ một vai trò `admin`, hay thêm vai trò nhân viên (xử lý đơn / nội dung) với quyền hạn chế?
-2. **Trang Cài đặt:** làm những nhóm nào (thông tin cửa hàng, vận chuyển, ngưỡng tồn kho, hồ sơ admin) hay tiếp tục để trống?
-3. **Thương hiệu "Core Điện":** giữ tên này hay đổi lại? (ảnh hưởng logo sidebar admin)
-4. **Trình soạn mô tả:** đồng ý dùng Tiptap (WYSIWYG) hay muốn Markdown?
-5. **Biểu đồ:** dùng thư viện `recharts` (đẹp, ~+90 KB lazy) hay SVG tự viết (nhẹ, ít tính năng)?
-6. **Xuất CSV / in phiếu giao hàng:** có cần ngay ở R4 không?
-7. **Thông báo đơn mới:** chỉ badge làm mới 60 s là đủ, hay cần âm thanh/thông báo trình duyệt?
-8. **Thiết bị chính** của nhân viên: máy tính hay máy tính bảng? (quyết định ưu tiên responsive)
-9. **Thứ tự ưu tiên:** đồng ý thứ tự R0 → R12, hay muốn làm Đơn hàng / Sản phẩm trước?
-10. **Thêm lệnh `php artisan admin:create`** vào R0 không?
+## 12. Quyết định đã chốt (27/10/2026)
+1. **Vai trò:** bắt đầu với 2 vai trò — Quản trị viên và Nhân viên (quyền hạn chế, bảng 4.6). Cài đặt, Người dùng, Nhật ký chỉ Quản trị viên.
+2. **Cài đặt:** Thông tin cửa hàng (tên, SĐT, địa chỉ — in trên phiếu giao hàng/hóa đơn); Cấu hình chung (phí ship mặc định, ngưỡng miễn phí ship); Tài khoản (đổi mật khẩu admin hiện tại).
+3. **Thương hiệu:** đổi "Core Điện" → **"Đồ Điện Siêu Xịn"** (làm ở R0).
+4. **Trình soạn mô tả:** WYSIWYG, ưu tiên **Tiptap**.
+5. **Biểu đồ:** **Recharts**.
+6. **In phiếu giao hàng:** làm ngay ở R4; **xuất CSV** dời sang R12.
+7. **Thông báo đơn mới:** chỉ báo khi thực sự có đơn mới, kèm âm thanh nhẹ (polling làm cơ chế).
+8. **Thiết bị:** tối ưu hoàn toàn cho máy tính, responsive tốt trên máy tính bảng.
+9. **Ưu tiên:** Đơn hàng và Sản phẩm trước (sau nền tảng R0–R3), rồi các phần còn lại.
+10. **`php artisan admin:create`:** thêm ở R0.
+
+### Câu hỏi nhỏ còn lại
+- Nhân viên có được xem số liệu doanh thu trên Bảng điều khiển không?
+- Nhân viên có được xem (không sửa) mã giảm giá không?
