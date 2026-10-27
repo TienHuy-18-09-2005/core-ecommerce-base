@@ -24,11 +24,11 @@
 | Persona | Mô tả | Việc chính |
 |---|---|---|
 | **Chủ shop (admin)** | Quyết định giá, khuyến mãi, xem doanh thu | Xem KPI hằng ngày, tạo mã giảm giá, theo dõi hàng sắp hết |
-| **Nhân viên xử lý đơn** | Dùng nhiều nhất, thao tác lặp | Lọc đơn chờ, xác nhận, đóng gói, giao, huỷ có lý do, ghi chú nội bộ |
+| **Nhân viên xử lý đơn** | Dùng nhiều nhất, thao tác lặp | Lọc đơn chờ, xác nhận, đóng gói, giao, hủy có lý do, ghi chú nội bộ |
 | **Nhân viên nội dung/kho** | Quản lý catalog | Thêm/sửa sản phẩm, biến thể, ảnh, thông số kỹ thuật, tồn kho, danh mục, thương hiệu |
 | **Kiểm duyệt** | Chăm sóc uy tín | Ẩn/hiện/xoá đánh giá, xem ảnh đánh giá |
 
-> Đã chốt: 2 vai trò **Quản trị viên** (`admin`) và **Nhân viên** (`staff`) — xem mục 4.6.
+> Đã chốt: Quản trị viên (toàn quyền) + nhân viên mang vai trò cấu hình được từ các quyền chi tiết (RBAC) — xem mục 4.6.
 
 JTBD ưu tiên: (1) "Khi có đơn mới, tôi muốn thấy ngay và xác nhận nhanh"; (2) "Khi nhập hàng mới, tôi muốn tạo sản phẩm có nhiều biến thể trong một lần"; (3) "Khi khách phàn nàn, tôi muốn tìm đơn theo SĐT/mã đơn trong vài giây"; (4) "Cuối ngày, tôi muốn biết doanh thu và hàng nào sắp hết".
 
@@ -76,6 +76,7 @@ KHÁCH HÀNG
   ▸ Người dùng    (mới)         /admin/nguoi-dung
   ▸ Đánh giá      [3]           /admin/danh-gia
 HỆ THỐNG
+  ▸ Vai trò & phân quyền (mới) /admin/vai-tro
   ▸ Nhật ký thao tác (mới)      /admin/nhat-ky
   ▸ Cài đặt                     /admin/cai-dat
 ──────────────
