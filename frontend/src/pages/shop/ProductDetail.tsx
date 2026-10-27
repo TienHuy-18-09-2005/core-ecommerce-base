@@ -180,6 +180,14 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
                 </div>
             </div>
 
+            {/* Mô tả chi tiết: HTML đã được máy chủ lọc qua allowlist (HtmlSanitizer) cả khi lưu lẫn khi trả về shop. */}
+            {product.description && product.description.trim() !== "" && (
+                <section aria-labelledby="product-description" className="mt-12 bg-white border rounded-xl p-6 shadow-sm">
+                    <h2 id="product-description" className="text-xl font-bold mb-4 text-gray-900">Mô tả sản phẩm</h2>
+                    <div className="rich-prose max-w-3xl text-gray-800" dangerouslySetInnerHTML={{ __html: product.description }} />
+                </section>
+            )}
+
             {/* Thông số kỹ thuật dạng JSON specifications */}
             {product.specifications && Object.keys(product.specifications).length > 0 && (
                 <div className="mt-12 bg-white border rounded-xl p-6 shadow-sm">

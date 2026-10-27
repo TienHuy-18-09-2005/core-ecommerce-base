@@ -48,6 +48,8 @@ export interface AdminProductRow {
   brand: { id: number; name: string } | null;
   categories: { id: number; name: string }[];
   price_min: number | null;
+  price_max: number | null;
+  sku: string | null;
   stock_total: number;
   variants_count: number;
   updated_at: string | null;
@@ -156,6 +158,15 @@ export interface BulkStatusResult {
   succeeded: number;
   failed: number;
 }
+
+export interface BulkProductResult {
+  results: { id: number; name: string | null; ok: boolean; message: string | null }[];
+  succeeded: number;
+  failed: number;
+}
+export type BulkProductInput =
+  | { ids: number[]; action: "status"; status: AdminProductRow["status"] }
+  | { ids: number[]; action: "add_category"; category_id: number };
 
 export interface StoreInfo { name: string; phone: string | null; address: string | null; email: string | null }
 

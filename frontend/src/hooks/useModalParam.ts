@@ -15,6 +15,7 @@ export function useModalParam() {
       const next = new URLSearchParams(prev);
       next.delete("sua");
       next.delete("them");
+      next.delete("tab");
       if (id === "new") next.set("them", "1");
       else if (id !== null) next.set("sua", String(id));
       return next;

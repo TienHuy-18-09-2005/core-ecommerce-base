@@ -79,7 +79,7 @@ describe("admin panel", () => {
   });
 
   it("lists products with filters kept in the URL", async () => {
-    svc.products.mockResolvedValue({ data: [{ id: 5, name: "Bóng đèn", slug: "bong-den", status: "published", is_featured: false, thumbnail_url: null, brand: null, categories: [], price_min: 50000, stock_total: 3, variants_count: 1, updated_at: null }], meta });
+    svc.products.mockResolvedValue({ data: [{ id: 5, name: "Bóng đèn", slug: "bong-den", status: "published", is_featured: false, thumbnail_url: null, brand: null, categories: [], price_min: 50000, price_max: 50000, sku: "BD-01", stock_total: 3, variants_count: 1, updated_at: null }], meta });
     svc.categories.mockResolvedValue([]);
     const router = renderAdmin("/admin/san-pham");
     expect(await screen.findByRole("button", { name: "Bóng đèn" })).toBeTruthy();
@@ -105,7 +105,7 @@ describe("admin panel", () => {
     svc.products.mockResolvedValue({ data: [], meta });
     svc.categories.mockResolvedValue([]);
     const router = renderAdmin("/admin/san-pham?status=draft&page=2");
-    const header = await screen.findByRole("columnheader", { name: /Giá từ/ });
+    const header = await screen.findByRole("columnheader", { name: /^Giá/ });
     expect(header.getAttribute("aria-sort")).toBe("none");
     fireEvent.click(within(header).getByRole("button"));
     await waitFor(() => expect(router.state.location.search).toBe("?status=draft&sort=price_min&direction=asc"));
@@ -353,7 +353,7 @@ describe("admin panel", () => {
     await waitFor(() => expect(router.state.location.search).toBe("?sua=5"));
     const dialog = await screen.findByRole("dialog", { name: "Sửa sản phẩm: Bóng đèn" });
     expect(screen.queryByLabelText("URL ảnh")).toBeNull();
-    fireEvent.click(within(dialog).getByRole("tab", { name: /Ảnh/ }));
+    fireEvent.click(within(dialog).getByRole("tab", { name: /Hình ảnh/ }));
     expect(await seriousViolations()).toEqual([]);
     fireEvent.click(within(dialog).getByRole("button", { name: "Xóa ảnh 1" }));
     fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
@@ -378,7 +378,7 @@ describe("admin panel", () => {
     fireEvent.click(await screen.findByRole("button", { name: "+ Thêm sản phẩm" }));
     const dialog = await screen.findByRole("dialog", { name: "Thêm sản phẩm" });
     fireEvent.change(within(dialog).getByLabelText(/Tên sản phẩm/), { target: { value: "Đèn" } });
-    fireEvent.click(within(dialog).getByRole("tab", { name: /Ảnh/ }));
+    fireEvent.click(within(dialog).getByRole("tab", { name: /Hình ảnh/ }));
     const png = (name: string) => new File(["x"], name, { type: "image/png" });
     fireEvent.change(within(dialog).getByLabelText("Chọn ảnh từ máy"), { target: { files: [png("a.png"), png("b.png"), new File(["x"], "c.pdf", { type: "application/pdf" })] } });
     expect(within(dialog).getByRole("alert").textContent).toContain("c.pdf: chỉ nhận ảnh JPG, PNG hoặc WebP.");
@@ -390,5 +390,67 @@ describe("admin panel", () => {
     await waitFor(() => expect(svc.reorderProductImages).toHaveBeenCalledWith(9, [101, 102], 102));
     expect(svc.uploadProductImage.mock.calls.map((c) => [c[0], (c[1] as File).name])).toEqual([[9, "b.png"], [9, "a.png"]]);
     expect(svc.createProduct.mock.calls[0][0]).not.toHaveProperty("media");
+  });
+
+  const row = { id: 5, name: "Bóng đèn", slug: "bong-den", status: "published" as const, is_featured: false, thumbnail_url: null, brand: { id: 1, name: "Rạng Đông" },
+    categories: [{ id: 3, name: "Đèn" }], price_min: 50000, price_max: 90000, sku: "BD-01", stock_total: 3, variants_count: 2, updated_at: "2026-10-26T09:00:00+07:00" };
+
+  it("R5: danh sách sản phẩm có cột mới, lọc thương hiệu, thao tác hàng loạt báo kết quả từng dòng", async () => {
+    svc.products.mockResolvedValue({ data: [row, { ...row, id: 6, name: "Quạt", sku: "Q-1", stock_total: 50 }], meta: { ...meta, total: 2 } });
+    svc.categories.mockResolvedValue([{ id: 3, name: "Đèn", slug: "den", parent_id: null }] as never);
+    svc.bulkProducts.mockResolvedValue({ succeeded: 1, failed: 1, results: [{ id: 5, name: "Bóng đèn", ok: true, message: null }, { id: 6, name: "Quạt", ok: false, message: "Không có biến thể nào đang bán." }] });
+    const router = renderAdmin("/admin/san-pham?brand_id=1");
+    expect(await screen.findByText("BD-01")).toBeTruthy();
+    await waitFor(() => expect(svc.products).toHaveBeenCalledWith(expect.objectContaining({ brand_id: "1" }), expect.anything()));
+    expect(screen.getAllByText(/50\.000.*–.*90\.000/)).toHaveLength(2);
+    expect(screen.getByText("3").className).toContain("text-admin-danger");
+    expect(await seriousViolations()).toEqual([]);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /Chọn tất cả/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Hiện" }));
+    await waitFor(() => expect(svc.bulkProducts).toHaveBeenCalledWith({ action: "status", status: "published", ids: [5, 6] }));
+    const report = await screen.findByRole("dialog", { name: "Kết quả thao tác hàng loạt" });
+    expect(report.textContent).toContain("Quạt: Không có biến thể nào đang bán.");
+    expect(router.state.location.search).toContain("brand_id=1");
+  });
+
+  it("R5: menu ⋯ nhân bản rồi mở bản sao để sửa", async () => {
+    svc.products.mockResolvedValue({ data: [row], meta });
+    svc.categories.mockResolvedValue([]);
+    svc.duplicateProduct.mockResolvedValue({ id: 77 } as never);
+    svc.product.mockReturnValue(new Promise(() => {}));
+    const router = renderAdmin("/admin/san-pham");
+    fireEvent.click(await screen.findByRole("button", { name: "Thao tác cho Bóng đèn" }));
+    expect(screen.getByRole("link", { name: /Xem ngoài shop/ }).getAttribute("href")).toBe("/san-pham/bong-den");
+    fireEvent.click(screen.getByRole("button", { name: "Nhân bản" }));
+    await waitFor(() => expect(svc.duplicateProduct).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(router.state.location.search).toBe("?sua=77"));
+  });
+
+  it("R5: modal 5 tab, báo thay đổi chưa lưu, chặn lưu khi SKU trùng, tab nằm trên URL", async () => {
+    svc.products.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
+    svc.categories.mockResolvedValue([]);
+    const router = renderAdmin("/admin/san-pham?them=1");
+    const dialog = await screen.findByRole("dialog", { name: "Thêm sản phẩm" });
+    expect(within(dialog).getAllByRole("tab").map((t) => t.textContent?.replace(/\s*\(\d+\)/, ""))).toEqual(["Thông tin chung", "Biến thể & tồn kho", "Hình ảnh", "Thông số kỹ thuật", "SEO"]);
+    expect(await within(dialog).findByRole("toolbar", { name: "Định dạng mô tả" })).toBeTruthy();
+    expect(within(dialog).getByRole("heading", { name: "Độ hoàn thiện" })).toBeTruthy();
+    expect(within(dialog).queryByText(/Có thay đổi chưa lưu/)).toBeNull();
+    fireEvent.change(within(dialog).getByLabelText(/Tên sản phẩm/), { target: { value: "Áo" } });
+    expect(within(dialog).getByText(/Có thay đổi chưa lưu/)).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole("tab", { name: /Biến thể/ }));
+    expect(router.state.location.search).toContain("tab=variants");
+    fireEvent.change(within(dialog).getByLabelText("SKU biến thể 1"), { target: { value: "AO-1" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Nhân đôi biến thể 1" }));
+    fireEvent.change(within(dialog).getByLabelText("SKU biến thể 2"), { target: { value: "ao-1" } });
+    expect(within(dialog).getAllByText("SKU bị trùng.")).toHaveLength(2);
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(svc.createProduct).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("tab", { name: "SEO" }));
+    expect(within(dialog).getByText("Xem trước trên Google")).toBeTruthy();
   });
 });

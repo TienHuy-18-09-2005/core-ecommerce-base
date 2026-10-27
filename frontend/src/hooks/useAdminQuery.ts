@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminService, cleanParams, type QueryParams } from "../services/adminService.ts";
-import type { AdminCategoryInput, AdminCouponInput, AdminProductInput } from "../types/admin.ts";
+import type { AdminCategoryInput, AdminCouponInput, AdminProductInput, BulkProductInput } from "../types/admin.ts";
 
 export const adminKeys = {
   all: ["admin"] as const,
@@ -60,6 +60,8 @@ export function useProductMutations() {
     create: useMutation({ mutationFn: (input: AdminProductInput) => adminService.createProduct(input), onSuccess }),
     update: useMutation({ mutationFn: ({ id, input }: { id: number; input: AdminProductInput }) => adminService.updateProduct(id, input), onSuccess }),
     remove: useMutation({ mutationFn: (id: number) => adminService.deleteProduct(id), onSuccess }),
+    bulk: useMutation({ mutationFn: (body: BulkProductInput) => adminService.bulkProducts(body), onSuccess }),
+    duplicate: useMutation({ mutationFn: (id: number) => adminService.duplicateProduct(id), onSuccess }),
     /** Làm mới cache sau khi đồng bộ ảnh (endpoint ảnh gọi trực tiếp để theo dõi tiến độ). */
     invalidate: onSuccess,
   };

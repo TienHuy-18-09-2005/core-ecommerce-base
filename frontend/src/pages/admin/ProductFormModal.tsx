@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, type KeyboardEvent } from "react";
+import { Suspense, lazy, useMemo, useState, type KeyboardEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PRODUCT_STATUS_LABELS, btnDanger, btnSecondary, inputClass } from "../../utils/adminFormat.ts";
 import { CheckboxField, FormField, useUnsavedChanges } from "../../components/admin/form/FormField.tsx";
 import { FormModal } from "../../components/admin/form/FormModal.tsx";
@@ -11,13 +12,12 @@ import { QueryError } from "../../components/admin/ui.tsx";
 import { useAdminCategoriesQuery, useAdminProductQuery, useProductMutations } from "../../hooks/useAdminQuery.ts";
 import { adminService } from "../../services/adminService.ts";
 import { productService } from "../../services/productService.ts";
-import type { AdminProduct, AdminProductInput, AdminVariant } from "../../types/admin.ts";
-import { errorMessage, firstFieldErrors } from "../../utils/fieldErrors.ts";
+import type { AdminProduct, AdminProductInput } from "../../types/admin.ts";
+import { VariantsTable } from "./product/VariantsTable.tsx";
+import { duplicateSkuRows, emptyVariant } from "./product/variantUtils.ts";
 
-const emptyVariant = (isDefault: boolean): AdminVariant => ({
-  sku: "", name: "Mặc định", price: 0, compare_at_price: null, cost_price: null,
-  stock_quantity: 0, weight_grams: 0, image_url: null, is_default: isDefault, is_active: true,
-});
+const RichTextEditor = lazy(() => import("../../components/admin/editor/RichTextEditor.tsx"));
+import { errorMessage, firstFieldErrors } from "../../utils/fieldErrors.ts";
 
 const emptyProduct: AdminProductInput = {
   name: "", slug: "", status: "draft", is_featured: false, brand_id: null, category_ids: [],
@@ -35,16 +35,22 @@ function toInput(p: AdminProduct): AdminProductInput {
 
 const TABS = [
   { id: "info", label: "Thông tin chung" },
-  { id: "variants", label: "Biến thể" },
-  { id: "images", label: "Ảnh" },
-  { id: "specs", label: "Thông số & SEO" },
+  { id: "variants", label: "Biến thể & tồn kho" },
+  { id: "images", label: "Hình ảnh" },
+  { id: "specs", label: "Thông số kỹ thuật" },
+  { id: "seo", label: "SEO" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
+const isTab = (t: string | null): t is TabId => TABS.some((x) => x.id === t);
+
+/** Văn bản thuần của HTML mô tả (để đếm độ dài, không render). */
+const plainText = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 
 /** Lỗi máy chủ thuộc tab nào — để gắn dấu và tự chuyển tab. */
 function tabOf(field: string): TabId {
   if (field.startsWith("variants")) return "variants";
-  if (field.startsWith("specifications") || field.startsWith("meta_")) return "specs";
+  if (field.startsWith("specifications")) return "specs";
+  if (field.startsWith("meta_")) return "seo";
   return "info";
 }
 
@@ -72,7 +78,11 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
   });
   // Sản phẩm mới đã tạo nhưng ảnh tải lỗi → lần lưu sau là cập nhật, không tạo trùng.
   const [savedId, setSavedId] = useState<number | null>(id);
-  const [tab, setTab] = useState<TabId>("info");
+  // Tab đang mở nằm trên URL (?tab=) để refresh/chia sẻ link vẫn đúng tab.
+  const [search, setSearch] = useSearchParams();
+  const rawTab = search.get("tab");
+  const tab: TabId = isTab(rawTab) ? rawTab : "info";
+  const setTab = (t: TabId) => setSearch((prev) => { const n = new URLSearchParams(prev); if (t === "info") n.delete("tab"); else n.set("tab", t); return n; }, { replace: true });
   const [busy, setBusy] = useState(false);
   const categories = useAdminCategoriesQuery();
   const brands = useQuery({ queryKey: ["brands"], queryFn: () => productService.getBrands() });
@@ -84,8 +94,17 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
   const initialIds = (product?.media ?? []).map((m) => m.id);
 
   const patch = (p: Partial<AdminProductInput>) => setForm((f) => ({ ...f, ...p }));
-  const patchVariant = (i: number, p: Partial<AdminVariant>) =>
-    setForm((f) => ({ ...f, variants: f.variants.map((v, j) => (j === i ? { ...v, ...p } : p.is_default ? { ...v, is_default: false } : v)) }));
+  const dupRows = useMemo(() => duplicateSkuRows(form.variants), [form.variants]);
+  const dirty = unsaved.isDirty();
+  const descLen = plainText(form.description ?? "").length;
+  const checks: { label: string; ok: boolean; tab: TabId; hint: string }[] = [
+    { label: "Hình ảnh", ok: images.length > 0, tab: "images", hint: images.length ? `${images.length} ảnh` : "Chưa có ảnh" },
+    { label: "Mô tả chi tiết", ok: descLen >= 100, tab: "info", hint: descLen ? `${descLen} ký tự (nên ≥ 100)` : "Chưa có mô tả" },
+    { label: "Mô tả ngắn", ok: !!form.short_description?.trim(), tab: "info", hint: form.short_description?.trim() ? "Đã có" : "Chưa có" },
+    { label: "Giá bán", ok: form.variants.every((v) => v.price > 0), tab: "variants", hint: form.variants.every((v) => v.price > 0) ? "Đủ" : "Có biến thể giá 0đ" },
+    { label: "SEO", ok: !!form.meta_title?.trim() && !!form.meta_description?.trim(), tab: "seo", hint: form.meta_title?.trim() && form.meta_description?.trim() ? "Đủ tiêu đề + mô tả" : "Thiếu tiêu đề hoặc mô tả" },
+  ];
+  const done = checks.filter((c) => c.ok).length;
   const setImage = (key: string, p: Partial<ImageItem>) => setImages((all) => all.map((x) => (x.key === key ? { ...x, ...p } : x)));
 
   /** Đồng bộ ảnh sau khi lưu sản phẩm: xóa ảnh bị bỏ → tải ảnh mới (có tiến độ) → lưu thứ tự + ảnh chính. */
@@ -112,6 +131,11 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
   };
 
   const onSubmit = async () => {
+    if (dupRows.size) {
+      setTab("variants");
+      toast.showError(new Error("Có SKU bị trùng giữa các biến thể. Sửa lại trước khi lưu."));
+      return;
+    }
     const payload: AdminProductInput = {
       ...form,
       slug: form.slug || null,
@@ -166,15 +190,18 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
       onSubmit={() => void onSubmit()} saving={busy}
       extraActions={slug && form.status === "published" ? <a className={btnSecondary} href={`/san-pham/${slug}`} target="_blank" rel="noreferrer">Xem trên shop</a> : undefined}>
       {unsaved.prompt}
-      <div role="tablist" aria-label="Phần của biểu mẫu" className="-mx-1 flex gap-1 overflow-x-auto border-b border-admin-border">
+      <div className="-mx-1 flex items-end gap-2 border-b border-admin-border">
+      <div role="tablist" aria-label="Phần của biểu mẫu" className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
         {TABS.map((t, i) => (
           <button key={t.id} id={`ptab-${t.id}`} type="button" role="tab" aria-selected={tab === t.id} aria-controls={`ppanel-${t.id}`} tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)} onKeyDown={(e) => onTabKey(e, i)}
             className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${tab === t.id ? "border-admin-primary text-admin-primary" : "border-transparent text-admin-muted hover:text-admin-fg"}`}>
-            {t.label}{t.id === "images" && images.length > 0 && ` (${images.length})`}
-            {errorTabs.has(t.id) && <span className="ml-1 text-admin-danger" aria-label="có lỗi">●</span>}
+            {t.label}{t.id === "images" && images.length > 0 && ` (${images.length})`}{t.id === "variants" && ` (${form.variants.length})`}
+            {(errorTabs.has(t.id) || (t.id === "variants" && dupRows.size > 0)) && <span className="ml-1 text-admin-danger" aria-label="có lỗi">●</span>}
           </button>
         ))}
+      </div>
+      <p role="status" className="mb-1.5 shrink-0 rounded bg-admin-warning-subtle px-2 py-0.5 text-xs font-medium text-admin-fg empty:hidden">{dirty ? "● Có thay đổi chưa lưu" : ""}</p>
       </div>
 
       <div role="tabpanel" id="ppanel-info" aria-labelledby="ptab-info" hidden={tab !== "info"} className="grid gap-4 lg:grid-cols-3">
@@ -188,11 +215,37 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
           <FormField label="Mô tả ngắn" error={errors.short_description}>
             <textarea className={inputClass} rows={2} value={form.short_description ?? ""} onChange={(e) => patch({ short_description: e.target.value })} />
           </FormField>
-          <FormField label="Mô tả chi tiết" hint="HTML cơ bản: p, strong, em, ul/ol, h2–h4, a, table — máy chủ tự lọc thẻ không an toàn." error={errors.description}>
-            <textarea className={`${inputClass} font-mono`} rows={8} value={form.description ?? ""} onChange={(e) => patch({ description: e.target.value })} />
-          </FormField>
+          <div className="text-sm">
+            <p id="pdesc-label" className="mb-1 font-medium text-admin-fg-soft">Mô tả chi tiết</p>
+            {tab === "info" && (
+              <Suspense fallback={<SkeletonBlock lines={6} label="Đang tải trình soạn thảo..." />}>
+                <RichTextEditor labelId="pdesc-label" invalid={!!errors.description} value={form.description ?? ""} onChange={(html) => patch({ description: html })}
+                  onError={toast.showError} onUploadImage={async (f) => (await adminService.uploadDescriptionImage(f)).url} />
+              </Suspense>
+            )}
+            <p className="mt-1 text-xs text-admin-muted">Ảnh chèn vào mô tả được tải lên máy chủ ngay (không vào thư viện ảnh sản phẩm). Máy chủ tự lọc thẻ/thuộc tính không an toàn.</p>
+            {errors.description && <p role="alert" className="mt-1 text-xs text-admin-danger">{errors.description}</p>}
+          </div>
         </div>
         <div className="space-y-4">
+          <section aria-labelledby="pcomplete" className="rounded-lg border border-admin-border bg-admin-subtle p-3 text-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 id="pcomplete" className="font-semibold text-admin-fg">Độ hoàn thiện</h3>
+              <span className="text-xs text-admin-muted">{done}/{checks.length}</span>
+            </div>
+            <div className="mb-2 h-1.5 overflow-hidden rounded bg-admin-border" aria-hidden="true"><div className="h-full bg-admin-success" style={{ width: `${(done / checks.length) * 100}%` }} /></div>
+            <ul className="space-y-1">
+              {checks.map((c) => (
+                <li key={c.label}>
+                  <button type="button" onClick={() => setTab(c.tab)} className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-admin-surface">
+                    <span aria-hidden="true" className={c.ok ? "text-admin-success" : "text-admin-muted"}>{c.ok ? "✓" : "○"}</span>
+                    <span className="flex-1 text-admin-fg">{c.label}<span className="sr-only">{c.ok ? ": đạt" : ": chưa đạt"}</span></span>
+                    <span className="text-xs text-admin-muted">{c.hint}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
           <FormField label="Trạng thái" error={errors.status} required>
             <select className={inputClass} value={form.status} onChange={(e) => patch({ status: e.target.value as AdminProductInput["status"] })}>
               {Object.entries(PRODUCT_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -222,30 +275,8 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
         </div>
       </div>
 
-      <div role="tabpanel" id="ppanel-variants" aria-labelledby="ptab-variants" hidden={tab !== "variants"} className="space-y-4">
-        <div className="flex justify-end">
-          <button type="button" className={btnSecondary} onClick={() => patch({ variants: [...form.variants, { ...emptyVariant(false), name: "" }] })}>+ Thêm biến thể</button>
-        </div>
-        {errors.variants && <p role="alert" className="text-xs text-admin-danger">{errors.variants}</p>}
-        {form.variants.map((v, i) => (
-          <fieldset key={v.id ?? `new-${i}`} className="grid gap-3 rounded-lg border border-admin-border p-3 sm:grid-cols-2 lg:grid-cols-4">
-            <legend className="px-1 text-xs text-admin-muted">Biến thể #{i + 1}{v.id ? ` (id ${v.id})` : " (mới)"}</legend>
-            <FormField label="SKU" error={errors[`variants.${i}.sku`]} required><input className={inputClass} value={v.sku} onChange={(e) => patchVariant(i, { sku: e.target.value })} /></FormField>
-            <FormField label="Tên biến thể" error={errors[`variants.${i}.name`]} required><input className={inputClass} value={v.name} onChange={(e) => patchVariant(i, { name: e.target.value })} /></FormField>
-            <FormField label="Giá bán" error={errors[`variants.${i}.price`]} required><input type="number" min={0} className={inputClass} value={v.price} onChange={(e) => patchVariant(i, { price: Number(e.target.value) })} /></FormField>
-            <FormField label="Giá gốc" error={errors[`variants.${i}.compare_at_price`]}><input type="number" min={0} className={inputClass} value={v.compare_at_price ?? ""} onChange={(e) => patchVariant(i, { compare_at_price: numOrNull(e.target.value) })} /></FormField>
-            <FormField label="Giá vốn" error={errors[`variants.${i}.cost_price`]}><input type="number" min={0} className={inputClass} value={v.cost_price ?? ""} onChange={(e) => patchVariant(i, { cost_price: numOrNull(e.target.value) })} /></FormField>
-            <FormField label="Tồn kho" error={errors[`variants.${i}.stock_quantity`]}><input type="number" min={0} className={inputClass} value={v.stock_quantity} onChange={(e) => patchVariant(i, { stock_quantity: Number(e.target.value) })} /></FormField>
-            <FormField label="Khối lượng (g)" error={errors[`variants.${i}.weight_grams`]}><input type="number" min={0} className={inputClass} value={v.weight_grams} onChange={(e) => patchVariant(i, { weight_grams: Number(e.target.value) })} /></FormField>
-            <div className="flex flex-col justify-end gap-1 text-sm">
-              <CheckboxField label="Mặc định"><input type="radio" name="default-variant" checked={v.is_default} onChange={() => patchVariant(i, { is_default: true })} /></CheckboxField>
-              <CheckboxField label="Đang bán"><input type="checkbox" checked={v.is_active} onChange={(e) => patchVariant(i, { is_active: e.target.checked })} /></CheckboxField>
-              {form.variants.length > 1 && (
-                <button type="button" className={btnDanger} onClick={() => patch({ variants: form.variants.filter((_, j) => j !== i) })}>Bỏ biến thể</button>
-              )}
-            </div>
-          </fieldset>
-        ))}
+      <div role="tabpanel" id="ppanel-variants" aria-labelledby="ptab-variants" hidden={tab !== "variants"}>
+        <VariantsTable variants={form.variants} onChange={(variants) => patch({ variants })} errors={errors} dupRows={dupRows} productName={form.name} />
       </div>
 
       <div role="tabpanel" id="ppanel-images" aria-labelledby="ptab-images" hidden={tab !== "images"}>
@@ -253,8 +284,8 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
         <ProductImagesField items={images} primaryKey={primaryKey} disabled={busy} onChange={(items, pk) => { setImages(items); setPrimaryKey(pk); }} />
       </div>
 
-      <div role="tabpanel" id="ppanel-specs" aria-labelledby="ptab-specs" hidden={tab !== "specs"} className="grid gap-6 lg:grid-cols-2">
-        <section>
+      <div role="tabpanel" id="ppanel-specs" aria-labelledby="ptab-specs" hidden={tab !== "specs"}>
+        <section className="max-w-3xl">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-admin-fg">Thông số kỹ thuật</h3>
             <button type="button" className={btnSecondary} onClick={() => setSpecs((s) => [...s, { key: "", value: "" }])}>+ Thêm dòng</button>
@@ -272,10 +303,21 @@ function ProductForm({ id, product, onClose }: { id: number | null; product?: Ad
             ))}
           </div>
         </section>
-        <section className="space-y-3">
-          <h3 className="font-semibold text-admin-fg">SEO</h3>
-          <FormField label="Meta title" error={errors.meta_title}><input className={inputClass} value={form.meta_title ?? ""} onChange={(e) => patch({ meta_title: e.target.value })} /></FormField>
+      </div>
+
+      <div role="tabpanel" id="ppanel-seo" aria-labelledby="ptab-seo" hidden={tab !== "seo"}>
+        <section className="max-w-2xl space-y-3">
+          <p className="text-sm text-admin-muted">Để trống sẽ dùng tên và mô tả ngắn của sản phẩm.</p>
+          <FormField label="Meta title" error={errors.meta_title}><input className={inputClass} maxLength={255} value={form.meta_title ?? ""} onChange={(e) => patch({ meta_title: e.target.value })} /></FormField>
+          <p className="-mt-2 text-xs text-admin-muted">{(form.meta_title ?? "").length}/60 ký tự khuyến nghị</p>
           <FormField label="Meta description" error={errors.meta_description}><textarea className={inputClass} rows={3} value={form.meta_description ?? ""} onChange={(e) => patch({ meta_description: e.target.value })} /></FormField>
+          <p className="-mt-2 text-xs text-admin-muted">{(form.meta_description ?? "").length}/160 ký tự khuyến nghị</p>
+          <div className="rounded-lg border border-admin-border p-3" aria-label="Xem trước kết quả tìm kiếm">
+            <p className="text-xs text-admin-muted">Xem trước trên Google</p>
+            <p className="truncate text-base text-admin-primary">{form.meta_title?.trim() || form.name || "Tên sản phẩm"}</p>
+            <p className="truncate text-xs text-admin-success">/san-pham/{form.slug || product?.slug || "duong-dan"}</p>
+            <p className="line-clamp-2 text-sm text-admin-fg-soft">{form.meta_description?.trim() || form.short_description || "Mô tả sản phẩm..."}</p>
+          </div>
         </section>
       </div>
     </FormModal>

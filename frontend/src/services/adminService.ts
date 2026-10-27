@@ -1,6 +1,6 @@
 import type {
   AdminCategory, AdminCategoryInput, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
-  AdminProductInput, AdminProductRow, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated,
+  AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated,
 } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
 
@@ -30,6 +30,14 @@ export const adminService = {
   product: (id: number, signal?: AbortSignal) => get<AdminProduct>(`/admin/products/${id}`, signal),
   createProduct: async (input: AdminProductInput) => (await apiClient.post<Envelope<AdminProduct>>("/admin/products", input)).data.data,
   updateProduct: async (id: number, input: AdminProductInput) => (await apiClient.put<Envelope<AdminProduct>>(`/admin/products/${id}`, input)).data.data,
+  bulkProducts: async (body: BulkProductInput) =>
+    (await apiClient.post<Envelope<BulkProductResult>>("/admin/products/bulk", body)).data.data,
+  duplicateProduct: async (id: number) => (await apiClient.post<Envelope<AdminProduct>>(`/admin/products/${id}/duplicate`)).data.data,
+  uploadDescriptionImage: async (file: File) => {
+    const form = new FormData();
+    form.append("image", file);
+    return (await apiClient.post<Envelope<{ url: string }>>("/admin/products/description-images", form)).data.data;
+  },
   deleteProduct: async (id: number) => { await apiClient.delete(`/admin/products/${id}`); },
   /** Tải một ảnh lên sản phẩm (máy chủ mã hóa lại WebP, bỏ EXIF); onProgress nhận 0–100. */
   uploadProductImage: async (productId: number, file: File, onProgress?: (percent: number) => void) => {

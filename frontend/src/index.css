@@ -254,3 +254,23 @@ body {
   --admin-status-neutral-bg: #1e293b;
   --admin-status-neutral-fg: #cbd5e1;
 }
+
+/* Nội dung mô tả sản phẩm (HTML đã lọc) — dùng chung cho trình soạn thảo admin và trang sản phẩm shop. */
+.rich-prose { line-height: 1.65; overflow-wrap: anywhere; }
+.rich-prose > * + * { margin-top: 0.75em; }
+.rich-prose h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1.25em; }
+.rich-prose h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.1em; }
+.rich-prose h4 { font-size: 1rem; font-weight: 600; margin-top: 1em; }
+.rich-prose ul { list-style: disc; padding-left: 1.4em; }
+.rich-prose ol { list-style: decimal; padding-left: 1.4em; }
+.rich-prose li > p { margin: 0; }
+.rich-prose a { color: var(--color-blue-700, #1d4ed8); text-decoration: underline; }
+.rich-prose blockquote { border-left: 3px solid currentColor; opacity: 0.85; padding-left: 0.9em; font-style: italic; }
+.rich-prose img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+.rich-prose img.ProseMirror-selectednode { outline: 2px solid var(--color-blue-500, #3b82f6); }
+.rich-prose table { width: 100%; border-collapse: collapse; font-size: 0.925em; display: block; overflow-x: auto; }
+.rich-prose th, .rich-prose td { border: 1px solid color-mix(in srgb, currentColor 22%, transparent); padding: 0.4em 0.6em; text-align: left; vertical-align: top; min-width: 4em; }
+.rich-prose th { font-weight: 600; background: color-mix(in srgb, currentColor 6%, transparent); }
+.rich-prose th > p, .rich-prose td > p { margin: 0; }
+.rich-prose .selectedCell { background: color-mix(in srgb, var(--color-blue-500, #3b82f6) 15%, transparent); }
+.rich-prose p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; opacity: 0.5; }
