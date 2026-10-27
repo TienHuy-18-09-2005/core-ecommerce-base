@@ -255,7 +255,7 @@ Bulk chỉ cho chuyển trạng thái hợp lệ theo state machine backend; k�
 Nút hành động chính = bước kế tiếp hợp lệ; "Hủy đơn" mở modal bắt buộc nhập lý do (`cancel_reason` đã có). Timeline lấy từ lịch sử trạng thái/audit log (cần kiểm tra API show đã trả lịch sử chưa → mục 9).
 
 ### 6.4 Sản phẩm — danh sách `/admin/san-pham`
-Cột: ☐ | Ảnh | Tên + SKU đầu | Danh mục | Thương hiệu | Giá (min–max) | Tồn kho (tổng, đỏ nếu thấp) | Trạng thái (Đang bán/Ẩn) | Cập nhật | ⋯ (Sửa, Nhân bản, Xem ngoài shop, Xóa).
+Cột: ☐ | Ảnh | Tên + SKU đầu | Danh mục | Thương hiệu | Giá (min–max) | Tồn kho (tổng, đỏ nếu thấp) | Trạng thái (Đang bán/Ẩn) | Cập nhật | Thao tác dạng biểu tượng có tooltip (Xem chi tiết, Sửa, Nhân bản, Xóa). Đã bỏ "Xem ngoài shop" khỏi bảng; tên sản phẩm là link tới trang chi tiết.
 Lọc: danh mục, thương hiệu, trạng thái, tồn kho thấp. Bulk: Ẩn/Hiện, Xóa, Gán danh mục.
 
 ### 6.5 Sản phẩm — trình soạn `/admin/san-pham/moi`, `/:id`
@@ -401,6 +401,13 @@ Không còn câu hỏi mở về phân quyền.
 
 ## Điều chỉnh trước R4 (27/10/2026): form dạng modal + ảnh sản phẩm tải file
 
-- **Thêm/Sửa dạng modal** (sản phẩm, danh mục, mã giảm giá): `FormModal` dùng Modal R2 (bẫy focus, ESC, Ctrl+S, đóng khi còn thay đổi → hỏi "Bỏ thay đổi?"). Trạng thái trên URL: `?them=1` / `?sua=ID`. Link cũ `/admin/san-pham/moi` và `/admin/san-pham/:id` tự chuyển về danh sách với modal mở. Modal sản phẩm cỡ `xl`, chia tab (Thông tin chung / Biến thể / Ảnh / Thông số & SEO), tab có lỗi được đánh dấu; màn hẹp gần toàn màn hình. Cập nhật trạng thái đơn hàng vẫn ở trang chi tiết.
+- **Thêm/Sửa dạng modal** (sản phẩm, danh mục, mã giảm giá): `FormModal` dùng Modal R2 (bẫy focus, ESC, Ctrl+S, đóng khi còn thay đổi → hỏi "Bỏ thay đổi?"). Trạng thái trên URL: `?them=1` / `?sua=ID`. Link cũ `/admin/san-pham/moi` tự chuyển về danh sách với modal thêm mở. `/admin/san-pham/:id` là **trang chi tiết sản phẩm (chỉ xem)**, xem mục bên dưới. Modal sản phẩm cỡ `xl`, chia tab (Thông tin chung / Biến thể / Ảnh / Thông số & SEO), tab có lỗi được đánh dấu; màn hẹp gần toàn màn hình. Cập nhật trạng thái đơn hàng vẫn ở trang chi tiết.
 - **Ảnh sản phẩm**: bỏ ô nhập URL. Chọn nhiều ảnh / kéo thả, xem trước, xóa, sắp xếp (kéo hoặc mũi tên), chọn ảnh chính; kiểm tra JPG/PNG/WebP ≤5MB, tối đa 10 ảnh; hiện tiến độ tải. Lưu sản phẩm xong mới đồng bộ ảnh: xóa → tải lên → lưu thứ tự + ảnh chính.
 - **Backend**: `POST /admin/products/{id}/images` (throttle `admin-upload`), `PUT .../images/order`, `DELETE .../images/{media}` — policy `update`, mã hóa lại WebP bỏ EXIF, audit log, xóa file khi xóa ảnh. `product_media` thêm `is_primary`, `file_path`; `thumbnail_url` tự đồng bộ theo ảnh chính. Migration chuyển dữ liệu URL cũ sang media (không mất dữ liệu). Lưu sản phẩm bỏ qua `media`/`thumbnail_url`.
+
+## Trang chi tiết sản phẩm (chỉ xem), bổ sung sau R5
+
+- Route `/admin/san-pham/:id` trong AdminLayout, breadcrumb "Tổng quan › Sản phẩm › Chi tiết sản phẩm". Không còn link "Xem ngoài shop" trong bảng sản phẩm; mọi việc xem diễn ra trong trang quản trị.
+- Nội dung: thư viện ảnh (ảnh chính trước), tên, trạng thái/nổi bật, giá (min–max), tổng tồn kho, danh mục, thương hiệu, các SKU, bảng biến thể (tồn kho thấp ≤ 5 tô đỏ), mô tả HTML (máy chủ lọc khi lưu, client lọc thêm lần nữa), thông số, SEO, 5 đánh giá gần nhất (`GET /admin/reviews?product_id=`), lịch sử thay đổi (`GET /admin/products/{id}/history`, đọc `admin_audit_logs`, 50 dòng mới nhất, `can:view,product`).
+- Nút: **Sửa** (mở modal qua `?sua=ID` ngay trên trang chi tiết), **Nhân bản** (chuyển tới chi tiết bản sao với modal sửa mở), **Xóa** (hộp xác nhận rồi về danh sách).
+- **Phân quyền (R6):** `products.view` cấp cho **mọi vai trò mẫu**, gồm Quản lý sản phẩm và Chăm sóc khách hàng, để ai cũng xem được trang này. Trang chỉ đọc với người thiếu quyền sửa: ẩn Sửa/Nhân bản khi thiếu `products.edit`, ẩn Xóa khi thiếu `products.delete`. Hiện dùng hook tạm `useProductPermissions()` (luôn true) trong `ProductDetailPage.tsx`, có TODO(R6) để thay bằng `useCan()`. Endpoint lịch sử dùng `products.view`.

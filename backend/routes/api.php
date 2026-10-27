@@ -96,6 +96,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
         ->middleware(['can:create,App\Models\Product', 'throttle:admin-upload']);
     Route::post('/products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->middleware('can:create,App\Models\Product');
     Route::get('/products/{product}', [AdminProductController::class, 'show'])->middleware('can:view,product');
+    Route::get('/products/{product}/history', [AdminProductController::class, 'history'])->middleware('can:view,product');
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->middleware('can:update,product');
     Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->middleware('can:delete,product');
     // Ảnh sản phẩm: tải từng file (để có tiến độ), sắp thứ tự + ảnh chính, xóa kèm file

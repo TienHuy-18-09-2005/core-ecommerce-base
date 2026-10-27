@@ -82,7 +82,7 @@ describe("admin panel", () => {
     svc.products.mockResolvedValue({ data: [{ id: 5, name: "Bóng đèn", slug: "bong-den", status: "published", is_featured: false, thumbnail_url: null, brand: null, categories: [], price_min: 50000, price_max: 50000, sku: "BD-01", stock_total: 3, variants_count: 1, updated_at: null }], meta });
     svc.categories.mockResolvedValue([]);
     const router = renderAdmin("/admin/san-pham");
-    expect(await screen.findByRole("button", { name: "Bóng đèn" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: "Bóng đèn" })).toBeTruthy();
     expect(await seriousViolations()).toEqual([]);
     // bộ lọc hiện sẵn, chọn là áp dụng ngay
     const bar = screen.getByRole("group", { name: "Bộ lọc" });
@@ -334,7 +334,7 @@ describe("admin panel", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
-  it("redirects the old product URL to the list with the edit modal, and syncs images on save", async () => {
+  it("opens the edit modal from ?sua=ID and syncs images on save", async () => {
     svc.products.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
     svc.categories.mockResolvedValue([]);
     svc.product.mockResolvedValue({
@@ -349,8 +349,7 @@ describe("admin panel", () => {
     svc.updateProduct.mockResolvedValue({ id: 5 } as never);
     svc.deleteProductImage.mockResolvedValue([] as never);
     svc.reorderProductImages.mockResolvedValue([] as never);
-    const router = renderAdmin("/admin/san-pham/5");
-    await waitFor(() => expect(router.state.location.search).toBe("?sua=5"));
+    renderAdmin("/admin/san-pham?sua=5");
     const dialog = await screen.findByRole("dialog", { name: "Sửa sản phẩm: Bóng đèn" });
     expect(screen.queryByLabelText("URL ảnh")).toBeNull();
     fireEvent.click(within(dialog).getByRole("tab", { name: /Hình ảnh/ }));
@@ -422,7 +421,9 @@ describe("admin panel", () => {
     const router = renderAdmin("/admin/san-pham");
     const dup = await screen.findByRole("button", { name: "Nhân bản Bóng đèn" });
     expect(screen.queryByRole("button", { name: /Thao tác cho/ })).toBeNull();
-    expect(screen.getByRole("link", { name: "Xem ngoài shop Bóng đèn" }).getAttribute("href")).toBe("/san-pham/bong-den");
+    expect(screen.queryByRole("link", { name: /Xem ngoài shop/ })).toBeNull();
+    expect(screen.getByRole("link", { name: "Xem chi tiết Bóng đèn" }).getAttribute("href")).toBe("/admin/san-pham/5");
+    expect(screen.getByRole("link", { name: "Bóng đèn" }).getAttribute("href")).toBe("/admin/san-pham/5");
     fireEvent.focus(dup);
     const tip = await screen.findByRole("tooltip");
     expect(tip.textContent).toBe("Nhân bản");
@@ -433,6 +434,81 @@ describe("admin panel", () => {
     fireEvent.click(dup);
     await waitFor(() => expect(svc.duplicateProduct).toHaveBeenCalledWith(5));
     await waitFor(() => expect(router.state.location.search).toBe("?sua=77"));
+  });
+
+  const fullProduct = {
+    id: 5, name: "Bóng đèn", slug: "bong-den", status: "published", is_featured: true, brand_id: 1, category_ids: [3], short_description: "Tiết kiệm điện",
+    description: '<p>Sáng <strong>mạnh</strong></p><script>alert(1)</script><img src="/a.webp" onerror="x()">',
+    unit: "cái", specifications: { "Công suất": "9W" }, meta_title: "Bóng đèn LED", meta_description: null, created_at: "2026-10-20T09:00:00+07:00", updated_at: "2026-10-26T09:00:00+07:00",
+    thumbnail_url: "/storage/products/a.webp",
+    variants: [
+      { id: 1, sku: "BD-9", name: "9W", price: 50000, compare_at_price: 60000, cost_price: null, stock_quantity: 2, weight_grams: 0, image_url: null, is_default: true, is_active: true },
+      { id: 2, sku: "BD-12", name: "12W", price: 90000, compare_at_price: null, cost_price: null, stock_quantity: 40, weight_grams: 0, image_url: null, is_default: false, is_active: true },
+    ],
+    media: [
+      { id: 12, url: "/storage/products/b.webp", alt_text: null, sort_order: 0, is_primary: false },
+      { id: 11, url: "/storage/products/a.webp", alt_text: null, sort_order: 1, is_primary: true },
+    ],
+  };
+
+  it("trang chi tiết sản phẩm: chỉ xem, ảnh chính trước, tồn kho thấp, mô tả đã lọc, đánh giá, lịch sử", async () => {
+    svc.product.mockResolvedValue(fullProduct as never);
+    svc.categories.mockResolvedValue([{ id: 3, name: "Đèn LED", slug: "den", parent_id: null }] as never);
+    svc.reviews.mockResolvedValue({ data: [{ id: 1, rating: 4, comment: "Rất sáng", images: [], is_approved: true, verified_purchase: true, created_at: "2026-10-25T09:00:00+07:00", product: null, user: { id: 2, name: "Lan", email: "l@x.vn" } }], meta });
+    svc.productHistory.mockResolvedValue([{ id: 9, action: "product.updated", changes: { status: ["draft", "published"], name: ["A", "B"] }, user: { id: 1, name: "Quản trị" }, created_at: "2026-10-26T09:00:00+07:00" }] as never);
+    renderAdmin("/admin/san-pham/5");
+    expect(await screen.findByRole("heading", { name: "Bóng đèn", level: 1 })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: /Breadcrumb|Đường dẫn/ }).textContent).toContain("Chi tiết sản phẩm");
+    expect(screen.getByRole("img", { name: "Bóng đèn" }).getAttribute("src")).toBe("/storage/products/a.webp");
+    expect(screen.getByText("2").className).toContain("text-admin-danger");
+    expect(screen.getByText("BD-9, BD-12")).toBeTruthy();
+    expect(await screen.findByText("Đèn LED")).toBeTruthy();
+    expect(screen.getByText("9W", { selector: "dd" })).toBeTruthy();
+    const desc = screen.getByText("mạnh").closest(".rich-prose") as HTMLElement;
+    expect(desc.innerHTML).not.toMatch(/script|onerror/);
+    expect(await screen.findByText("Rất sáng")).toBeTruthy();
+    expect(svc.reviews).toHaveBeenCalledWith(expect.objectContaining({ product_id: "5" }), expect.anything());
+    expect(await screen.findByText("Cập nhật sản phẩm")).toBeTruthy();
+    expect(screen.getByText(/trạng thái: draft → published · Đổi tên/)).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByText(/Xem ngoài shop/)).toBeNull();
+    expect(await seriousViolations()).toEqual([]);
+  });
+
+  it("trang chi tiết: Sửa mở modal ?sua, Nhân bản, Xóa có xác nhận rồi về danh sách", async () => {
+    svc.product.mockResolvedValue(fullProduct as never);
+    svc.categories.mockResolvedValue([]);
+    svc.reviews.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
+    svc.productHistory.mockResolvedValue([]);
+    svc.duplicateProduct.mockResolvedValue({ id: 77 } as never);
+    svc.deleteProduct.mockResolvedValue(undefined as never);
+    svc.products.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
+    const router = renderAdmin("/admin/san-pham/5");
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa" }));
+    await waitFor(() => expect(router.state.location.search).toBe("?sua=5"));
+    expect(await screen.findByRole("dialog", { name: "Sửa sản phẩm: Bóng đèn" })).toBeTruthy();
+    expect(router.state.location.pathname).toBe("/admin/san-pham/5");
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: "Nhân bản" }));
+    await waitFor(() => expect(svc.duplicateProduct).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/admin/san-pham/77"));
+    await router.navigate("/admin/san-pham/5");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Xóa" }));
+    const dlg = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dlg).getByRole("button", { name: "Xóa" }));
+    await waitFor(() => expect(svc.deleteProduct).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/admin/san-pham"));
+  });
+
+  it("trang chi tiết: lỗi tải thì báo lỗi có nút thử lại", async () => {
+    svc.product.mockRejectedValue(new ApiError("Không tìm thấy", { status: 404, code: "NOT_FOUND" }));
+    svc.categories.mockResolvedValue([]);
+    renderAdmin("/admin/san-pham/5");
+    expect((await screen.findByRole("alert")).textContent).toContain("Không tìm thấy dữ liệu.");
+    expect(screen.getByRole("button", { name: "Thử lại" })).toBeTruthy();
   });
 
   it("R5: modal 5 tab, báo thay đổi chưa lưu, chặn lưu khi SKU trùng, tab nằm trên URL", async () => {

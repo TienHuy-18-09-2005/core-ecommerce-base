@@ -103,6 +103,15 @@ export interface AdminProduct extends AdminProductInput {
   updated_at: string | null;
 }
 
+/** Một dòng lịch sử thay đổi sản phẩm (từ nhật ký thao tác admin). */
+export interface ProductHistoryEntry {
+  id: number;
+  action: string;
+  changes: Record<string, unknown> | null;
+  user: { id: number; name: string } | null;
+  created_at: string | null;
+}
+
 export interface AdminCategory {
   id: number;
   parent_id: number | null;

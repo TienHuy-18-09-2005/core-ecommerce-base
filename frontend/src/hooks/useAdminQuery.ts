@@ -7,6 +7,7 @@ export const adminKeys = {
   dashboard: ["admin", "dashboard"] as const,
   products: (p: QueryParams) => ["admin", "products", cleanParams(p)] as const,
   product: (id: number) => ["admin", "product", id] as const,
+  productHistory: (id: number) => ["admin", "product-history", id] as const,
   categories: ["admin", "categories"] as const,
   coupons: (p: QueryParams) => ["admin", "coupons", cleanParams(p)] as const,
   orders: (p: QueryParams) => ["admin", "orders", cleanParams(p)] as const,
@@ -24,6 +25,9 @@ export const useAdminProductsQuery = (p: QueryParams) =>
 
 export const useAdminProductQuery = (id: number | null) =>
   useQuery({ queryKey: adminKeys.product(id ?? 0), queryFn: ({ signal }) => adminService.product(id as number, signal), enabled: id !== null });
+
+export const useAdminProductHistoryQuery = (id: number) =>
+  useQuery({ queryKey: adminKeys.productHistory(id), queryFn: ({ signal }) => adminService.productHistory(id, signal) });
 
 export const useAdminCategoriesQuery = () =>
   useQuery({ queryKey: adminKeys.categories, queryFn: ({ signal }) => adminService.categories(signal) });

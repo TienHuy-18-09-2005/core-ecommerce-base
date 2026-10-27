@@ -21,6 +21,9 @@ class ReviewController extends Controller
         if (($f['visibility'] ?? null) !== null) {
             $q->where('is_approved', $f['visibility'] === 'visible');
         }
+        if (! empty($f['product_id'])) {
+            $q->where('product_id', $f['product_id']);
+        }
         if (! empty($f['rating'])) {
             $q->where('rating', $f['rating']);
         }

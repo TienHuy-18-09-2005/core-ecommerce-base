@@ -17,7 +17,8 @@ import { adminService } from "../../services/adminService.ts";
 import { productService } from "../../services/productService.ts";
 import type { AdminProductRow, BulkProductInput, BulkProductResult } from "../../types/admin.ts";
 import { formatCurrency } from "../../utils/formatCurrency.ts";
-import { Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { Copy, Eye, Pencil, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
 import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
@@ -121,7 +122,7 @@ export default function ProductsPage() {
           ) },
           { header: "Sản phẩm", sortKey: "name", hideable: false, cell: (p) => (
             <div className="min-w-40">
-              <button type="button" onClick={() => modal.openEdit(p.id)} className="text-left font-medium text-admin-primary hover:underline">{p.name}</button>
+              <Link to={`/admin/san-pham/${p.id}`} className="text-left font-medium text-admin-primary hover:underline">{p.name}</Link>
               <p className="font-mono text-xs text-admin-muted">{p.sku ?? "—"}{p.variants_count > 1 && <span className="font-sans"> · {p.variants_count} biến thể</span>}</p>
             </div>
           ) },
@@ -135,10 +136,9 @@ export default function ProductsPage() {
           { header: "Cập nhật", sortKey: "updated_at", secondary: true, cell: (p) => <span className="whitespace-nowrap text-sm">{p.updated_at ? formatDateTime(p.updated_at) : "—"}</span> },
           { header: "Thao tác", hideable: false, cell: (p) => (
             <IconActions>
+              <IconButton label="Xem chi tiết" ariaLabel={`Xem chi tiết ${p.name}`} icon={<Eye />} href={`/admin/san-pham/${p.id}`} />
               <IconButton label="Sửa" ariaLabel={`Sửa ${p.name}`} icon={<Pencil />} onClick={() => modal.openEdit(p.id)} />
               <IconButton label="Nhân bản" ariaLabel={`Nhân bản ${p.name}`} icon={<Copy />} disabled={duplicate.isPending} onClick={() => onDuplicate(p)} />
-              <IconButton label={p.status === "published" ? "Xem ngoài shop" : "Chưa bán — không xem được ngoài shop"} ariaLabel={`Xem ngoài shop ${p.name}`}
-                icon={<ExternalLink />} href={`/san-pham/${p.slug}`} external disabled={p.status !== "published"} />
               <IconButton label="Xóa" ariaLabel={`Xóa ${p.name}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(p.id, p.name)} />
             </IconActions>
           ) },

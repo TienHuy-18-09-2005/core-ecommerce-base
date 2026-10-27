@@ -5,7 +5,8 @@ import {
 } from "lucide-react";
 import DashboardPage from "./DashboardPage.tsx";
 import ProductsPage from "./ProductsPage.tsx";
-import { ProductCreateRedirect, ProductEditRedirect } from "./productRedirects.tsx";
+import { ProductCreateRedirect } from "./productRedirects.tsx";
+import ProductDetailPage from "./ProductDetailPage.tsx";
 import OrdersPage from "./OrdersPage.tsx";
 import OrderDetailPage from "./OrderDetailPage.tsx";
 import OrderPrintPage from "./OrderPrintPage.tsx";
@@ -55,7 +56,7 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { path: "san-pham", label: "Sản phẩm", group: "catalog", icon: Boxes, component: ProductsPage,
     children: [
       { path: "moi", label: "Thêm sản phẩm", component: ProductCreateRedirect },
-      { path: ":id", label: "Sửa sản phẩm", component: ProductEditRedirect },
+      { path: ":id", label: "Chi tiết sản phẩm", component: ProductDetailPage },
     ] },
   { path: "danh-muc", label: "Danh mục", group: "catalog", icon: FolderTree, component: CategoriesPage },
   { path: "thuong-hieu", label: "Thương hiệu", group: "catalog", icon: Tag },
@@ -76,7 +77,7 @@ export function navGroups(routes: AdminRoute[] = ADMIN_ROUTES) {
 
 export interface Crumb { label: string; to?: string }
 
-/** Breadcrumb cho một pathname, vd. /admin/san-pham/5 → Quản trị › Sản phẩm › Sửa sản phẩm. */
+/** Breadcrumb cho một pathname, vd. /admin/san-pham/5 → Quản trị › Sản phẩm › Chi tiết sản phẩm. */
 export function breadcrumbFor(pathname: string, routes: AdminRoute[] = ADMIN_ROUTES): Crumb[] {
   const rest = pathname.replace(/^\/admin\/?/, "").replace(/\/+$/, "");
   const [head = "", ...tail] = rest.split("/");

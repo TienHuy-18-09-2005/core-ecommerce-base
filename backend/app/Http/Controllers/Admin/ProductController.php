@@ -29,6 +29,22 @@ class ProductController extends Controller
         return response()->json(['success' => true, 'data' => $this->productService->detail($product)]);
     }
 
+    /** Lịch sử thay đổi của một sản phẩm (đọc từ admin_audit_logs), mới nhất trước, tối đa 50 dòng. */
+    public function history(Product $product): JsonResponse
+    {
+        $logs = \App\Models\AdminAuditLog::query()->with('user:id,name')
+            ->where('subject_type', 'Product')->where('subject_id', $product->id)
+            ->orderByDesc('id')->limit(50)->get();
+
+        return response()->json(['success' => true, 'data' => $logs->map(fn ($l) => [
+            'id' => $l->id,
+            'action' => $l->action,
+            'changes' => $l->changes,
+            'user' => $l->user ? ['id' => $l->user->id, 'name' => $l->user->name] : null,
+            'created_at' => $l->created_at?->toIso8601String(),
+        ])->all()]);
+    }
+
     public function store(StoreProductRequest $request): JsonResponse
     {
         $product = $this->productService->createProductWithVariants($request->validated());

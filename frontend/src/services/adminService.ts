@@ -1,7 +1,6 @@
 import type {
   AdminCategory, AdminCategoryInput, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
-  AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated,
-} from "../types/admin.ts";
+  AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated, ProductHistoryEntry } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
 
 type Envelope<T> = { success: boolean; message?: string; data: T };
@@ -28,6 +27,7 @@ export const adminService = {
 
   products: (params: QueryParams, signal?: AbortSignal) => page<AdminProductRow>("/admin/products", params, signal),
   product: (id: number, signal?: AbortSignal) => get<AdminProduct>(`/admin/products/${id}`, signal),
+  productHistory: (id: number, signal?: AbortSignal) => get<ProductHistoryEntry[]>(`/admin/products/${id}/history`, signal),
   createProduct: async (input: AdminProductInput) => (await apiClient.post<Envelope<AdminProduct>>("/admin/products", input)).data.data,
   updateProduct: async (id: number, input: AdminProductInput) => (await apiClient.put<Envelope<AdminProduct>>(`/admin/products/${id}`, input)).data.data,
   bulkProducts: async (body: BulkProductInput) =>

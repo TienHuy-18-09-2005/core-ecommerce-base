@@ -43,7 +43,7 @@ describe("adminRoutes", () => {
     expect(breadcrumbFor("/admin/don-hang/7")).toEqual([{ label: "Tổng quan", to: "/admin" }, { label: "Đơn hàng", to: "/admin/don-hang" }, { label: "Chi tiết đơn" }]);
     expect(breadcrumbFor("/admin/don-hang/7/in").at(-1)?.label).toBe("In phiếu giao hàng");
     expect(breadcrumbFor("/admin/san-pham/moi").at(-1)?.label).toBe("Thêm sản phẩm");
-    expect(breadcrumbFor("/admin/san-pham/12").at(-1)?.label).toBe("Sửa sản phẩm");
+    expect(breadcrumbFor("/admin/san-pham/12").at(-1)?.label).toBe("Chi tiết sản phẩm");
     expect(breadcrumbFor("/admin/nhat-ky").at(-1)?.label).toBe("Không tìm thấy");
   });
 });
@@ -52,7 +52,7 @@ describe("AdminLayout", () => {
   it("shows breadcrumb with current page", () => {
     renderLayout("/admin/san-pham/5");
     const bc = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(bc).getByText("Sửa sản phẩm").getAttribute("aria-current")).toBe("page");
+    expect(within(bc).getByText("Chi tiết sản phẩm").getAttribute("aria-current")).toBe("page");
     expect(within(bc).getByRole("link", { name: "Sản phẩm" }).getAttribute("href")).toBe("/admin/san-pham");
   });
 

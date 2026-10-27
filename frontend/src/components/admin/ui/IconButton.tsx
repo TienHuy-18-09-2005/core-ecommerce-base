@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 
 const DELAY = 150;
 
@@ -80,8 +81,9 @@ export function IconButton({ label, ariaLabel, icon, tone = "default", disabled,
   return (
     <>
       {href && !disabled
-        ? <a ref={setRef} href={href} className={cls} aria-label={ariaLabel ?? label} {...t.handlers}
-            {...(external ? { target: "_blank", rel: "noreferrer" } : {})}>{content}</a>
+        ? external
+          ? <a ref={setRef} href={href} className={cls} aria-label={ariaLabel ?? label} {...t.handlers} target="_blank" rel="noreferrer">{content}</a>
+          : <Link ref={setRef} to={href} className={cls} aria-label={ariaLabel ?? label} {...t.handlers}>{content}</Link>
         : <button ref={setRef} type="button" className={cls} aria-label={ariaLabel ?? label} aria-disabled={disabled || undefined} onClick={disabled ? undefined : onClick} {...t.handlers}>{content}</button>}
       {t.node}
     </>
