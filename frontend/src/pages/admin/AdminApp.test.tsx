@@ -234,15 +234,15 @@ describe("admin panel", () => {
     expect(await screen.findByText("<img src=x onerror=alert(1)>Tốt")).toBeTruthy();
     expect(await seriousViolations()).toEqual([]);
     expect(document.querySelector("img[src='x']")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Ẩn" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ẩn đánh giá" }));
     await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledWith(1, false));
-    fireEvent.click(screen.getByRole("button", { name: "Hiện" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hiện đánh giá" }));
     await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledWith(2, true));
-    fireEvent.click(screen.getAllByRole("button", { name: "Xóa" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Xóa đánh giá" })[0]);
     fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Hủy bỏ" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(svc.deleteReview).not.toHaveBeenCalled();
-    fireEvent.click(screen.getAllByRole("button", { name: "Xóa" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Xóa đánh giá" })[0]);
     fireEvent.click(within(await screen.findByRole("alertdialog", { name: "Xóa đánh giá?" })).getByRole("button", { name: "Xóa" }));
     await waitFor(() => expect(svc.deleteReview).toHaveBeenCalledWith(1));
   });
@@ -283,7 +283,7 @@ describe("admin panel", () => {
     const items = await within(screen.getByRole("main")).findAllByRole("listitem");
     expect(items[0].textContent).toContain("Đèn LED");
     expect(items[1].textContent).toContain("└ Đèn âm trần");
-    fireEvent.click(within(items[0]).getByRole("button", { name: "Xóa" }));
+    fireEvent.click(within(items[0]).getByRole("button", { name: "Xóa danh mục Đèn LED" }));
     fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Xóa" }));
     expect(await screen.findByText("Danh mục còn danh mục con hoặc sản phẩm.")).toBeTruthy();
     expect(await seriousViolations()).toEqual([]);
@@ -414,15 +414,23 @@ describe("admin panel", () => {
     expect(router.state.location.search).toContain("brand_id=1");
   });
 
-  it("R5: menu ⋯ nhân bản rồi mở bản sao để sửa", async () => {
+  it("R5: nút biểu tượng có tooltip, nhân bản rồi mở bản sao để sửa", async () => {
     svc.products.mockResolvedValue({ data: [row], meta });
     svc.categories.mockResolvedValue([]);
     svc.duplicateProduct.mockResolvedValue({ id: 77 } as never);
     svc.product.mockReturnValue(new Promise(() => {}));
     const router = renderAdmin("/admin/san-pham");
-    fireEvent.click(await screen.findByRole("button", { name: "Thao tác cho Bóng đèn" }));
-    expect(screen.getByRole("link", { name: /Xem ngoài shop/ }).getAttribute("href")).toBe("/san-pham/bong-den");
-    fireEvent.click(screen.getByRole("button", { name: "Nhân bản" }));
+    const dup = await screen.findByRole("button", { name: "Nhân bản Bóng đèn" });
+    expect(screen.queryByRole("button", { name: /Thao tác cho/ })).toBeNull();
+    expect(screen.getByRole("link", { name: "Xem ngoài shop Bóng đèn" }).getAttribute("href")).toBe("/san-pham/bong-den");
+    fireEvent.focus(dup);
+    const tip = await screen.findByRole("tooltip");
+    expect(tip.textContent).toBe("Nhân bản");
+    expect(dup.getAttribute("aria-describedby")).toBe(tip.id);
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+    fireEvent.click(dup);
     await waitFor(() => expect(svc.duplicateProduct).toHaveBeenCalledWith(5));
     await waitFor(() => expect(router.state.location.search).toBe("?sua=77"));
   });

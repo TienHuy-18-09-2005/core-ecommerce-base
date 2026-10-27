@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { btnDanger, btnPrimary, flattenTree, inputClass } from "../../utils/adminFormat.ts";
+import { Pencil, Trash2 } from "lucide-react";
+import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
+import { btnPrimary, flattenTree, inputClass } from "../../utils/adminFormat.ts";
 import { CheckboxField, FormField, useUnsavedChanges } from "../../components/admin/form/FormField.tsx";
 import { FormModal } from "../../components/admin/form/FormModal.tsx";
 import { useModalParam } from "../../hooks/useModalParam.ts";
@@ -43,10 +45,10 @@ export default function CategoriesPage() {
                 {!cat.is_active && <span className="ml-2 rounded bg-admin-status-neutral-bg px-1.5 text-xs">Ẩn</span>}
                 <p className="text-xs text-admin-muted">/{cat.slug} · {cat.products_count} sản phẩm · {cat.children_count} danh mục con</p>
               </div>
-              <div className="flex gap-2">
-                <button type="button" className="text-admin-primary" aria-label={`Sửa danh mục ${cat.name}`} onClick={() => modal.openEdit(cat.id)}>Sửa</button>
-                <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(cat)}>Xóa</button>
-              </div>
+              <IconActions>
+                <IconButton label="Sửa" ariaLabel={`Sửa danh mục ${cat.name}`} icon={<Pencil />} onClick={() => modal.openEdit(cat.id)} />
+                <IconButton label="Xóa" ariaLabel={`Xóa danh mục ${cat.name}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(cat)} />
+              </IconActions>
             </li>
           ))}
         </ul>

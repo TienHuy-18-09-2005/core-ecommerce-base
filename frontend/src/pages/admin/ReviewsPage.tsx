@@ -1,3 +1,5 @@
+import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
 import { Link } from "react-router-dom";
 import { btnDanger, btnSecondary, formatDateTime } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
@@ -89,10 +91,10 @@ export default function ReviewsPage() {
         { header: "Ngày", secondary: true, sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
         { header: "Trạng thái", sortKey: "is_approved", cell: (r) => <ReviewStatusBadge approved={r.is_approved} /> },
         { header: "Thao tác", hideable: false, cell: (r) => (
-          <div className="flex flex-col gap-2">
-            <button type="button" className={btnSecondary} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)}>{r.is_approved ? "Ẩn" : "Hiện"}</button>
-            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(r.id)}>Xóa</button>
-          </div>
+          <IconActions>
+            <IconButton label={r.is_approved ? "Ẩn đánh giá" : "Hiện đánh giá"} icon={r.is_approved ? <EyeOff /> : <Eye />} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)} />
+            <IconButton label="Xóa đánh giá" tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(r.id)} />
+          </IconActions>
         ) },
       ]} />
       <Pagination meta={data?.meta} onPage={setPage} />

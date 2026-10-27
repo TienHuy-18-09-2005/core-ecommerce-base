@@ -17,6 +17,8 @@ import { adminService } from "../../services/adminService.ts";
 import { productService } from "../../services/productService.ts";
 import type { AdminProductRow, BulkProductInput, BulkProductResult } from "../../types/admin.ts";
 import { formatCurrency } from "../../utils/formatCurrency.ts";
+import { Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
 import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
 const LOW_STOCK = 5;
@@ -132,19 +134,13 @@ export default function ProductsPage() {
           { header: "Trạng thái", sortKey: "status", cell: (p) => <ProductStatusBadge status={p.status} /> },
           { header: "Cập nhật", sortKey: "updated_at", secondary: true, cell: (p) => <span className="whitespace-nowrap text-sm">{p.updated_at ? formatDateTime(p.updated_at) : "—"}</span> },
           { header: "Thao tác", hideable: false, cell: (p) => (
-            <Popover label={`Thao tác cho ${p.name}`} align="right" panelClass="w-48 !p-1" buttonClass="rounded px-2 py-1 text-lg leading-none text-admin-fg-soft hover:bg-admin-subtle"
-              button={<><span aria-hidden="true">⋯</span><span className="sr-only">Thao tác cho {p.name}</span></>}>
-              {(close) => (
-                <div className="flex flex-col text-sm">
-                  <MenuItem onClick={() => { close(); modal.openEdit(p.id); }}>Sửa</MenuItem>
-                  <MenuItem disabled={duplicate.isPending} onClick={() => { close(); onDuplicate(p); }}>Nhân bản</MenuItem>
-                  {p.status === "published"
-                    ? <a className="rounded px-3 py-2 text-admin-fg hover:bg-admin-subtle" href={`/san-pham/${p.slug}`} target="_blank" rel="noreferrer" onClick={close}>Xem ngoài shop ↗</a>
-                    : <span className="px-3 py-2 text-admin-muted" title="Chỉ sản phẩm đang bán mới xem được ngoài shop">Xem ngoài shop (chưa bán)</span>}
-                  <MenuItem danger disabled={remove.isPending} onClick={() => { close(); void onDelete(p.id, p.name); }}>Xóa</MenuItem>
-                </div>
-              )}
-            </Popover>
+            <IconActions>
+              <IconButton label="Sửa" ariaLabel={`Sửa ${p.name}`} icon={<Pencil />} onClick={() => modal.openEdit(p.id)} />
+              <IconButton label="Nhân bản" ariaLabel={`Nhân bản ${p.name}`} icon={<Copy />} disabled={duplicate.isPending} onClick={() => onDuplicate(p)} />
+              <IconButton label={p.status === "published" ? "Xem ngoài shop" : "Chưa bán — không xem được ngoài shop"} ariaLabel={`Xem ngoài shop ${p.name}`}
+                icon={<ExternalLink />} href={`/san-pham/${p.slug}`} external disabled={p.status !== "published"} />
+              <IconButton label="Xóa" ariaLabel={`Xóa ${p.name}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(p.id, p.name)} />
+            </IconActions>
           ) },
         ]} />
       <Pagination meta={data?.meta} onPage={setPage} />
@@ -164,9 +160,3 @@ export default function ProductsPage() {
   );
 }
 
-function MenuItem({ onClick, danger, disabled, children }: { onClick: () => void; danger?: boolean; disabled?: boolean; children: string }) {
-  return (
-    <button type="button" disabled={disabled} onClick={onClick}
-      className={`rounded px-3 py-2 text-left hover:bg-admin-subtle disabled:opacity-40 ${danger ? "text-admin-danger" : "text-admin-fg"}`}>{children}</button>
-  );
-}

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
+import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
 import { btnDanger, btnPrimary, formatDateTime, inputClass, toLocalInput } from "../../utils/adminFormat.ts";
 import { CheckboxField, FormField, useUnsavedChanges } from "../../components/admin/form/FormField.tsx";
 import { FormModal } from "../../components/admin/form/FormModal.tsx";
@@ -59,10 +61,10 @@ export default function CouponsPage() {
             { header: "Hiệu lực", secondary: true, sortKey: "expires_at", cell: (c) => <span className="text-xs">{formatDateTime(c.starts_at)} → {formatDateTime(c.expires_at)}</span> },
             { header: "Trạng thái", sortKey: "is_active", cell: (c) => (c.is_active ? "Đang bật" : "Tắt") },
             { header: "Thao tác", hideable: false, cell: (c) => (
-              <div className="flex gap-2">
-                <button type="button" className="text-admin-primary" aria-label={`Sửa mã ${c.code}`} onClick={() => modal.openEdit(c.id)}>Sửa</button>
-                <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(c)}>Xóa</button>
-              </div>
+              <IconActions>
+                <IconButton label="Sửa" ariaLabel={`Sửa mã ${c.code}`} icon={<Pencil />} onClick={() => modal.openEdit(c.id)} />
+                <IconButton label="Xóa" ariaLabel={`Xóa mã ${c.code}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(c)} />
+              </IconActions>
             ) },
           ]} />
           <Pagination meta={data?.meta} onPage={setPage} />
