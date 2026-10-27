@@ -37,6 +37,8 @@ class ProductService
         if ($product) {
             // Tăng view count ngầm (có thể đưa vào job/queue nếu cao tải)
             $product->increment('view_count');
+            // Lọc lại khi hiển thị: mô tả cũ (nhập trước khi có bộ lọc) cũng an toàn để render HTML.
+            $product->description = app(\App\Services\Support\HtmlSanitizer::class)->clean($product->description);
         }
 
         return $product;

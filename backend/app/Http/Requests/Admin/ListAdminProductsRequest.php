@@ -17,6 +17,7 @@ class ListAdminProductsRequest extends FormRequest
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:draft,published,archived'],
             'category_id' => ['nullable', 'integer'],
+            'brand_id' => ['nullable', 'integer'],
             'low_stock' => ['nullable', 'boolean'],
             ...\App\Support\AdminSort::rules(['newest', 'oldest', 'stock', 'id', 'name', 'price_min', 'stock_total', 'status', 'updated_at']),
             'page' => ['nullable', 'integer', 'min:1', 'max:10000'],

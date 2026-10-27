@@ -24,7 +24,10 @@ class AdminProductService
         $q = Product::query()->with(['brand:id,name', 'categories:id,name'])
             ->withSum('variants as stock_total', 'stock_quantity')
             ->withMin('variants as price_min', 'price')
-            ->withCount('variants');
+            ->withMax('variants as price_max', 'price')
+            ->withCount('variants')
+            ->addSelect(['first_sku' => ProductVariant::select('sku')->whereColumn('product_id', 'products.id')
+                ->orderByDesc('is_default')->orderBy('id')->limit(1)]);
         if (! empty($f['q'])) {
             $term = '%'.addcslashes($f['q'], '%_\\').'%';
             $q->where(fn ($w) => $w->where('name', 'like', $term)
@@ -35,6 +38,9 @@ class AdminProductService
         }
         if (! empty($f['category_id'])) {
             $q->whereHas('categories', fn ($c) => $c->where('categories.id', $f['category_id']));
+        }
+        if (! empty($f['brand_id'])) {
+            $q->where('brand_id', $f['brand_id']);
         }
         if (! empty($f['low_stock'])) {
             $q->whereHas('variants', fn ($v) => $v->where('is_active', true)->where('stock_quantity', '<=', self::LOW_STOCK));
@@ -61,6 +67,8 @@ class AdminProductService
             'brand' => $p->brand ? ['id' => $p->brand->id, 'name' => $p->brand->name] : null,
             'categories' => $p->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values()->all(),
             'price_min' => $p->price_min !== null ? (float) $p->price_min : null,
+            'price_max' => $p->price_max !== null ? (float) $p->price_max : null,
+            'sku' => $p->first_sku,
             'stock_total' => (int) ($p->stock_total ?? 0),
             'variants_count' => (int) ($p->variants_count ?? 0),
             'updated_at' => $p->updated_at?->toIso8601String(),
@@ -165,6 +173,24 @@ class AdminProductService
             ]);
             $product->categories()->sync($data['category_ids'] ?? []);
 
+            // Sửa lỗi hoán đổi SKU: unique index kiểm từng câu UPDATE, nên A↔B trong một lần lưu sẽ va nhau.
+            // Bước 1: biến thể bị bỏ → xóa mềm; nếu SKU của nó được dùng lại trong form thì đổi SKU cũ sang dạng lưu trữ.
+            $removed = array_diff($existing, $ids);
+            $wanted = array_map('mb_strtolower', array_column($data['variants'], 'sku'));
+            foreach (ProductVariant::whereIn('id', $removed ?: [0])->get() as $gone) {
+                if (in_array(mb_strtolower($gone->sku), $wanted, true)) {
+                    $gone->forceFill(['sku' => mb_substr($gone->sku, 0, 80).'~del'.$gone->id])->saveQuietly();
+                }
+                $gone->delete();
+            }
+            // Bước 2: biến thể giữ lại nhưng đổi SKU → đặt SKU tạm (duy nhất) trước, rồi mới ghi SKU mới ở bước 3.
+            $current = ProductVariant::whereIn('id', $ids ?: [0])->pluck('sku', 'id');
+            foreach ($data['variants'] as $v) {
+                if (! empty($v['id']) && $current[$v['id']] !== $v['sku']) {
+                    ProductVariant::whereKey($v['id'])->update(['sku' => '~tmp'.$v['id'].'-'.Str::random(8)]);
+                }
+            }
+
             $defaultIdx = collect($data['variants'])->search(fn ($v) => ! empty($v['is_default']));
             $defaultIdx = $defaultIdx === false ? 0 : $defaultIdx;
             foreach (array_values($data['variants']) as $i => $v) {
@@ -175,11 +201,6 @@ class AdminProductService
                     $product->variants()->create($fields);
                 }
             }
-            // Biến thể bị bỏ khỏi form → xóa mềm (đơn cũ vẫn tham chiếu được)
-            $removed = array_diff($existing, $ids);
-            if ($removed) {
-                ProductVariant::whereIn('id', $removed)->delete();
-            }
 
             $changes = app(AuditLogger::class)->diff($before, $product->only(self::AUDITED));
             if ($removed) {
@@ -189,6 +210,87 @@ class AdminProductService
 
             return $product->refresh();
         });
+    }
+
+    /**
+     * Hàng loạt: đổi trạng thái (ẩn/hiện) hoặc gán thêm danh mục. Thành công từng phần — trả kết quả từng sản phẩm.
+     *
+     * @param  int[]  $ids
+     * @return array{succeeded:int, failed:int, results: array<int, array{id:int, name:?string, ok:bool, message:?string}>}
+     */
+    public function bulk(array $ids, string $action, ?string $status, ?int $categoryId): array
+    {
+        $products = Product::whereIn('id', $ids)->get()->keyBy('id');
+        $results = [];
+        foreach ($ids as $id) {
+            $p = $products->get($id);
+            if (! $p) {
+                $results[] = ['id' => $id, 'name' => null, 'ok' => false, 'message' => 'Không tìm thấy sản phẩm.'];
+
+                continue;
+            }
+            try {
+                DB::transaction(function () use ($p, $action, $status, $categoryId) {
+                    if ($action === 'status') {
+                        if ($status === 'published' && ! $p->variants()->where('is_active', true)->exists()) {
+                            throw ValidationException::withMessages(['status' => 'Không có biến thể nào đang bán.']);
+                        }
+                        $before = $p->status;
+                        $p->update(['status' => $status]);
+                        $this->audit->record('product.updated', $p, ['status' => ['from' => $before, 'to' => $status], 'bulk' => true]);
+                    } else {
+                        $p->categories()->syncWithoutDetaching([$categoryId]);
+                        $this->audit->record('product.updated', $p, ['category_added' => $categoryId, 'bulk' => true]);
+                    }
+                });
+                $results[] = ['id' => $id, 'name' => $p->name, 'ok' => true, 'message' => null];
+            } catch (ValidationException $e) {
+                $results[] = ['id' => $id, 'name' => $p->name, 'ok' => false, 'message' => collect($e->errors())->flatten()->first()];
+            }
+        }
+        $ok = count(array_filter($results, fn ($r) => $r['ok']));
+
+        return ['succeeded' => $ok, 'failed' => count($results) - $ok, 'results' => $results];
+    }
+
+    /** Nhân bản: bản nháp mới, slug/SKU mới, tồn kho về 0; không chép ảnh (tránh hai sản phẩm chung một file). */
+    public function duplicate(Product $src): Product
+    {
+        $src->load(['variants' => fn ($v) => $v->orderByDesc('is_default')->orderBy('id'), 'categories:id']);
+
+        return DB::transaction(function () use ($src) {
+            $name = mb_substr($src->name, 0, 240).' (bản sao)';
+            $copy = Product::create([
+                'brand_id' => $src->brand_id, 'name' => $name, 'slug' => $this->uniqueSlug(null, $name),
+                'short_description' => $src->short_description, 'description' => $this->html->clean($src->description),
+                'unit' => $src->unit, 'specifications' => $src->specifications, 'meta_title' => $src->meta_title,
+                'meta_description' => $src->meta_description, 'has_variants' => $src->has_variants,
+                'status' => 'draft', 'is_featured' => false,
+            ]);
+            $copy->categories()->sync($src->categories->pluck('id')->all());
+            foreach ($src->variants as $v) {
+                $copy->variants()->create([
+                    'sku' => $this->copySku($v->sku), 'name' => $v->name, 'price' => $v->price,
+                    'compare_at_price' => $v->compare_at_price, 'cost_price' => $v->cost_price, 'stock_quantity' => 0,
+                    'weight_grams' => $v->weight_grams, 'image_url' => null, 'is_default' => $v->is_default, 'is_active' => $v->is_active,
+                ]);
+            }
+            $this->audit->record('product.duplicated', $copy, ['from' => $src->id]);
+
+            return $copy;
+        });
+    }
+
+    private function copySku(string $sku): string
+    {
+        $base = mb_substr($sku, 0, 90).'-COPY';
+        $try = $base;
+        $n = 2;
+        while (ProductVariant::withTrashed()->where('sku', $try)->exists()) {
+            $try = $base.$n++;
+        }
+
+        return $try;
     }
 
     public function delete(Product $product): void

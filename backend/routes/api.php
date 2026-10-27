@@ -91,6 +91,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
 
     Route::get('/products', [AdminProductController::class, 'index'])->middleware('can:viewAny,App\Models\Product');
     Route::post('/products', [AdminProductController::class, 'store'])->middleware('can:create,App\Models\Product');
+    Route::post('/products/bulk', [AdminProductController::class, 'bulk'])->middleware('can:updateAny,App\Models\Product');
+    Route::post('/products/description-images', [AdminProductController::class, 'descriptionImage'])
+        ->middleware(['can:create,App\Models\Product', 'throttle:admin-upload']);
+    Route::post('/products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->middleware('can:create,App\Models\Product');
     Route::get('/products/{product}', [AdminProductController::class, 'show'])->middleware('can:view,product');
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->middleware('can:update,product');
     Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->middleware('can:delete,product');
