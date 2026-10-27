@@ -16,6 +16,7 @@ class ListAdminOrdersRequest extends FormRequest
         return [
             'status' => ['nullable', 'in:pending,confirmed,packing,shipping,delivered,cancelled,returned'],
             'payment_status' => ['nullable', 'in:unpaid,paid,refunded,failed'],
+            'payment_method' => ['nullable', 'in:cod,vnpay,momo,vietqr'],
             'q' => ['nullable', 'string', 'max:100'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],

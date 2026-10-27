@@ -287,7 +287,7 @@ class AdminPanelTest extends TestCase
         $this->assertSame(['pending', 'confirmed', 'packing', 'shipping', 'delivered'], array_column($detail['timeline'], 'status'));
         $this->assertSame($this->admin->name, $detail['timeline'][1]['by']);
 
-        $this->asSpa($this->admin)->patchJson("/api/admin/orders/{$order->id}/status", ['status' => 'cancelled'])->assertStatus(409);
+        $this->asSpa($this->admin)->patchJson("/api/admin/orders/{$order->id}/status", ['status' => 'cancelled', 'cancel_reason' => 'Thử lại'])->assertStatus(409);
 
         $this->asSpa($this->admin)->getJson('/api/admin/orders?status=delivered&q=TEST0001')->assertOk()
             ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.order_code', 'ORD-TEST0001');
@@ -307,7 +307,7 @@ class AdminPanelTest extends TestCase
             ->assertOk()->assertJsonPath('data.cancel_reason', 'Khách đổi ý');
         $this->assertSame(5, $v->refresh()->stock_quantity);
         $this->assertSame(0, $coupon->refresh()->used_count);
-        $this->asSpa($this->admin)->patchJson("/api/admin/orders/{$order->id}/status", ['status' => 'cancelled'])->assertStatus(409);
+        $this->asSpa($this->admin)->patchJson("/api/admin/orders/{$order->id}/status", ['status' => 'cancelled', 'cancel_reason' => 'Thử lại'])->assertStatus(409);
         $this->assertSame(5, $v->refresh()->stock_quantity);
 
         $ret = $this->makeOrder(['order_code' => 'ORD-TEST0002', 'status' => 'shipping']);

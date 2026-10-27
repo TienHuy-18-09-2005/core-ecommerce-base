@@ -112,9 +112,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
     Route::delete('/coupons/{coupon}', [AdminCouponController::class, 'destroy'])->middleware('can:delete,coupon');
 
     Route::get('/orders', [AdminOrderController::class, 'index'])->middleware('can:viewAny,App\Models\Order');
+    // Route tĩnh đặt trước /orders/{order}
+    Route::get('/orders/status-counts', [AdminOrderController::class, 'counts'])->middleware('can:viewAny,App\Models\Order');
+    Route::get('/orders/latest-id', [AdminOrderController::class, 'latest'])->middleware('can:viewAny,App\Models\Order');
+    Route::get('/orders/print', [AdminOrderController::class, 'print'])->middleware('can:print,App\Models\Order');
+    Route::post('/orders/bulk-status', [AdminOrderController::class, 'bulkStatus'])->middleware('can:updateAny,App\Models\Order');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->middleware('can:manage,order');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
         ->middleware('can:update,order');
+    Route::post('/orders/{order}/notes', [AdminOrderController::class, 'addNote'])->middleware('can:update,order');
 
     Route::get('/reviews', [AdminReviewController::class, 'index'])->middleware('can:viewAny,App\Models\ProductReview');
     Route::patch('/reviews/{review}', [AdminReviewController::class, 'moderate'])->middleware('can:moderate,review');

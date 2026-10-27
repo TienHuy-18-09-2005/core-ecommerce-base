@@ -51,6 +51,27 @@ class Order extends Model
         ];
     }
 
+    /** Mọi đơn mới (checkout, seeder…) có ngay mốc "Đặt hàng" trên timeline. */
+    protected static function booted(): void
+    {
+        static::created(function (Order $order) {
+            $order->statusHistories()->create([
+                'from_status' => null, 'to_status' => $order->status ?? 'pending',
+                'user_id' => null, 'note' => null,
+            ]);
+        });
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderBy('id');
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(OrderNote::class)->orderByDesc('id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -39,9 +39,42 @@ class AdminOrderService
 
     public function list(array $f): LengthAwarePaginator
     {
-        $q = Order::query()->withCount('items');
+        $q = $this->filtered(Order::query()->withCount('items'), $f);
         if (! empty($f['status'])) {
             $q->where('status', $f['status']);
+        }
+
+        return \App\Support\AdminSort::apply($q, $f, ['id' => 'id', 'order_code' => 'order_code', 'customer_name' => 'customer_name', 'total_amount' => 'total_amount', 'status' => 'status', 'created_at' => 'created_at'])->paginate($f['per_page'] ?? 20);
+    }
+
+    /** Đếm theo trạng thái cho tab — áp các lọc khác (tìm, thanh toán, ngày) trừ chính trạng thái. */
+    public function statusCounts(array $f): array
+    {
+        $rows = $this->filtered(Order::query(), $f)->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
+        $out = ['all' => (int) $rows->sum()];
+        foreach (array_keys(self::STATUS_LABELS) as $st) {
+            $out[$st] = (int) ($rows[$st] ?? 0);
+        }
+
+        return $out;
+    }
+
+    /** Cho polling thông báo đơn mới: id lớn nhất, số đơn mới hơn `since`, số đơn chờ xác nhận (badge). */
+    public function latest(?int $since): array
+    {
+        $latest = (int) Order::max('id');
+
+        return [
+            'latest_id' => $latest,
+            'new_count' => $since !== null ? Order::where('id', '>', $since)->count() : 0,
+            'pending_count' => Order::where('status', 'pending')->count(),
+        ];
+    }
+
+    private function filtered($q, array $f)
+    {
+        if (! empty($f['payment_method'])) {
+            $q->where('payment_method', $f['payment_method']);
         }
         if (! empty($f['payment_status'])) {
             $q->where('payment_status', $f['payment_status']);
@@ -60,7 +93,7 @@ class AdminOrderService
             $q->where('created_at', '<=', $f['to'].' 23:59:59');
         }
 
-        return \App\Support\AdminSort::apply($q, $f, ['id' => 'id', 'order_code' => 'order_code', 'customer_name' => 'customer_name', 'total_amount' => 'total_amount', 'status' => 'status', 'created_at' => 'created_at'])->paginate($f['per_page'] ?? 20);
+        return $q;
     }
 
     public function summary(Order $order): array
@@ -81,10 +114,13 @@ class AdminOrderService
 
     public function detail(Order $order): array
     {
-        $order->load('items', 'coupon:id,code');
-        $logs = AdminAuditLog::with('user:id,name')
-            ->where('subject_type', 'Order')->where('subject_id', $order->id)
-            ->orderBy('id')->get();
+        $order->load('items', 'coupon:id,code', 'statusHistories.user:id,name', 'notes.user:id,name');
+        $history = $order->statusHistories;
+        if ($history->isEmpty()) {
+            // Đơn rất cũ chưa có lịch sử: hiển thị tối thiểu mốc đặt hàng
+            $history = collect([(new \App\Models\OrderStatusHistory(['from_status' => null, 'to_status' => 'pending', 'backfilled' => true]))
+                ->forceFill(['created_at' => $order->created_at])]);
+        }
 
         return $this->presenter->full($order) + [
             'id' => $order->id,
@@ -93,18 +129,73 @@ class AdminOrderService
             'admin_note' => $order->admin_note,
             'cancel_reason' => $order->cancel_reason,
             'allowed_transitions' => self::TRANSITIONS[$order->status] ?? [],
-            'timeline' => array_merge(
-                [['type' => 'created', 'status' => 'pending', 'label' => 'Đặt hàng', 'by' => null, 'note' => null,
-                    'at' => $order->created_at?->toIso8601String()]],
-                $logs->map(fn (AdminAuditLog $l) => [
-                    'type' => 'status_changed',
-                    'status' => $l->changes['to'] ?? null,
-                    'label' => self::STATUS_LABELS[$l->changes['to'] ?? ''] ?? ($l->changes['to'] ?? ''),
-                    'by' => $l->user?->name,
-                    'note' => $l->changes['note'] ?? null,
-                    'at' => $l->created_at?->toIso8601String(),
-                ])->all(),
-            ),
+            'timeline' => $history->map(fn ($h) => [
+                'type' => $h->from_status === null ? 'created' : 'status_changed',
+                'status' => $h->to_status,
+                'from' => $h->from_status,
+                'label' => $h->from_status === null ? 'Đặt hàng' : (self::STATUS_LABELS[$h->to_status] ?? $h->to_status),
+                'by' => $h->user?->name,
+                'note' => $h->note,
+                'backfilled' => (bool) $h->backfilled,
+                'at' => $h->created_at?->toIso8601String(),
+            ])->values()->all(),
+            'notes' => $order->notes->map(fn ($n) => $this->noteArray($n))->values()->all(),
+        ];
+    }
+
+    public function noteArray(\App\Models\OrderNote $n): array
+    {
+        return ['id' => $n->id, 'body' => $n->body, 'by' => $n->user?->name, 'at' => $n->created_at?->toIso8601String()];
+    }
+
+    public function addNote(Order $order, string $body): \App\Models\OrderNote
+    {
+        return DB::transaction(function () use ($order, $body) {
+            $note = $order->notes()->create(['user_id' => request()?->user()?->id, 'body' => $body]);
+            $this->audit->record('order.note_added', $order, ['note_id' => $note->id, 'length' => mb_strlen($body)]);
+
+            return $note->load('user:id,name');
+        });
+    }
+
+    /**
+     * Đổi trạng thái hàng loạt: mỗi đơn xử lý trong transaction riêng, lỗi đơn này không ảnh hưởng đơn khác.
+     * Trả kết quả từng đơn (ok + lý do khi thất bại).
+     */
+    public function bulkStatus(array $ids, string $status, ?string $cancelReason, ?string $note): array
+    {
+        $codes = Order::whereIn('id', $ids)->pluck('order_code', 'id');
+        $results = [];
+        foreach (array_values(array_unique($ids)) as $id) {
+            if (! isset($codes[$id])) {
+                $results[] = ['id' => $id, 'order_code' => null, 'ok' => false, 'message' => 'Không tìm thấy đơn.'];
+                continue;
+            }
+            try {
+                $this->updateOrderStatus($id, $status, $note, $cancelReason);
+                $results[] = ['id' => $id, 'order_code' => $codes[$id], 'ok' => true, 'message' => null];
+            } catch (DomainException $e) {
+                $results[] = ['id' => $id, 'order_code' => $codes[$id], 'ok' => false, 'message' => $e->getMessage()];
+            }
+        }
+        $ok = count(array_filter($results, fn ($r) => $r['ok']));
+
+        return ['results' => $results, 'succeeded' => $ok, 'failed' => count($results) - $ok];
+    }
+
+    /** Dữ liệu phiếu giao hàng cho 1..n đơn (giữ thứ tự yêu cầu). */
+    public function printData(array $ids): array
+    {
+        $orders = Order::with('items', 'coupon:id,code')->whereIn('id', $ids)->get()->keyBy('id');
+
+        return [
+            'store' => StoreInfo::get(),
+            'orders' => collect($ids)->unique()->filter(fn ($id) => $orders->has($id))
+                ->map(fn ($id) => $this->presenter->full($orders[$id]) + [
+                    'id' => $orders[$id]->id,
+                    'coupon_code' => $orders[$id]->coupon?->code,
+                    'cod_amount' => $orders[$id]->payment_method === 'cod' && $orders[$id]->payment_status !== 'paid' ? (float) $orders[$id]->total_amount : 0.0,
+                ])->values()->all(),
         ];
     }
 
@@ -151,6 +242,11 @@ class AdminOrderService
                 $order->admin_note = $adminNote;
             }
             $order->save();
+
+            $order->statusHistories()->create([
+                'from_status' => $old, 'to_status' => $newStatus, 'user_id' => request()?->user()?->id,
+                'note' => $newStatus === 'cancelled' ? ($cancelReason ?: $adminNote ?: null) : ($adminNote ?: null),
+            ]);
 
             $this->audit->record('order.status_changed', $order, array_filter([
                 'from' => $old, 'to' => $newStatus, 'note' => $adminNote ?: null, 'cancel_reason' => $cancelReason ?: null,
