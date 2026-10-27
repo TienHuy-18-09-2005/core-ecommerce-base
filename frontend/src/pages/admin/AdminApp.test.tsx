@@ -80,18 +80,20 @@ describe("admin panel", () => {
     const router = renderAdmin("/admin/san-pham");
     expect(await screen.findByRole("button", { name: "Bóng đèn" })).toBeTruthy();
     expect(await seriousViolations()).toEqual([]);
-    fireEvent.click(within(screen.getByRole("group", { name: "Bộ lọc" })).getByRole("button", { name: "Trạng thái" }));
-    fireEvent.change(within(screen.getByRole("dialog", { name: "Lọc theo trạng thái" })).getByLabelText("Trạng thái"), { target: { value: "draft" } });
+    // bộ lọc hiện sẵn, chọn là áp dụng ngay
+    const bar = screen.getByRole("group", { name: "Bộ lọc" });
+    expect(screen.queryByRole("button", { name: "Xóa bộ lọc" })).toBeNull();
+    fireEvent.change(within(bar).getByLabelText("Trạng thái"), { target: { value: "draft" } });
     await waitFor(() => expect(router.state.location.search).toBe("?status=draft"));
     await waitFor(() => expect(svc.products).toHaveBeenLastCalledWith(expect.objectContaining({ status: "draft", page: 1 }), expect.anything()));
-    // chip đang lọc hiện giá trị, bấm × để bỏ
-    fireEvent.click(await screen.findByRole("button", { name: "Bỏ lọc trạng thái" }));
+    expect((within(bar).getByLabelText("Trạng thái") as HTMLSelectElement).value).toBe("draft");
+    fireEvent.click(await screen.findByRole("button", { name: "Xóa bộ lọc" }));
     await waitFor(() => expect(router.state.location.search).toBe(""));
     // chế độ xem có sẵn "Hàng sắp hết"
     fireEvent.click(screen.getByRole("button", { name: "Xem đã lưu" }));
     fireEvent.click(screen.getByRole("button", { name: "Hàng sắp hết" }));
     await waitFor(() => expect(router.state.location.search).toBe("?low_stock=1"));
-    expect(screen.getByRole("button", { name: "Sắp hết hàng" }).getAttribute("aria-pressed")).toBe("true");
+    expect((screen.getByRole("checkbox", { name: "Sắp hết hàng" }) as HTMLInputElement).checked).toBe(true);
     expect(await seriousViolations()).toEqual([]);
   });
 

@@ -1,4 +1,4 @@
-import { Bookmark, Plus, Search, X } from "lucide-react";
+import { Bookmark, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { inputClass } from "../../../utils/adminFormat.ts";
 import { FormField } from "../form/FormField.tsx";
@@ -32,50 +32,47 @@ export function SearchBox({ label, placeholder, value, onChange, delay = 400 }: 
   );
 }
 
-function valueLabel(f: FilterDef, v: string) {
-  if (f.type === "select") return f.options.find((o) => o.value === v)?.label ?? v;
-  if (f.type === "date") return v.split("-").reverse().join("/");
-  return "";
-}
+const ctl = "h-9 rounded-lg border bg-admin-surface px-2 text-sm text-admin-fg focus:outline-none focus:ring-2 focus:ring-admin-primary/40";
+const ctlIdle = `${ctl} border-admin-border-strong`;
+const ctlOn = `${ctl} border-admin-primary bg-admin-primary/10 font-medium text-admin-primary`;
 
-/** Thanh lọc dạng chip: chip trống "+ Bộ lọc" mở popover; chip đang lọc hiện giá trị và nút × bỏ lọc. */
+/** Thanh lọc hiện sẵn: mỗi bộ lọc là một ô có nhãn, chọn là áp dụng ngay (đồng bộ URL); đang lọc thì tô nổi. */
 export function FilterChips({ filters, values, onChange, onClear }: {
   filters: FilterDef[]; values: Record<string, string>; onChange: (key: string, v: string) => void; onClear: () => void;
 }) {
   const anyActive = filters.some((f) => values[f.key]);
   return (
-    <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-center gap-2">
+    <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-end gap-x-3 gap-y-2">
       {filters.map((f) => {
         const v = values[f.key] ?? "";
+        const id = `filter-${f.key}`;
         if (f.type === "toggle") {
-          return <button key={f.key} type="button" aria-pressed={v === "1"} className={v === "1" ? chipOn : chipIdle} onClick={() => onChange(f.key, v === "1" ? "" : "1")}>{f.label}</button>;
+          return (
+            <label key={f.key} htmlFor={id} className={`${v === "1" ? ctlOn : ctlIdle} inline-flex cursor-pointer items-center gap-2`}>
+              <input id={id} type="checkbox" className="size-4 accent-admin-primary" checked={v === "1"} onChange={(e) => onChange(f.key, e.target.checked ? "1" : "")} />
+              {f.label}
+            </label>
+          );
         }
         return (
-          <div key={f.key} className="flex items-center">
-            <Popover label={`Lọc theo ${f.label.toLowerCase()}`} buttonClass={v ? `${chipOn} rounded-r-none pr-2` : chipIdle}
-              button={v ? <>{f.label}: {valueLabel(f, v)}</> : <><Plus aria-hidden className="size-3.5" />{f.label}</>}>
-              {(close) => (
-                <FormField label={f.label}>
-                  {f.type === "select" ? (
-                    <select className={inputClass} value={v} onChange={(e) => { onChange(f.key, e.target.value); close(); }}>
-                      <option value="">Tất cả</option>
-                      {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  ) : (
-                    <input type="date" className={inputClass} value={v} onChange={(e) => onChange(f.key, e.target.value)} />
-                  )}
-                </FormField>
-              )}
-            </Popover>
-            {v && (
-              <button type="button" aria-label={`Bỏ lọc ${f.label.toLowerCase()}`} className={`${chipOn} rounded-l-none border-l-0 px-2`} onClick={() => onChange(f.key, "")}>
-                <X aria-hidden className="size-3.5" />
-              </button>
+          <div key={f.key} className="flex flex-col gap-0.5">
+            <label htmlFor={id} className="text-xs font-medium text-admin-muted">{f.label}</label>
+            {f.type === "select" ? (
+              <select id={id} className={`${v ? ctlOn : ctlIdle} min-w-32`} value={v} onChange={(e) => onChange(f.key, e.target.value)}>
+                <option value="">Tất cả</option>
+                {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            ) : (
+              <input id={id} type="date" className={v ? ctlOn : ctlIdle} value={v} onChange={(e) => onChange(f.key, e.target.value)} />
             )}
           </div>
         );
       })}
-      {anyActive && <button type="button" className="text-sm text-admin-muted underline-offset-2 hover:text-admin-fg hover:underline" onClick={onClear}>Xóa bộ lọc</button>}
+      {anyActive && (
+        <button type="button" className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm text-admin-muted hover:bg-admin-subtle hover:text-admin-fg" onClick={onClear}>
+          <X aria-hidden className="size-4" />Xóa bộ lọc
+        </button>
+      )}
     </div>
   );
 }
