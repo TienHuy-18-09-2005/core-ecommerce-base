@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminService, cleanParams, type QueryParams } from "../services/adminService.ts";
-import type { AdminRoleInput, AdminCategoryInput, AdminCouponInput, AdminProductInput, BulkProductInput } from "../types/admin.ts";
+import type { AdminRoleInput, AdminCategoryInput, DashboardRange, AdminCouponInput, AdminProductInput, BulkProductInput } from "../types/admin.ts";
 
 export const adminKeys = {
   all: ["admin"] as const,
@@ -21,7 +21,10 @@ export const adminKeys = {
   staff: (p: QueryParams) => ["admin", "staff", cleanParams(p)] as const,
 };
 
-export const useDashboardQuery = () => useQuery({ queryKey: adminKeys.dashboard, queryFn: ({ signal }) => adminService.dashboard(signal) });
+export const useDashboardQuery = (range: DashboardRange = "14d") => useQuery({
+  queryKey: [...adminKeys.dashboard, range], queryFn: ({ signal }) => adminService.dashboard(range, signal),
+  placeholderData: keepPreviousData, staleTime: 30_000,
+});
 
 export const useAdminProductsQuery = (p: QueryParams) =>
   useQuery({ queryKey: adminKeys.products(p), queryFn: ({ signal }) => adminService.products(p, signal), placeholderData: keepPreviousData });

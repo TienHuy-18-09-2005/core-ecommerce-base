@@ -358,7 +358,7 @@ Thứ tự: **Nền tảng R0–R3 → Đơn hàng (R4) → Sản phẩm (R5) �
 | **R5** | ⭐ Sản phẩm | Trình soạn tab, **Tiptap**, biến thể sửa trực tiếp, sửa lỗi hoán đổi SKU, ảnh kéo thả, cảnh báo rời trang, nhân bản; shop hiển thị mô tả | Hoán đổi SKU thành công (test); HTML độc bị loại | 3 ngày |
 | **R6** ✅ Đã xong (28/10/2026) | Phân quyền RBAC | Bảng roles/permissions/role_permission + pivot `user_role` (nhiều vai trò); seed quyền và 4 vai trò mẫu; Gate theo quyền, Policy chuyển sang quyền; `/me` trả `permissions`; `useCan` ẩn menu, nút và widget; dashboard bỏ trường doanh thu khi thiếu quyền; màn hình **Vai trò & phân quyền** (CRUD, ma trận checkbox); gán **nhiều vai trò** (multi-select) trong Người dùng, bản tối giản nếu R11 chưa làm; xóa cache quyền khi đổi; audit thay đổi quyền và gán vai trò; `admin:create --role=staff --staff-role=a,b` | Test API ma trận: mỗi vai trò mẫu bị 403 đúng chỗ; Quản lý sản phẩm gọi dashboard **không có** trường doanh thu, Kế toán có; admin không bị giới hạn; không xóa được vai trò còn người dùng; nhân viên không tự sửa được `roles.manage`; **user mang 2 vai trò (vd. Quản lý sản phẩm + Kế toán) có đúng hợp quyền** (sửa sản phẩm được và thấy doanh thu); gỡ 1 vai trò thì mất quyền ngay ở request kế tiếp (cache đã xóa); staff không có vai trò nào bị 403 toàn khu admin; audit ghi diff | 4,5 ngày |
 | **R7** ✅ Đã xong (29/10/2026) | Cài đặt | Thông tin cửa hàng, phí ship & ngưỡng miễn phí (checkout dùng), đổi mật khẩu admin | Phiếu giao hàng & checkout lấy từ cài đặt | 1,5 ngày |
-| **R8** | Bảng điều khiển | KPI so kỳ, khoảng ngày, **Recharts**, "Việc cần làm" | Lighthouse a11y ≥ 95 | 1,5 ngày |
+| **R8** ✅ Đã xong (27/10/2026) | Bảng điều khiển | KPI so kỳ, khoảng ngày, **Recharts**, "Việc cần làm" | Lighthouse a11y ≥ 95 | 1,5 ngày |
 | **R9** | Catalog phụ | Cây danh mục kéo thả + API reorder; Thương hiệu | CRUD thương hiệu có test | 2 ngày |
 | **R10** | Khuyến mãi & đánh giá | Coupon drawer, lượt dùng, nhân bản; đánh giá thẻ, lightbox, bulk, hoàn tác | Test bulk moderate | 1,5 ngày |
 | **R11** | Người dùng & nhật ký | Khóa/vai trò (chặn tự khóa), nhật ký có diff | Test chặn tự khóa | 2,5 ngày |
@@ -430,4 +430,21 @@ Không còn câu hỏi mở về phân quyền.
 - **Quyền:** `settings.view` (xem, có thể cấp cho vai trò) và `settings.manage` (sửa, chỉ admin). Trang `/admin/cai-dat` mở cho mọi người vào được khu quản trị; tab Cửa hàng/Vận chuyển cần `settings.view` (chỉ đọc nếu thiếu `settings.manage`); tab Tài khoản luôn có.
 - **Đổi mật khẩu:** `PUT /api/admin/account/password` — bắt buộc mật khẩu hiện tại, xác nhận, tối thiểu 10 ký tự gồm hoa, thường, số, ký tự đặc biệt, khác mật khẩu cũ; giới hạn 5 lần/phút; thu hồi token khác + phiên khác (driver database) + `logoutOtherDevices`; audit `account.password_changed` không chứa mật khẩu. Lưu cài đặt ghi audit `settings.updated` kèm diff.
 - **Giao diện:** tab dọc (desktop) / ngang (tablet, mobile), điều hướng phím mũi tên, FormField v2, cảnh báo rời trang khi chưa lưu, Ctrl+S, toast, gợi ý độ mạnh mật khẩu, dark mode.
+
+## R8 — Đã triển khai (27/10/2026)
+
+**Backend**
+- `App\Services\Admin\DashboardService` + `GET /api/admin/dashboard?range=today|7d|14d|30d` (mặc định `14d`, giá trị khác → 422).
+- KPI kỳ này so với kỳ trước liền kề cùng độ dài (kỳ trước cắt tại cùng giờ trong ngày): số đơn, doanh thu, giá trị đơn TB; `change_pct = null` khi kỳ trước bằng 0. Doanh thu không tính đơn hủy/trả.
+- Chia ngày/giờ theo `shop.report_timezone` (mặc định Asia/Ho_Chi_Minh, DB lưu UTC); "Hôm nay" vẽ theo giờ.
+- Top 5 sản phẩm bán chạy (1 truy vấn GROUP BY), 5 đơn gần đây, biến thể sắp hết, "Việc cần làm": đơn chờ xác nhận, đánh giá đang ẩn, mã giảm giá hết hạn trong 7 ngày, biến thể sắp hết.
+- Phân quyền ở server: doanh thu (KPI, chuỗi, cột doanh thu của SP bán chạy) chỉ khi `revenue.view`; đơn hàng → `orders.view`; tồn kho & SP bán chạy → `products.view`; đánh giá → `reviews.view`; mã giảm giá → `coupons.view`.
+- Cache `shop.dashboard_cache_ttl` (60 giây) theo khoảng ngày + tập quyền; Order/OrderItem/ProductVariant/ProductReview/Coupon lưu/xóa → tăng phiên bản, cache tự làm mới.
+- Test: `R8DashboardTest` (so kỳ, múi giờ, phạm vi không hợp lệ, việc cần làm, ẩn doanh thu SP bán chạy, ma trận quyền 4 vai trò, làm mới cache).
+
+**Frontend**
+- `DashboardPage` mới: chọn khoảng (radiogroup, phím mũi tên, lưu ở `?range=`), thẻ KPI ▲/▼ %, biểu đồ cột doanh thu + đường số đơn (**Recharts lazy-load** — chunk riêng `RevenueChart`), bảng ẩn cho trình đọc màn hình, skeleton/trống/lỗi, chế độ tối dùng token admin, lưới co giãn cho tablet.
+- Test: ma trận quyền (admin, kế toán, CSKH, quản lý SP) + axe, % so kỳ, đổi khoảng ngày, trạng thái trống/lỗi.
+
+**Chưa làm**: khoảng ngày tùy chọn; biểu đồ trạng thái đơn (API đã trả `status_breakdown`); chưa đo Lighthouse thực tế (đã kiểm axe trong test).
 

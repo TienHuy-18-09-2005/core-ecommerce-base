@@ -9,6 +9,7 @@ import { AuthContext, type AuthContextValue } from "../../app/useAuth.ts";
 import { AdminRoute } from "../../app/routeParts.tsx";
 import { adminService } from "../../services/adminService.ts";
 import { ApiError } from "../../services/apiError.ts";
+import { dashboardFixture } from "../../test/dashboardFixture.ts";
 
 vi.mock("../../services/adminService.ts", async (orig) => {
   const real = await orig<typeof import("../../services/adminService.ts")>();
@@ -66,15 +67,11 @@ describe("admin panel", () => {
   });
 
   it("renders dashboard stats and low stock", async () => {
-    svc.dashboard.mockResolvedValue({
-      stats: { orders_total: 12, orders_today: 3, revenue_today: 450000, revenue_14d: 900000, pending_orders: 2, low_stock_variants: 1, hidden_reviews: 4 },
-      revenue_series: [{ date: "2026-10-26", orders: 3, revenue: 450000 }],
-      recent_orders: [],
-      low_stock: [{ variant_id: 9, product_id: 5, product_name: "Bóng đèn", variant_name: "9W", sku: "BD-9", stock_quantity: 2 }],
-    });
+    svc.dashboard.mockResolvedValue(dashboardFixture());
     renderAdmin("/admin");
     expect(await screen.findByRole("heading", { name: "Tổng quan" })).toBeTruthy();
     expect((await screen.findByText("Đơn chờ xác nhận")).nextSibling?.textContent).toBe("2");
+    expect(screen.getByText("▲ 50%")).toBeTruthy();
     expect(screen.getByText("9W (BD-9)")).toBeTruthy();
   });
 

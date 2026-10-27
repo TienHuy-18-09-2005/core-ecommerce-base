@@ -29,6 +29,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // R8: dữ liệu đổi → tăng phiên bản cache bảng điều khiển.
+        foreach ([\App\Models\Order::class, \App\Models\OrderItem::class, \App\Models\ProductVariant::class, \App\Models\ProductReview::class, \App\Models\Coupon::class] as $model) {
+            $model::saved(fn () => \App\Services\Admin\DashboardService::bump());
+            $model::deleted(fn () => \App\Services\Admin\DashboardService::bump());
+        }
+
         // Vào khu quản trị: admin đang hoạt động, hoặc nhân viên có ít nhất một quyền.
         Gate::define('admin', fn (User $user): bool => $user->permissions() !== []);
         // Mỗi quyền R6 là một ability: can:revenue.view, Gate::allows('orders.cancel')...

@@ -142,7 +142,7 @@ class AdminRbacTest extends TestCase
         $p = $this->product();
         $this->as($u)->getJson("/api/admin/products/{$p->id}/history")->assertForbidden();
         $this->as($u)->getJson('/api/admin/dashboard')->assertOk()
-            ->assertJsonStructure(['data' => ['stats' => ['revenue_today', 'revenue_14d'], 'revenue_series' => [['date', 'orders', 'revenue']]]]);
+            ->assertJsonStructure(['data' => ['stats' => ['revenue_today', 'revenue_range'], 'revenue_series' => [['date', 'orders', 'revenue']]]]);
     }
 
     public function test_customer_care_cannot_cancel_but_can_note(): void
@@ -161,7 +161,7 @@ class AdminRbacTest extends TestCase
         $this->order();
         $res = $this->as($this->staff('product_manager'))->getJson('/api/admin/dashboard')->assertOk();
         $this->assertArrayNotHasKey('revenue_today', $res->json('data.stats'));
-        $this->assertArrayNotHasKey('revenue_14d', $res->json('data.stats'));
+        $this->assertArrayNotHasKey('revenue_range', $res->json('data.stats'));
         $this->assertArrayNotHasKey('revenue', $res->json('data.revenue_series.0'));
         $this->assertSame([], $res->json('data.recent_orders'), 'không có orders.view thì không thấy đơn gần đây');
         $this->assertStringNotContainsString('130000', $res->getContent());

@@ -23,18 +23,36 @@ export interface OrderSummaryRow {
   created_at: string | null;
 }
 
+export type DashboardRange = "today" | "7d" | "14d" | "30d";
+
+/** Giá trị kỳ này / kỳ trước liền kề; change_pct = null khi kỳ trước bằng 0. */
+export interface KpiPair { current: number; previous: number; change_pct: number | null }
+
+/** R8: mọi khối gắn quyền — server bỏ khóa (hoặc trả rỗng) khi thiếu quyền. */
 export interface DashboardData {
-  stats: {
-    orders_total: number;
-    orders_today: number;
-    /** Không có khi thiếu quyền revenue.view (server ẩn). */
-    revenue_today?: number;
-    revenue_14d?: number;
-    pending_orders: number;
-    low_stock_variants: number;
-    hidden_reviews: number;
+  range: { key: DashboardRange; days: number; from: string; to: string; previous_from: string; previous_to: string; timezone: string };
+  granularity: "hour" | "day";
+  kpis: {
+    orders: KpiPair;
+    /** Chỉ có khi revenue.view. */
+    revenue?: KpiPair;
+    avg_order_value?: KpiPair;
+    pending_orders?: number;
+    low_stock_variants?: number;
   };
+  stats: {
+    orders_total?: number;
+    orders_today?: number;
+    revenue_today?: number;
+    revenue_range?: number;
+    pending_orders?: number;
+    low_stock_variants?: number;
+    hidden_reviews?: number;
+  };
+  todo: { pending_orders?: number; hidden_reviews?: number; expiring_coupons?: number; low_stock_variants?: number };
   revenue_series: { date: string; orders: number; revenue?: number }[];
+  status_breakdown: Record<string, number>;
+  top_products: { product_id: number | null; name: string; quantity: number; revenue?: number }[];
   recent_orders: OrderSummaryRow[];
   low_stock: { variant_id: number; product_id: number; product_name: string | null; variant_name: string; sku: string; stock_quantity: number }[];
 }

@@ -1,6 +1,6 @@
 import type {
   AdminCategory, AdminCategoryInput, AdminRole, AdminRoleInput, AdminSettings, AdminPasswordInput, ShopSettingsValues, AdminStaff, PermissionGroup, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
-  AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated, ProductHistoryEntry } from "../types/admin.ts";
+  AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, DashboardRange, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated, ProductHistoryEntry } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
 
 type Envelope<T> = { success: boolean; message?: string; data: T };
@@ -23,7 +23,8 @@ async function get<T>(url: string, signal?: AbortSignal): Promise<T> {
 }
 
 export const adminService = {
-  dashboard: (signal?: AbortSignal) => get<DashboardData>("/admin/dashboard", signal),
+  dashboard: async (range: DashboardRange = "14d", signal?: AbortSignal) =>
+    (await apiClient.get<Envelope<DashboardData>>("/admin/dashboard", { params: { range }, signal })).data.data,
 
   products: (params: QueryParams, signal?: AbortSignal) => page<AdminProductRow>("/admin/products", params, signal),
   product: (id: number, signal?: AbortSignal) => get<AdminProduct>(`/admin/products/${id}`, signal),

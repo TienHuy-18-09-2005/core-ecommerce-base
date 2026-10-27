@@ -11,6 +11,8 @@ import { canEnterAdmin, userCan } from "../../hooks/useCan.ts";
 import { navGroups } from "./adminRoutes.ts";
 import { seriousViolations } from "../../components/admin/axeTestUtils.ts";
 import type { User } from "../../types/auth.ts";
+import { dashboardFixture } from "../../test/dashboardFixture.ts";
+import { formatChange } from "./DashboardPage.tsx";
 
 vi.mock("../../services/adminService.ts", async (orig) => {
   const real = await orig<typeof import("../../services/adminService.ts")>();
@@ -78,7 +80,7 @@ describe("useCan helpers", () => {
 
 describe("admin RBAC UI", () => {
   it("lets staff with roles in and hides menu items they cannot use", async () => {
-    svc.dashboard.mockResolvedValue({ stats: { orders_total: 1, orders_today: 1, pending_orders: 0, low_stock_variants: 0, hidden_reviews: 0 }, revenue_series: [{ date: "2026-10-26", orders: 1 }], recent_orders: [], low_stock: [] });
+    svc.dashboard.mockResolvedValue(dashboardFixture({ revenue: false, products: false, coupons: true }));
     renderAdmin("/admin", user("staff", CSKH));
     expect(await screen.findByRole("heading", { name: "Tổng quan" })).toBeTruthy();
     const nav = screen.getAllByRole("navigation", { name: "Menu quản trị" })[0];
@@ -86,15 +88,16 @@ describe("admin RBAC UI", () => {
     expect(within(nav).queryByText("Danh mục")).toBeNull();
     expect(within(nav).getByText("Đơn hàng")).toBeTruthy();
     // Không có revenue.view → server bỏ trường doanh thu, UI ẩn widget.
-    await screen.findByText("Đơn hôm nay");
-    expect(screen.queryByText("Doanh thu hôm nay")).toBeNull();
-    expect(screen.queryByText(/Doanh thu 14 ngày/)).toBeNull();
+    await screen.findByTestId("kpi-Số đơn");
+    expect(screen.queryByTestId("kpi-Doanh thu")).toBeNull();
+    expect(screen.queryByText("Giá trị đơn TB")).toBeNull();
   });
 
   it("shows revenue widgets to the accountant", async () => {
-    svc.dashboard.mockResolvedValue({ stats: { orders_total: 1, orders_today: 1, revenue_today: 450000, revenue_14d: 900000, pending_orders: 0, low_stock_variants: 0, hidden_reviews: 0 }, revenue_series: [{ date: "2026-10-26", orders: 1, revenue: 450000 }], recent_orders: [], low_stock: [] });
+    svc.dashboard.mockResolvedValue(dashboardFixture({ products: false, reviews: false }));
     renderAdmin("/admin", user("staff", ACCOUNTANT));
-    expect(await screen.findByText("Doanh thu hôm nay")).toBeTruthy();
+    expect(await screen.findByTestId("kpi-Doanh thu")).toBeTruthy();
+    expect(screen.getByText("Giá trị đơn TB")).toBeTruthy();
   });
 
   it("renders a 403 page for a route without permission", async () => {
@@ -187,5 +190,60 @@ describe("admin RBAC UI", () => {
     fireEvent.click(within(dialog).getByLabelText("Chăm sóc khách hàng"));
     fireEvent.click(within(dialog).getByRole("button", { name: "Thêm nhân viên" }));
     await waitFor(() => expect(svc.addStaff).toHaveBeenCalledWith("c@x.vn", [3]));
+  });
+});
+
+describe("R8 dashboard", () => {
+  const PM = ["dashboard.view", "products.view", "products.edit", "categories.view", "categories.manage", "reviews.view", "reviews.moderate"];
+
+  it("formats change vs previous period", () => {
+    expect(formatChange(50)).toEqual({ text: "▲ 50%", tone: "up" });
+    expect(formatChange(-12.5)).toEqual({ text: "▼ 12,5%", tone: "down" });
+    expect(formatChange(0).tone).toBe("flat");
+    expect(formatChange(null).text).toBe("Chưa có dữ liệu kỳ trước");
+  });
+
+  it.each([
+    ["admin", ALL, { revenue: true, orders: true, products: true }],
+    ["accountant", ACCOUNTANT, { revenue: true, orders: true, products: true }],
+    ["customer care", CSKH, { revenue: false, orders: true, products: true }],
+    ["product manager", PM, { revenue: false, orders: false, products: true }],
+  ])("permission matrix: %s", async (_n, perms, exp) => {
+    const has = (p: string) => perms.includes(p);
+    svc.dashboard.mockResolvedValue(dashboardFixture({ revenue: has("revenue.view"), orders: has("orders.view"), products: has("products.view"), reviews: has("reviews.view"), coupons: has("coupons.view") }));
+    renderAdmin("/admin", user("staff", perms));
+    await screen.findByTestId("kpi-Số đơn");
+    expect(!!screen.queryByTestId("kpi-Doanh thu")).toBe(exp.revenue);
+    expect(!!screen.queryByRole("region", { name: "Đơn hàng gần đây" })).toBe(exp.orders);
+    expect(!!screen.queryByRole("region", { name: "Sắp hết hàng" })).toBe(exp.products);
+    expect(!!screen.queryByText("đơn chờ xác nhận")).toBe(exp.orders);
+    expect(!!screen.queryByText(/350\.000/)).toBe(exp.revenue); // doanh thu SP bán chạy
+    expect(screen.getByRole("region", { name: "Việc cần làm" })).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
+  });
+
+  it("switches range preset, keeps it in the URL and refetches", async () => {
+    svc.dashboard.mockResolvedValue(dashboardFixture());
+    renderAdmin("/admin", user("staff", ALL));
+    await screen.findByTestId("kpi-Số đơn");
+    expect(svc.dashboard.mock.calls[0][0]).toBe("14d");
+    const group = screen.getByRole("radiogroup", { name: "Khoảng thời gian" });
+    fireEvent.click(within(group).getByRole("radio", { name: "7 ngày" }));
+    await waitFor(() => expect(svc.dashboard.mock.calls.at(-1)?.[0]).toBe("7d"));
+    fireEvent.keyDown(within(group).getByRole("radio", { name: "7 ngày" }), { key: "ArrowLeft" });
+    await waitFor(() => expect(svc.dashboard.mock.calls.at(-1)?.[0]).toBe("today"));
+    expect(within(group).getByRole("radio", { name: "Hôm nay" }).getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("shows empty state when no orders in range", async () => {
+    svc.dashboard.mockResolvedValue(dashboardFixture({}, { revenue_series: [{ date: "2026-10-26", orders: 0, revenue: 0 }] }));
+    renderAdmin("/admin", user("staff", ALL));
+    expect(await screen.findByText("Chưa có đơn hàng trong khoảng này")).toBeTruthy();
+  });
+
+  it("shows error state on failure", async () => {
+    svc.dashboard.mockRejectedValue(new Error("boom"));
+    renderAdmin("/admin", user("staff", ALL));
+    expect(await screen.findByRole("button", { name: /Thử lại/ })).toBeTruthy();
   });
 });
