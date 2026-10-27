@@ -86,7 +86,7 @@ class AdminProductService
             'specifications' => $p->specifications ?: (object) [],
             'meta_title' => $p->meta_title,
             'meta_description' => $p->meta_description,
-            'media' => $p->media->sortBy('sort_order')->map(fn ($m) => ['url' => $m->file_url, 'alt_text' => $m->alt_text])->values()->all(),
+            'media' => app(ProductImageService::class)->present($p),
             'variants' => $p->variants->map(fn (ProductVariant $v) => [
                 'id' => $v->id,
                 'sku' => $v->sku,
@@ -119,7 +119,6 @@ class AdminProductService
                 'is_featured' => $data['is_featured'] ?? false,
             ]);
             $product->categories()->sync($data['category_ids'] ?? []);
-            $this->syncMedia($product, $data['media'] ?? null);
 
             if ($variants) {
                 foreach (array_values($variants) as $i => $v) {
@@ -165,7 +164,6 @@ class AdminProductService
                 'has_variants' => count($data['variants']) > 1,
             ]);
             $product->categories()->sync($data['category_ids'] ?? []);
-            $this->syncMedia($product, $data['media'] ?? []);
 
             $defaultIdx = collect($data['variants'])->search(fn ($v) => ! empty($v['is_default']));
             $defaultIdx = $defaultIdx === false ? 0 : $defaultIdx;
@@ -210,7 +208,6 @@ class AdminProductService
             'name' => $d['name'],
             'short_description' => isset($d['short_description']) ? strip_tags($d['short_description']) : null,
             'description' => $this->html->clean($d['description'] ?? null),
-            'thumbnail_url' => $d['thumbnail_url'] ?? null,
             'unit' => $d['unit'] ?? 'cái',
             'specifications' => $this->cleanSpecs($d['specifications'] ?? null),
             'meta_title' => $d['meta_title'] ?? null,
@@ -246,17 +243,6 @@ class AdminProductService
         }
 
         return $out ?: null;
-    }
-
-    private function syncMedia(Product $product, ?array $media): void
-    {
-        if ($media === null) {
-            return;
-        }
-        $product->media()->delete();
-        foreach (array_values($media) as $i => $m) {
-            $product->media()->create(['file_url' => $m['url'], 'alt_text' => $m['alt_text'] ?? null, 'media_type' => 'image', 'sort_order' => $i]);
-        }
     }
 
     /** SKU unique toàn bảng (kể cả biến thể đã xóa mềm vì unique index không phân biệt). */

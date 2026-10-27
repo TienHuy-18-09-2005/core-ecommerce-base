@@ -5,7 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Support\ImageUrlRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-/** Cập nhật toàn bộ sản phẩm (PUT): đồng bộ biến thể theo id, ảnh gallery thay toàn bộ. */
+/** Cập nhật toàn bộ sản phẩm (PUT): đồng bộ biến thể theo id, ảnh quản lý riêng qua /images. */
 class UpdateProductRequest extends FormRequest
 {
     public function authorize(): bool
@@ -21,7 +21,6 @@ class UpdateProductRequest extends FormRequest
             'slug' => ['nullable', 'string', 'max:255', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'short_description' => ['nullable', 'string', 'max:1000'],
             'description' => ['nullable', 'string', 'max:100000'],
-            'thumbnail_url' => ['nullable', 'string', 'max:500', ImageUrlRule::REGEX],
             'unit' => ['nullable', 'string', 'max:50'],
             'specifications' => ['nullable', 'array', 'max:50'],
             'specifications.*' => ['nullable', 'string', 'max:500'],
@@ -31,9 +30,6 @@ class UpdateProductRequest extends FormRequest
             'meta_description' => ['nullable', 'string', 'max:500'],
             'category_ids' => ['nullable', 'array', 'max:20'],
             'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
-            'media' => ['nullable', 'array', 'max:12'],
-            'media.*.url' => ['required', 'string', 'max:500', ImageUrlRule::REGEX],
-            'media.*.alt_text' => ['nullable', 'string', 'max:255'],
             'variants' => ['required', 'array', 'min:1', 'max:100'],
             'variants.*.id' => ['nullable', 'integer'],
             'variants.*.sku' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9._-]+$/', 'distinct:ignore_case'],
@@ -56,8 +52,6 @@ class UpdateProductRequest extends FormRequest
             'variants.*.sku.distinct' => 'SKU bị trùng trong danh sách biến thể.',
             'variants.*.sku.regex' => 'SKU chỉ gồm chữ, số, dấu chấm, gạch ngang, gạch dưới.',
             'slug.regex' => 'Slug chỉ gồm chữ thường, số và dấu gạch ngang.',
-            'thumbnail_url.regex' => 'Đường dẫn ảnh không hợp lệ.',
-            'media.*.url.regex' => 'Đường dẫn ảnh không hợp lệ.',
             'variants.*.image_url.regex' => 'Đường dẫn ảnh không hợp lệ.',
         ];
     }

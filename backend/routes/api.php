@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\ProductImageController as AdminProductImageController;
 use App\Http\Controllers\Shop\BrandController;
 use App\Http\Controllers\Shop\CartController;
 use App\Http\Controllers\Shop\CategoryController;
@@ -90,11 +91,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
 
     Route::get('/products', [AdminProductController::class, 'index'])->middleware('can:viewAny,App\Models\Product');
     Route::post('/products', [AdminProductController::class, 'store'])->middleware('can:create,App\Models\Product');
-    Route::post('/products/images', [AdminProductController::class, 'uploadImage'])
-        ->middleware(['can:create,App\Models\Product', 'throttle:admin-upload']);
     Route::get('/products/{product}', [AdminProductController::class, 'show'])->middleware('can:view,product');
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->middleware('can:update,product');
     Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->middleware('can:delete,product');
+    // Ảnh sản phẩm: tải từng file (để có tiến độ), sắp thứ tự + ảnh chính, xóa kèm file
+    Route::post('/products/{product}/images', [AdminProductImageController::class, 'store'])
+        ->middleware(['can:update,product', 'throttle:admin-upload']);
+    Route::put('/products/{product}/images/order', [AdminProductImageController::class, 'reorder'])->middleware('can:update,product');
+    Route::delete('/products/{product}/images/{media}', [AdminProductImageController::class, 'destroy'])
+        ->middleware('can:update,product')->scopeBindings();
 
     Route::get('/categories', [AdminCategoryController::class, 'index'])->middleware('can:viewAny,App\Models\Category');
     Route::post('/categories', [AdminCategoryController::class, 'store'])->middleware('can:create,App\Models\Category');

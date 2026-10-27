@@ -169,7 +169,7 @@ class ProductRepository extends BaseRepository implements ProductRepositoryInter
                 'brand',
                 'categories',
                 'media' => function ($q) {
-                    $q->orderBy('sort_order', 'asc');
+                    $q->orderByDesc('is_primary')->orderBy('sort_order', 'asc');
                 },
                 'variants' => function ($q) {
                     $q->where('is_active', true)->with('attributeValues.attribute');

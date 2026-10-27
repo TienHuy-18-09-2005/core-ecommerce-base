@@ -36,7 +36,8 @@ class AdminPanelTest extends TestCase
             ['get', '/api/admin/products/1'],
             ['put', '/api/admin/products/1'],
             ['delete', '/api/admin/products/1'],
-            ['post', '/api/admin/products/images'],
+            ['post', '/api/admin/products/1/images'],
+            ['put', '/api/admin/products/1/images/order'],
             ['get', '/api/admin/categories'],
             ['post', '/api/admin/categories'],
             ['put', '/api/admin/categories/1'],
@@ -102,13 +103,14 @@ class AdminPanelTest extends TestCase
                 ['id' => $v1, 'sku' => 'DEN-01', 'name' => 'Trắng', 'price' => 155000, 'stock_quantity' => 8],
                 ['sku' => 'DEN-03', 'name' => 'Đen', 'price' => 170000, 'stock_quantity' => 5, 'is_default' => true],
             ],
+            // trường cũ bị bỏ qua: ảnh chỉ quản lý qua /images, PUT không xóa ảnh hiện có
             'media' => [['url' => '/storage/products/a.jpg', 'alt_text' => 'Ảnh 1']],
         ])->assertOk()
             ->assertJsonPath('data.name', 'Đèn bàn LED Pro')
             ->assertJsonPath('data.slug', 'den-ban-led')
             ->assertJsonCount(2, 'data.variants')
             ->assertJsonPath('data.variants.0.sku', 'DEN-03')
-            ->assertJsonPath('data.media.0.url', '/storage/products/a.jpg');
+            ->assertJsonCount(0, 'data.media');
         $this->assertSoftDeleted('product_variants', ['id' => $v2]);
 
         $this->asSpa($this->admin)->getJson('/api/admin/products?q=DEN-03')->assertOk()
@@ -138,35 +140,91 @@ class AdminPanelTest extends TestCase
             ['sku' => 'q1', 'name' => 'A', 'price' => 1, 'stock_quantity' => 1],
             ['sku' => 'Q1', 'name' => 'B', 'price' => 1, 'stock_quantity' => 1],
         ]])->assertStatus(422)->assertJsonValidationErrors(['variants.1.sku']);
+        // thumbnail_url không còn nhập tay: bị bỏ qua, không lưu
         $this->asSpa($this->admin)->putJson("/api/admin/products/{$p->id}", $base + [
             'thumbnail_url' => 'javascript:alert(1)',
             'variants' => [['sku' => 'Q1', 'name' => 'A', 'price' => 1, 'stock_quantity' => 1]],
-        ])->assertStatus(422)->assertJsonPath('errors.thumbnail_url.0', 'Đường dẫn ảnh không hợp lệ.');
+        ])->assertOk()->assertJsonPath('data.thumbnail_url', null);
         $this->asSpa($this->admin)->putJson("/api/admin/products/{$p->id}", $base)
             ->assertStatus(422)->assertJsonPath('errors.variants.0', 'Sản phẩm cần ít nhất một biến thể.');
+    }
+
+    private function upload(Product $p, string $fixture = 'gps.jpg', string $name = 'gps.jpg')
+    {
+        return $this->asSpa($this->admin)->post("/api/admin/products/{$p->id}/images", [
+            'image' => UploadedFile::fake()->createWithContent($name, file_get_contents(base_path("tests/Fixtures/reviews/$fixture"))),
+        ], ['Accept' => 'application/json']);
     }
 
     public function test_product_image_upload_strips_metadata_and_fails_closed(): void
     {
         Storage::fake('public');
-        $src = base_path('tests/Fixtures/reviews/gps.jpg');
-        $res = $this->asSpa($this->admin)->post('/api/admin/products/images', [
-            'image' => UploadedFile::fake()->createWithContent('gps.jpg', file_get_contents($src)),
-        ], ['Accept' => 'application/json'])->assertCreated();
-        $path = $res->json('data.path');
+        $p = Product::create(['name' => 'Đèn', 'slug' => 'den', 'status' => 'published']);
+        $res = $this->upload($p)->assertCreated()->assertJsonPath('data.is_primary', true);
+        $media = \App\Models\ProductMedia::find($res->json('data.id'));
         $this->assertStringStartsWith('/storage/products/', $res->json('data.url'));
-        $stored = Storage::disk('public')->path($path);
+        $this->assertArrayNotHasKey('file_path', $res->json('data.images.0'));
+        $stored = Storage::disk('public')->path($media->file_path);
         $this->assertArrayNotHasKey('GPSLatitude', @exif_read_data($stored) ?: []);
         [$w, $h] = getimagesize($stored);
         $this->assertSame([20, 40], [$w, $h]);
-        // Pha 7.3: ảnh tải lên được lưu dạng WebP
-        $this->assertStringEndsWith('.webp', $path);
+        $this->assertStringEndsWith('.webp', $media->file_path);
         $this->assertSame('image/webp', getimagesize($stored)['mime']);
+        $this->assertSame($media->file_url, $p->fresh()->thumbnail_url);
 
-        $broken = UploadedFile::fake()->createWithContent('x.jpg', file_get_contents(base_path('tests/Fixtures/reviews/noscan.jpg')));
-        $this->asSpa($this->admin)->post('/api/admin/products/images', ['image' => $broken], ['Accept' => 'application/json'])
+        $this->upload($p, 'noscan.jpg', 'x.jpg')
             ->assertStatus(422)->assertJsonPath('errors.image.0', 'Ảnh không hợp lệ hoặc bị hỏng, vui lòng chọn ảnh JPEG, PNG hoặc WebP khác.');
+        $this->asSpa($this->admin)->post("/api/admin/products/{$p->id}/images", ['image' => UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')], ['Accept' => 'application/json'])
+            ->assertStatus(422)->assertJsonValidationErrors(['image']);
         $this->assertCount(1, Storage::disk('public')->allFiles('products'));
+        $this->assertSame(1, AdminAuditLog::where('action', 'product.image_added')->count());
+    }
+
+    public function test_product_images_reorder_primary_delete_and_limit(): void
+    {
+        Storage::fake('public');
+        $p = Product::create(['name' => 'Quạt', 'slug' => 'quat', 'status' => 'published']);
+        $a = $this->upload($p)->json('data.id');
+        $b = $this->upload($p)->json('data.id');
+        $c = $this->upload($p)->json('data.id');
+
+        $this->asSpa($this->admin)->putJson("/api/admin/products/{$p->id}/images/order", ['ids' => [$c, $a, $b], 'primary_id' => $b])
+            ->assertOk()->assertJsonPath('data.0.id', $c)->assertJsonPath('data.2.is_primary', true)->assertJsonPath('data.0.is_primary', false);
+        $this->assertSame(\App\Models\ProductMedia::find($b)->file_url, $p->fresh()->thumbnail_url);
+        // thiếu ảnh / ảnh lạ → 422
+        $this->asSpa($this->admin)->putJson("/api/admin/products/{$p->id}/images/order", ['ids' => [$a, $b]])->assertStatus(422);
+        $other = Product::create(['name' => 'Khác', 'slug' => 'khac', 'status' => 'published']);
+        $x = $this->upload($other)->json('data.id');
+        $this->asSpa($this->admin)->putJson("/api/admin/products/{$p->id}/images/order", ['ids' => [$c, $a, $b], 'primary_id' => $x])->assertStatus(422);
+        // xóa ảnh của sản phẩm khác qua URL sản phẩm này → 404 (scopeBindings)
+        $this->asSpa($this->admin)->deleteJson("/api/admin/products/{$p->id}/images/$x")->assertNotFound();
+
+        $path = \App\Models\ProductMedia::find($b)->file_path;
+        $this->asSpa($this->admin)->deleteJson("/api/admin/products/{$p->id}/images/$b")->assertOk()
+            ->assertJsonCount(2, 'data')->assertJsonPath('data.0.is_primary', true);
+        Storage::disk('public')->assertMissing($path);
+        $this->assertSame(\App\Models\ProductMedia::find($c)->file_url, $p->fresh()->thumbnail_url);
+
+        // shop: ảnh chính đứng đầu
+        $this->getJson('/api/products/quat')->assertOk()->assertJsonPath('data.media.0.id', $c);
+
+        for ($i = 0; $i < 8; $i++) {
+            \App\Models\ProductMedia::create(['product_id' => $p->id, 'file_url' => "/x$i.jpg", 'media_type' => 'image', 'sort_order' => 10 + $i]);
+        }
+        $this->upload($p)->assertStatus(422)->assertJsonPath('errors.image.0', 'Mỗi sản phẩm tối đa 10 ảnh.');
+        $this->assertSame(
+            ['product.image_added', 'product.images_reordered', 'product.image_removed'],
+            AdminAuditLog::where('subject_type', 'Product')->where('subject_id', $p->id)->orderBy('id')->pluck('action')->unique()->values()->all()
+        );
+    }
+
+    public function test_image_routes_reject_customers(): void
+    {
+        $p = Product::create(['name' => 'A', 'slug' => 'a', 'status' => 'published']);
+        $m = \App\Models\ProductMedia::create(['product_id' => $p->id, 'file_url' => '/a.jpg', 'media_type' => 'image']);
+        $customer = User::factory()->create(['role' => 'customer']);
+        $this->asSpa($customer)->deleteJson("/api/admin/products/{$p->id}/images/{$m->id}")->assertForbidden();
+        $this->assertDatabaseHas('product_media', ['id' => $m->id]);
     }
 
     public function test_categories_block_cycles_and_in_use_delete(): void

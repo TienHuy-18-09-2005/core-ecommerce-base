@@ -6,10 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ListAdminProductsRequest;
 use App\Http\Requests\Admin\StoreProductRequest;
 use App\Http\Requests\Admin\UpdateProductRequest;
-use App\Http\Requests\Admin\UploadImageRequest;
 use App\Models\Product;
 use App\Services\Admin\AdminProductService;
-use App\Services\Support\ImageSanitizer;
 use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
@@ -55,17 +53,5 @@ class ProductController extends Controller
         $this->productService->delete($product);
 
         return response()->json(['success' => true, 'message' => 'Đã xóa sản phẩm.']);
-    }
-
-    /** Upload ảnh sản phẩm: mã hoá lại để bỏ metadata, trả URL công khai. */
-    public function uploadImage(UploadImageRequest $request, ImageSanitizer $images): JsonResponse
-    {
-        $path = $images->storeOne($request->file('image'), 'products');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã tải ảnh lên.',
-            'data' => ['url' => '/storage/'.$path, 'path' => $path],
-        ], 201);
     }
 }

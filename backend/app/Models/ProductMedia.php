@@ -12,17 +12,22 @@ class ProductMedia extends Model
     protected $fillable = [
         'product_id',
         'file_url',
+        'file_path',
         'media_type',
         'alt_text',
         'sort_order',
+        'is_primary',
     ];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
+            'is_primary' => 'boolean',
         ];
     }
+
+    protected $hidden = ['file_path'];
 
     public function product(): BelongsTo
     {
