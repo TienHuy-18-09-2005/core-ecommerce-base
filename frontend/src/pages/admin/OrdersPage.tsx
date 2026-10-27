@@ -13,8 +13,7 @@ const opts = (m: Record<string, string>) => Object.entries(m).map(([value, label
 const FILTERS: FilterDef[] = [
   { key: "status", label: "Trạng thái đơn", type: "select", options: opts(ORDER_STATUS_LABELS) },
   { key: "payment_status", label: "Thanh toán", type: "select", options: opts(PAYMENT_STATUS_LABELS) },
-  { key: "from", label: "Từ ngày", type: "date" },
-  { key: "to", label: "Đến ngày", type: "date" },
+  { key: "range", label: "Khoảng ngày", type: "daterange", fromKey: "from", toKey: "to" },
 ];
 const PRESETS = [
   { name: "Đơn chờ xác nhận", query: "status=pending" },

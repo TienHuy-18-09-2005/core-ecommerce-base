@@ -9,7 +9,8 @@ import { ctlIdle, ctlOn, ghostBtn, toolBtn, toolBtnOn, toolLabel } from "./toolb
 export type FilterDef =
   | { key: string; label: string; type: "select"; options: { value: string; label: string }[] }
   | { key: string; label: string; type: "toggle" }
-  | { key: string; label: string; type: "date" };
+  | { key: string; label: string; type: "date" }
+  | { key: string; label: string; type: "daterange"; fromKey: string; toKey: string };
 
 
 /** Ô tìm kiếm debounce (400ms), Enter áp dụng ngay; đồng bộ khi URL đổi từ nơi khác. */
@@ -23,7 +24,7 @@ export function SearchBox({ label, placeholder, value, onChange, delay = 400 }: 
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
   const id = useId();
   return (
-    <div className="w-full sm:w-72 xl:w-[280px] xl:shrink-0">
+    <div className="w-full sm:w-72 xl:w-[240px] xl:shrink-0 2xl:w-[280px]">
       <label htmlFor={id} className={`${toolLabel} mb-1`}>{label}</label>
       <div className="relative">
         <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-admin-muted" />
@@ -39,12 +40,31 @@ export function SearchBox({ label, placeholder, value, onChange, delay = 400 }: 
 export function FilterChips({ filters, values, onChange, onClear }: {
   filters: FilterDef[]; values: Record<string, string>; onChange: (key: string, v: string) => void; onClear: () => void;
 }) {
-  const anyActive = filters.some((f) => values[f.key]);
+  const anyActive = filters.some((f) => (f.type === "daterange" ? values[f.fromKey] || values[f.toKey] : values[f.key]));
   return (
     <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-end gap-3 xl:flex-nowrap">
       {filters.map((f) => {
         const v = values[f.key] ?? "";
         const id = `filter-${f.key}`;
+        if (f.type === "daterange") {
+          const from = values[f.fromKey] ?? "", to = values[f.toKey] ?? "";
+          const invalid = !!from && !!to && from > to;
+          const errId = `${id}-err`;
+          const dateCls = "h-full w-[6.75rem] bg-transparent text-sm outline-none [color-scheme:inherit]";
+          return (
+            <div key={f.key} role="group" aria-labelledby={`${id}-label`} className="relative">
+              <span id={`${id}-label`} className={`${toolLabel} mb-1`}>{f.label}</span>
+              <div className={`${from || to ? ctlOn : ctlIdle} inline-flex items-center gap-1 !px-2 focus-within:ring-2 focus-within:ring-admin-primary/40 ${invalid ? "!border-admin-danger" : ""}`}>
+                <input type="date" aria-label={`${f.label}: từ ngày`} aria-invalid={invalid || undefined} aria-describedby={invalid ? errId : undefined}
+                  className={dateCls} value={from} max={to || undefined} onChange={(e) => onChange(f.fromKey, e.target.value)} />
+                <span aria-hidden className="text-admin-muted">–</span>
+                <input type="date" aria-label={`${f.label}: đến ngày`} aria-invalid={invalid || undefined} aria-describedby={invalid ? errId : undefined}
+                  className={dateCls} value={to} min={from || undefined} onChange={(e) => onChange(f.toKey, e.target.value)} />
+              </div>
+              {invalid && <p id={errId} role="alert" className="absolute top-full left-0 mt-1 text-xs whitespace-nowrap text-admin-danger">Ngày bắt đầu phải trước hoặc bằng ngày kết thúc</p>}
+            </div>
+          );
+        }
         if (f.type === "toggle") {
           return (
             <div key={f.key}>
@@ -60,7 +80,7 @@ export function FilterChips({ filters, values, onChange, onClear }: {
           <div key={f.key}>
             <label htmlFor={id} className={`${toolLabel} mb-1`}>{f.label}</label>
             {f.type === "select" ? (
-              <select id={id} className={`${v ? ctlOn : ctlIdle} min-w-36 pr-8`} value={v} onChange={(e) => onChange(f.key, e.target.value)}>
+              <select id={id} className={`${v ? ctlOn : ctlIdle} min-w-36 pr-8 xl:max-2xl:w-40`} title={f.label} value={v} onChange={(e) => onChange(f.key, e.target.value)}>
                 <option value="">Tất cả</option>
                 {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -71,8 +91,8 @@ export function FilterChips({ filters, values, onChange, onClear }: {
         );
       })}
       {anyActive && (
-        <button type="button" className={ghostBtn} onClick={onClear}>
-          <X aria-hidden className="size-4" />Xóa bộ lọc
+        <button type="button" className={ghostBtn} title="Xóa bộ lọc" onClick={onClear}>
+          <X aria-hidden className="size-4" /><span className="xl:max-2xl:sr-only">Xóa bộ lọc</span>
         </button>
       )}
     </div>
