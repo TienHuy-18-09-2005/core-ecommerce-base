@@ -67,7 +67,7 @@ export default function DashboardPage() {
             <section>
               <h2 className="mb-2 font-semibold">Sắp hết hàng</h2>
               <DataTable rows={data.low_stock} rowKey={(v) => v.variant_id} empty="Không có biến thể nào sắp hết." columns={[
-                { header: "Sản phẩm", cell: (v) => <Link className="text-admin-primary" to={`/admin/san-pham/${v.product_id}`}>{v.product_name ?? "—"}</Link> },
+                { header: "Sản phẩm", cell: (v) => <Link className="text-admin-primary" to={`/admin/san-pham?sua=${v.product_id}`}>{v.product_name ?? "—"}</Link> },
                 { header: "Biến thể", cell: (v) => `${v.variant_name} (${v.sku})` },
                 { header: "Tồn", cell: (v) => <span className="font-semibold text-admin-danger">{v.stock_quantity}</span> },
               ]} />

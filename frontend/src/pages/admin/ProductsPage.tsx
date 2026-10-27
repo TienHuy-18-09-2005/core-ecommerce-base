@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useModalParam } from "../../hooks/useModalParam.ts";
+import { ProductFormModal } from "./ProductFormModal.tsx";
 import { PRODUCT_STATUS_LABELS, btnDanger, btnPrimary } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
 import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
@@ -20,6 +21,7 @@ const PRESETS = [
 ];
 
 export default function ProductsPage() {
+  const modal = useModalParam();
   const { values, page, set, setMany, setPage, sort, toggleSort, sortParams, query, applyQuery } = useListParams(KEYS);
   const { data, error, isLoading, refetch, isRefetching } = useAdminProductsQuery({ ...values, ...sortParams, page });
   const confirm = useConfirm();
@@ -52,7 +54,7 @@ export default function ProductsPage() {
 
   return (
     <>
-      <PageHeader title="Sản phẩm" actions={<Link to="/admin/san-pham/moi" className={btnPrimary}>+ Thêm sản phẩm</Link>} />
+      <PageHeader title="Sản phẩm" actions={<button type="button" onClick={modal.openCreate} className={btnPrimary}>+ Thêm sản phẩm</button>} />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable tableId="products" sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp."
         selection={selection} rowLabel={(p) => p.name}
@@ -67,7 +69,7 @@ export default function ProductsPage() {
             <div className="flex items-center gap-3">
               <img src={safeImageUrl(p.thumbnail_url) ?? "/product-fallback.svg"} alt="" loading="lazy" decoding="async" width={40} height={40} className="h-10 w-10 rounded object-cover" />
               <div>
-                <Link to={`/admin/san-pham/${p.id}`} className="font-medium text-admin-primary">{p.name}</Link>
+                <button type="button" onClick={() => modal.openEdit(p.id)} className="text-left font-medium text-admin-primary hover:underline">{p.name}</button>
                 <p className="text-xs text-admin-muted">{p.brand?.name ?? "—"} · {p.categories.map((c) => c.name).join(", ") || "Chưa phân loại"}</p>
               </div>
             </div>
@@ -77,12 +79,13 @@ export default function ProductsPage() {
           { header: "Trạng thái", sortKey: "status", cell: (p) => <ProductStatusBadge status={p.status} /> },
           { header: "Thao tác", hideable: false, cell: (p) => (
             <div className="flex gap-2">
-              <Link to={`/admin/san-pham/${p.id}`} className="text-sm text-admin-primary">Sửa</Link>
+              <button type="button" onClick={() => modal.openEdit(p.id)} aria-label={`Sửa sản phẩm ${p.name}`} className="text-sm text-admin-primary">Sửa</button>
               <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(p.id, p.name)}>Xóa</button>
             </div>
           ) },
         ]} />
       <Pagination meta={data?.meta} onPage={setPage} />
+      {modal.mode && <ProductFormModal key={modal.editId ?? "new"} id={modal.editId} onClose={modal.close} />}
     </>
   );
 }

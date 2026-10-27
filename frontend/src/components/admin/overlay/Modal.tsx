@@ -6,7 +6,7 @@ import { useOverlay } from "./useOverlay.ts";
 
 export function Modal({ open, onClose, title, description, children, footer, size = "md", role = "dialog", initialFocus }: {
   open: boolean; onClose: () => void; title: string; description?: ReactNode; children?: ReactNode; footer?: ReactNode;
-  size?: "sm" | "md" | "lg"; role?: "dialog" | "alertdialog"; initialFocus?: React.RefObject<HTMLElement | null>;
+  size?: "sm" | "md" | "lg" | "xl"; role?: "dialog" | "alertdialog"; initialFocus?: React.RefObject<HTMLElement | null>;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -15,21 +15,23 @@ export function Modal({ open, onClose, title, description, children, footer, siz
   latestClose.current = onClose;
   useOverlay(open, panel, () => latestClose.current(), initialFocus);
   if (!open) return null;
-  const width = size === "sm" ? "max-w-md" : size === "lg" ? "max-w-3xl" : "max-w-lg";
+  const width = size === "sm" ? "max-w-md" : size === "lg" ? "max-w-3xl" : size === "xl" ? "max-w-5xl" : "max-w-lg";
+  // Biểu mẫu lớn: gần toàn màn hình trên điện thoại/máy tính bảng hẹp, thân cuộn riêng, chân cố định.
+  const big = size === "lg" || size === "xl";
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end justify-center p-4 sm:items-center">
+    <div className={`fixed inset-0 z-[60] flex items-end justify-center sm:items-center ${big ? "p-0 sm:p-4" : "p-4"}`}>
       <div className="absolute inset-0 bg-black/50" aria-hidden onClick={onClose} />
       <div ref={panel} role={role} aria-modal="true" aria-labelledby={titleId} aria-describedby={description ? descId : undefined} tabIndex={-1}
-        className={`relative w-full ${width} animate-fade-in rounded-xl border border-admin-border bg-admin-surface text-admin-fg shadow-xl outline-none`}>
-        <div className="flex items-start justify-between gap-3 px-5 pt-5">
+        className={`relative flex w-full ${width} animate-fade-in flex-col border border-admin-border bg-admin-surface text-admin-fg shadow-xl outline-none ${big ? "h-[100dvh] rounded-none sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-xl" : "max-h-[calc(100dvh-2rem)] rounded-xl"}`}>
+        <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
           <h2 id={titleId} className="text-lg font-semibold">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="-mr-2 -mt-1 rounded-lg p-2 text-admin-muted hover:bg-admin-subtle hover:text-admin-fg"><X aria-hidden className="size-5" /></button>
         </div>
-        <div className="px-5 py-3 text-sm text-admin-fg-soft">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3 text-sm text-admin-fg-soft">
           {description && <div id={descId}>{description}</div>}
           {children}
         </div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-admin-border px-5 py-3">{footer}</div>}
+        {footer && <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-admin-border px-5 py-3">{footer}</div>}
       </div>
     </div>,
     document.body,

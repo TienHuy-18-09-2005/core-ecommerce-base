@@ -76,18 +76,27 @@ export interface AdminProductInput {
   category_ids: number[];
   short_description: string | null;
   description: string | null;
-  thumbnail_url: string | null;
   unit: string | null;
   specifications: Record<string, string>;
   meta_title: string | null;
   meta_description: string | null;
-  media: { url: string; alt_text: string | null }[];
   variants: AdminVariant[];
+}
+
+/** Ảnh sản phẩm — quản lý qua endpoint riêng (tải file lên), không gửi kèm khi lưu sản phẩm. */
+export interface AdminProductImage {
+  id: number;
+  url: string;
+  alt_text: string | null;
+  sort_order: number;
+  is_primary: boolean;
 }
 
 export interface AdminProduct extends AdminProductInput {
   id: number;
   slug: string;
+  thumbnail_url: string | null;
+  media: AdminProductImage[];
   created_at: string | null;
   updated_at: string | null;
 }

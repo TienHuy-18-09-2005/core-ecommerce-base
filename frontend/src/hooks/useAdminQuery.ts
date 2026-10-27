@@ -57,7 +57,8 @@ export function useProductMutations() {
     create: useMutation({ mutationFn: (input: AdminProductInput) => adminService.createProduct(input), onSuccess }),
     update: useMutation({ mutationFn: ({ id, input }: { id: number; input: AdminProductInput }) => adminService.updateProduct(id, input), onSuccess }),
     remove: useMutation({ mutationFn: (id: number) => adminService.deleteProduct(id), onSuccess }),
-    upload: useMutation({ mutationFn: (file: File) => adminService.uploadImage(file) }),
+    /** Làm mới cache sau khi đồng bộ ảnh (endpoint ảnh gọi trực tiếp để theo dõi tiến độ). */
+    invalidate: onSuccess,
   };
 }
 

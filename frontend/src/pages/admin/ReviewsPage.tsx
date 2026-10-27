@@ -84,7 +84,7 @@ export default function ReviewsPage() {
             )}
           </div>
         ) },
-        { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham/${r.product.id}`} className="text-admin-primary">{r.product.name}</Link> : "—") },
+        { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham?sua=${r.product.id}`} className="text-admin-primary">{r.product.name}</Link> : "—") },
         { header: "Khách hàng", secondary: true, cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-admin-muted">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-admin-success">Đã mua hàng</p>}</> },
         { header: "Ngày", secondary: true, sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
         { header: "Trạng thái", sortKey: "is_approved", cell: (r) => <ReviewStatusBadge approved={r.is_approved} /> },

@@ -78,7 +78,7 @@ describe("admin panel", () => {
     svc.products.mockResolvedValue({ data: [{ id: 5, name: "Bóng đèn", slug: "bong-den", status: "published", is_featured: false, thumbnail_url: null, brand: null, categories: [], price_min: 50000, stock_total: 3, variants_count: 1, updated_at: null }], meta });
     svc.categories.mockResolvedValue([]);
     const router = renderAdmin("/admin/san-pham");
-    expect(await screen.findByRole("link", { name: "Bóng đèn" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Bóng đèn" })).toBeTruthy();
     expect(await seriousViolations()).toEqual([]);
     fireEvent.click(within(screen.getByRole("group", { name: "Bộ lọc" })).getByRole("button", { name: "Trạng thái" }));
     fireEvent.change(within(screen.getByRole("dialog", { name: "Lọc theo trạng thái" })).getByLabelText("Trạng thái"), { target: { value: "draft" } });
@@ -237,12 +237,103 @@ describe("admin panel", () => {
   it("creates a coupon", async () => {
     svc.coupons.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
     svc.createCoupon.mockResolvedValue({} as never);
-    renderAdmin("/admin/ma-giam-gia");
-    fireEvent.change(await screen.findByLabelText("Mã"), { target: { value: "giam10" } });
+    const router = renderAdmin("/admin/ma-giam-gia");
+    fireEvent.click(await screen.findByRole("button", { name: "+ Tạo mã giảm giá" }));
+    await waitFor(() => expect(router.state.location.search).toBe("?them=1"));
+    const dialog = await screen.findByRole("dialog", { name: "Tạo mã giảm giá" });
+    fireEvent.change(within(dialog).getByLabelText("Mã"), { target: { value: "giam10" } });
     expect(await seriousViolations()).toEqual([]);
     fireEvent.change(screen.getByLabelText("Loại"), { target: { value: "percent" } });
     fireEvent.change(screen.getByLabelText("Giá trị"), { target: { value: "10" } });
     fireEvent.click(screen.getByRole("button", { name: "Tạo mã" }));
     await waitFor(() => expect(svc.createCoupon).toHaveBeenCalledWith(expect.objectContaining({ code: "giam10", type: "percent", value: 10, starts_at: null })));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Tạo mã giảm giá" })).toBeNull());
+    expect(router.state.location.search).toBe("");
+  });
+
+  it("asks before discarding unsaved changes in a form modal", async () => {
+    svc.coupons.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
+    renderAdmin("/admin/ma-giam-gia?them=1");
+    const dialog = await screen.findByRole("dialog", { name: "Tạo mã giảm giá" });
+    // chưa sửa gì → đóng ngay
+    fireEvent.change(within(dialog).getByLabelText("Mã"), { target: { value: "X" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hủy" }));
+    const ask = await screen.findByRole("alertdialog", { name: "Bỏ thay đổi?" });
+    fireEvent.click(within(ask).getByRole("button", { name: "Tiếp tục sửa" }));
+    expect(screen.getByRole("dialog", { name: "Tạo mã giảm giá" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(within(await screen.findByRole("alertdialog", { name: "Bỏ thay đổi?" })).getByRole("button", { name: "Bỏ thay đổi" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Tạo mã giảm giá" })).toBeNull());
+  });
+
+  it("saves a category modal with Ctrl+S", async () => {
+    svc.categories.mockResolvedValue([]);
+    svc.createCategory.mockResolvedValue({} as never);
+    renderAdmin("/admin/danh-muc");
+    fireEvent.click(await screen.findByRole("button", { name: "+ Thêm danh mục" }));
+    const dialog = await screen.findByRole("dialog", { name: "Thêm danh mục" });
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.change(within(dialog).getByLabelText(/Tên danh mục/), { target: { value: "Đèn LED" } });
+    fireEvent.keyDown(document, { key: "s", ctrlKey: true });
+    await waitFor(() => expect(svc.createCategory).toHaveBeenCalledWith(expect.objectContaining({ name: "Đèn LED" })));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("redirects the old product URL to the list with the edit modal, and syncs images on save", async () => {
+    svc.products.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
+    svc.categories.mockResolvedValue([]);
+    svc.product.mockResolvedValue({
+      id: 5, name: "Bóng đèn", slug: "bong-den", status: "draft", is_featured: false, brand_id: null, category_ids: [], short_description: null, description: null,
+      unit: "cái", specifications: {}, meta_title: null, meta_description: null, created_at: null, updated_at: null, thumbnail_url: "/storage/products/a.webp",
+      variants: [{ id: 1, sku: "BD", name: "Mặc định", price: 1, compare_at_price: null, cost_price: null, stock_quantity: 1, weight_grams: 0, image_url: null, is_default: true, is_active: true }],
+      media: [
+        { id: 11, url: "/storage/products/a.webp", alt_text: null, sort_order: 0, is_primary: true },
+        { id: 12, url: "/storage/products/b.webp", alt_text: null, sort_order: 1, is_primary: false },
+      ],
+    } as never);
+    svc.updateProduct.mockResolvedValue({ id: 5 } as never);
+    svc.deleteProductImage.mockResolvedValue([] as never);
+    svc.reorderProductImages.mockResolvedValue([] as never);
+    const router = renderAdmin("/admin/san-pham/5");
+    await waitFor(() => expect(router.state.location.search).toBe("?sua=5"));
+    const dialog = await screen.findByRole("dialog", { name: "Sửa sản phẩm: Bóng đèn" });
+    expect(screen.queryByLabelText("URL ảnh")).toBeNull();
+    fireEvent.click(within(dialog).getByRole("tab", { name: /Ảnh/ }));
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Xóa ảnh 1" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
+    await waitFor(() => expect(svc.reorderProductImages).toHaveBeenCalledWith(5, [12], 12));
+    expect(svc.deleteProductImage).toHaveBeenCalledWith(5, 11);
+    expect(svc.updateProduct.mock.calls[0][1]).not.toHaveProperty("media");
+    expect(svc.updateProduct.mock.calls[0][1]).not.toHaveProperty("thumbnail_url");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("creates a product then uploads the chosen images with the selected primary", async () => {
+    let n = 0;
+    URL.createObjectURL = vi.fn(() => `blob:preview-${++n}`);
+    URL.revokeObjectURL = vi.fn();
+    svc.products.mockResolvedValue({ data: [], meta: { ...meta, total: 0 } });
+    svc.categories.mockResolvedValue([]);
+    svc.createProduct.mockResolvedValue({ id: 9 } as never);
+    let up = 100;
+    svc.uploadProductImage.mockImplementation(async (_id, _f, onProgress) => { onProgress?.(50); return { id: ++up, url: "/x.webp", is_primary: false, images: [] }; });
+    svc.reorderProductImages.mockResolvedValue([] as never);
+    renderAdmin("/admin/san-pham");
+    fireEvent.click(await screen.findByRole("button", { name: "+ Thêm sản phẩm" }));
+    const dialog = await screen.findByRole("dialog", { name: "Thêm sản phẩm" });
+    fireEvent.change(within(dialog).getByLabelText(/Tên sản phẩm/), { target: { value: "Đèn" } });
+    fireEvent.click(within(dialog).getByRole("tab", { name: /Ảnh/ }));
+    const png = (name: string) => new File(["x"], name, { type: "image/png" });
+    fireEvent.change(within(dialog).getByLabelText("Chọn ảnh từ máy"), { target: { files: [png("a.png"), png("b.png"), new File(["x"], "c.pdf", { type: "application/pdf" })] } });
+    expect(within(dialog).getByRole("alert").textContent).toContain("c.pdf: chỉ nhận ảnh JPG, PNG hoặc WebP.");
+    expect(within(dialog).getAllByRole("img").map((i) => i.getAttribute("src"))).toEqual(["blob:preview-1", "blob:preview-2"]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Đưa ảnh 2 lên trước" }));
+    fireEvent.click(within(dialog).getAllByRole("radio", { name: "Ảnh chính" })[1]);
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
+    await waitFor(() => expect(svc.reorderProductImages).toHaveBeenCalledWith(9, [101, 102], 102));
+    expect(svc.uploadProductImage.mock.calls.map((c) => [c[0], (c[1] as File).name])).toEqual([[9, "b.png"], [9, "a.png"]]);
+    expect(svc.createProduct.mock.calls[0][0]).not.toHaveProperty("media");
   });
 });

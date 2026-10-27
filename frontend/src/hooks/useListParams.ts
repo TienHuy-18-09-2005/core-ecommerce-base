@@ -54,7 +54,7 @@ export function useListParams<K extends string>(keys: readonly K[]) {
   };
 
   /** Query hiện tại (bỏ trang) — dùng cho "chế độ xem đã lưu". */
-  const query = (() => { const q = new URLSearchParams(search); q.delete("page"); q.sort(); return q.toString(); })();
+  const query = (() => { const q = new URLSearchParams(search); q.delete("page"); q.delete("sua"); q.delete("them"); q.sort(); return q.toString(); })();
   const applyQuery = (q: string) => setSearch(new URLSearchParams(q), { replace: true });
 
   return { values, page, set, setMany, query, applyQuery, setPage: (p: number) => set("page", String(p)), sort, toggleSort, sortParams };

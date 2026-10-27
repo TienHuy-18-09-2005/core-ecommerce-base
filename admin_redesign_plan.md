@@ -398,3 +398,9 @@ Tổng ước lượng: ~28 ngày công (R6 4,5 ngày do hỗ trợ nhiều vai 
 10. **`php artisan admin:create`:** thêm ở R0.
 
 Không còn câu hỏi mở về phân quyền.
+
+## Điều chỉnh trước R4 (27/10/2026): form dạng modal + ảnh sản phẩm tải file
+
+- **Thêm/Sửa dạng modal** (sản phẩm, danh mục, mã giảm giá): `FormModal` dùng Modal R2 (bẫy focus, ESC, Ctrl+S, đóng khi còn thay đổi → hỏi "Bỏ thay đổi?"). Trạng thái trên URL: `?them=1` / `?sua=ID`. Link cũ `/admin/san-pham/moi` và `/admin/san-pham/:id` tự chuyển về danh sách với modal mở. Modal sản phẩm cỡ `xl`, chia tab (Thông tin chung / Biến thể / Ảnh / Thông số & SEO), tab có lỗi được đánh dấu; màn hẹp gần toàn màn hình. Cập nhật trạng thái đơn hàng vẫn ở trang chi tiết.
+- **Ảnh sản phẩm**: bỏ ô nhập URL. Chọn nhiều ảnh / kéo thả, xem trước, xóa, sắp xếp (kéo hoặc mũi tên), chọn ảnh chính; kiểm tra JPG/PNG/WebP ≤5MB, tối đa 10 ảnh; hiện tiến độ tải. Lưu sản phẩm xong mới đồng bộ ảnh: xóa → tải lên → lưu thứ tự + ảnh chính.
+- **Backend**: `POST /admin/products/{id}/images` (throttle `admin-upload`), `PUT .../images/order`, `DELETE .../images/{media}` — policy `update`, mã hóa lại WebP bỏ EXIF, audit log, xóa file khi xóa ảnh. `product_media` thêm `is_primary`, `file_path`; `thumbnail_url` tự đồng bộ theo ảnh chính. Migration chuyển dữ liệu URL cũ sang media (không mất dữ liệu). Lưu sản phẩm bỏ qua `media`/`thumbnail_url`.

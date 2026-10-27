@@ -1,5 +1,5 @@
 import type {
-  AdminCategory, AdminCategoryInput, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct,
+  AdminCategory, AdminCategoryInput, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
   AdminProductInput, AdminProductRow, AdminReview, DashboardData, OrderSummaryRow, Paginated,
 } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
@@ -31,11 +31,18 @@ export const adminService = {
   createProduct: async (input: AdminProductInput) => (await apiClient.post<Envelope<AdminProduct>>("/admin/products", input)).data.data,
   updateProduct: async (id: number, input: AdminProductInput) => (await apiClient.put<Envelope<AdminProduct>>(`/admin/products/${id}`, input)).data.data,
   deleteProduct: async (id: number) => { await apiClient.delete(`/admin/products/${id}`); },
-  uploadImage: async (file: File) => {
+  /** Tải một ảnh lên sản phẩm (máy chủ mã hóa lại WebP, bỏ EXIF); onProgress nhận 0–100. */
+  uploadProductImage: async (productId: number, file: File, onProgress?: (percent: number) => void) => {
     const form = new FormData();
     form.append("image", file);
-    return (await apiClient.post<Envelope<{ url: string; path: string }>>("/admin/products/images", form)).data.data;
+    return (await apiClient.post<Envelope<{ id: number; url: string; is_primary: boolean; images: AdminProductImage[] }>>(`/admin/products/${productId}/images`, form, {
+      onUploadProgress: (e) => { if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100)); },
+    })).data.data;
   },
+  reorderProductImages: async (productId: number, ids: number[], primaryId: number | null) =>
+    (await apiClient.put<Envelope<AdminProductImage[]>>(`/admin/products/${productId}/images/order`, { ids, primary_id: primaryId })).data.data,
+  deleteProductImage: async (productId: number, mediaId: number) =>
+    (await apiClient.delete<Envelope<AdminProductImage[]>>(`/admin/products/${productId}/images/${mediaId}`)).data.data,
 
   categories: (signal?: AbortSignal) => get<AdminCategory[]>("/admin/categories", signal),
   createCategory: async (input: AdminCategoryInput) => (await apiClient.post<Envelope<AdminCategory>>("/admin/categories", input)).data.data,
