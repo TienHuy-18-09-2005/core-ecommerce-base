@@ -357,7 +357,7 @@ Thứ tự: **Nền tảng R0–R3 → Đơn hàng (R4) → Sản phẩm (R5) �
 | **R4** | ⭐ Đơn hàng | Tab có đếm, lọc ngày/thanh toán, bulk đổi trạng thái, chi tiết + timeline + ghi chú + modal hủy, **in phiếu giao hàng** (đơn lẻ & nhiều đơn), **thông báo đơn mới + âm thanh nhẹ** | Xác nhận đơn ≤ 3 click; phiếu in đúng khổ; âm thanh chỉ khi có đơn mới | 3,5 ngày |
 | **R5** | ⭐ Sản phẩm | Trình soạn tab, **Tiptap**, biến thể sửa trực tiếp, sửa lỗi hoán đổi SKU, ảnh kéo thả, cảnh báo rời trang, nhân bản; shop hiển thị mô tả | Hoán đổi SKU thành công (test); HTML độc bị loại | 3 ngày |
 | **R6** ✅ Đã xong (28/10/2026) | Phân quyền RBAC | Bảng roles/permissions/role_permission + pivot `user_role` (nhiều vai trò); seed quyền và 4 vai trò mẫu; Gate theo quyền, Policy chuyển sang quyền; `/me` trả `permissions`; `useCan` ẩn menu, nút và widget; dashboard bỏ trường doanh thu khi thiếu quyền; màn hình **Vai trò & phân quyền** (CRUD, ma trận checkbox); gán **nhiều vai trò** (multi-select) trong Người dùng, bản tối giản nếu R11 chưa làm; xóa cache quyền khi đổi; audit thay đổi quyền và gán vai trò; `admin:create --role=staff --staff-role=a,b` | Test API ma trận: mỗi vai trò mẫu bị 403 đúng chỗ; Quản lý sản phẩm gọi dashboard **không có** trường doanh thu, Kế toán có; admin không bị giới hạn; không xóa được vai trò còn người dùng; nhân viên không tự sửa được `roles.manage`; **user mang 2 vai trò (vd. Quản lý sản phẩm + Kế toán) có đúng hợp quyền** (sửa sản phẩm được và thấy doanh thu); gỡ 1 vai trò thì mất quyền ngay ở request kế tiếp (cache đã xóa); staff không có vai trò nào bị 403 toàn khu admin; audit ghi diff | 4,5 ngày |
-| **R7** | Cài đặt | Thông tin cửa hàng, phí ship & ngưỡng miễn phí (checkout dùng), đổi mật khẩu admin | Phiếu giao hàng & checkout lấy từ cài đặt | 1,5 ngày |
+| **R7** ✅ Đã xong (29/10/2026) | Cài đặt | Thông tin cửa hàng, phí ship & ngưỡng miễn phí (checkout dùng), đổi mật khẩu admin | Phiếu giao hàng & checkout lấy từ cài đặt | 1,5 ngày |
 | **R8** | Bảng điều khiển | KPI so kỳ, khoảng ngày, **Recharts**, "Việc cần làm" | Lighthouse a11y ≥ 95 | 1,5 ngày |
 | **R9** | Catalog phụ | Cây danh mục kéo thả + API reorder; Thương hiệu | CRUD thương hiệu có test | 2 ngày |
 | **R10** | Khuyến mãi & đánh giá | Coupon drawer, lượt dùng, nhân bản; đánh giá thẻ, lightbox, bulk, hoàn tác | Test bulk moderate | 1,5 ngày |
@@ -421,3 +421,13 @@ Không còn câu hỏi mở về phân quyền.
 - **Giao diện:** `useCan()`; menu, route (trang 403), nút, widget ẩn theo quyền; màn hình **Vai trò & phân quyền** gồm tab Vai trò (lọc theo tên/quyền, modal checkbox theo nhóm) và tab Nhân viên (thêm theo email, gán nhiều vai trò, thu hồi).
 - **Tạo nhân viên CLI:** `php artisan admin:create --role=staff --staff-role=customer_care,accountant`.
 - **Còn lại:** chưa có màn hình xem nhật ký tổng (R-Nhật ký); gán vai trò sẽ chuyển vào trang Người dùng khi làm R11.
+
+## R7 — Đã triển khai (29/10/2026)
+
+- **Dữ liệu:** `App\Services\Support\ShopSettings` (bảng `settings` key–value, cache `settings:shop`, xóa cache khi lưu). Mặc định lấy từ `config/store.php` (`STORE_NAME` = "Đồ Điện Siêu Xịn", `STORE_PHONE`, `STORE_ADDRESS`) và `config/shop.php` (`SHOP_SHIPPING_FEE`, `SHOP_FREE_SHIPPING_THRESHOLD`).
+- **Phí vận chuyển:** giỏ hàng, preview mã giảm giá và checkout cùng dùng `ShopSettings::shippingFor()`; miễn phí khi tạm tính (trước giảm giá) ≥ ngưỡng; ngưỡng 0 = tắt. Giỏ trả `free_shipping_threshold`, `free_shipping_remaining`; shop hiện "Mua thêm … để được miễn phí vận chuyển".
+- **Phiếu giao hàng** lấy tên/SĐT/địa chỉ từ cài đặt; chân trang shop đọc `GET /api/settings/public`.
+- **Quyền:** `settings.view` (xem, có thể cấp cho vai trò) và `settings.manage` (sửa, chỉ admin). Trang `/admin/cai-dat` mở cho mọi người vào được khu quản trị; tab Cửa hàng/Vận chuyển cần `settings.view` (chỉ đọc nếu thiếu `settings.manage`); tab Tài khoản luôn có.
+- **Đổi mật khẩu:** `PUT /api/admin/account/password` — bắt buộc mật khẩu hiện tại, xác nhận, tối thiểu 10 ký tự gồm hoa, thường, số, ký tự đặc biệt, khác mật khẩu cũ; giới hạn 5 lần/phút; thu hồi token khác + phiên khác (driver database) + `logoutOtherDevices`; audit `account.password_changed` không chứa mật khẩu. Lưu cài đặt ghi audit `settings.updated` kèm diff.
+- **Giao diện:** tab dọc (desktop) / ngang (tablet, mobile), điều hướng phím mũi tên, FormField v2, cảnh báo rời trang khi chưa lưu, Ctrl+S, toast, gợi ý độ mạnh mật khẩu, dark mode.
+

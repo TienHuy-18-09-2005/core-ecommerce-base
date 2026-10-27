@@ -125,7 +125,7 @@ class OrderService
             $coupon->increment('used_count');
         }
 
-        $shippingFee = (float) config('shop.shipping_fee');
+        $shippingFee = app(\App\Services\Support\ShopSettings::class)->shippingFor($subtotal);
 
         $order = Order::create([
             'order_code' => $this->newOrderCode(),
@@ -170,7 +170,7 @@ class OrderService
 
         $coupon = $this->coupons->find($code);
         $discount = $this->coupons->discountFor($coupon, $subtotal, $userId, null);
-        $shipping = (float) config('shop.shipping_fee');
+        $shipping = app(\App\Services\Support\ShopSettings::class)->shippingFor($subtotal, $summary === null || (int) ($summary['item_count'] ?? 0) === 0);
 
         return [
             'code' => $coupon->code,

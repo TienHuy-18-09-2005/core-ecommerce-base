@@ -19,20 +19,20 @@ vi.mock("../../services/productService.ts", () => ({ productService: { getBrands
 const svc = vi.mocked(adminService);
 const meta = { current_page: 1, last_page: 1, per_page: 20, total: 1 };
 
-function auth(role: string): AuthContextValue {
+function auth(role: string, permissions?: string[]): AuthContextValue {
   return {
-    user: { id: 1, name: "Quản trị", email: "a@x.vn", role } as AuthContextValue["user"],
+    user: { id: 1, name: "Quản trị", email: "a@x.vn", role, ...(permissions ? { permissions } : {}) } as AuthContextValue["user"],
     isLoading: false, login: vi.fn(), register: vi.fn(), logout: vi.fn(), setUser: vi.fn(),
     cartAdjustments: [], dismissCartAdjustments: vi.fn(),
   };
 }
 
-function renderAdmin(path: string, role = "admin") {
+function renderAdmin(path: string, role = "admin", permissions?: string[]) {
   const router = createMemoryRouter([{ path: "/admin/*", element: <AdminRoute /> }, { path: "*", element: <p>khác</p> }], { initialEntries: [path] });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <AuthContext.Provider value={auth(role)}>
+      <AuthContext.Provider value={auth(role, permissions)}>
         <ToastProvider><RouterProvider router={router} /></ToastProvider>
       </AuthContext.Provider>
     </QueryClientProvider>,
@@ -130,11 +130,74 @@ describe("admin panel", () => {
     await waitFor(() => expect(svc.orders).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "total_amount", direction: "desc" }), expect.anything()));
   });
 
-  it("shows the empty settings placeholder and sidebar link", async () => {
-    renderAdmin("/admin/cai-dat");
+  const settings = { store_name: "Đồ Điện Siêu Xịn", store_phone: "028 1234 5678", store_address: "1 Lê Lợi", shipping_fee: 30000, free_shipping_threshold: 0 };
+  const settingsData = { ...settings, defaults: settings };
+
+  it("R7: admin edits shipping settings with Ctrl+S and sees a toast", async () => {
+    svc.settings.mockResolvedValue(settingsData);
+    svc.updateSettings.mockResolvedValue({ ...settingsData, free_shipping_threshold: 500000 });
+    renderAdmin("/admin/cai-dat?tab=shipping");
     expect(await screen.findByRole("heading", { name: "Cài đặt" })).toBeTruthy();
-    expect(screen.getByText(/sẽ được bổ sung/)).toBeTruthy();
+    const input = await screen.findByLabelText(/Ngưỡng miễn phí/);
     expect(screen.getAllByRole("link", { name: "Cài đặt" }).length).toBeGreaterThan(0);
+    fireEvent.change(input, { target: { value: "500000" } });
+    expect(screen.getByText(/được miễn phí vận chuyển/)).toBeTruthy();
+    fireEvent.keyDown(input, { key: "s", ctrlKey: true });
+    await waitFor(() => expect(svc.updateSettings.mock.calls[0]?.[0]).toEqual({ shipping_fee: 30000, free_shipping_threshold: 500000 }));
+    expect(await screen.findByText("Đã lưu cài đặt.")).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
+  });
+
+  it("R7: store info shows server validation errors", async () => {
+    svc.settings.mockResolvedValue(settingsData);
+    svc.updateSettings.mockRejectedValue(new ApiError("Dữ liệu không hợp lệ.", { status: 422, code: "VALIDATION_ERROR", fieldErrors: { store_phone: ["Số điện thoại không hợp lệ."] } }));
+    renderAdmin("/admin/cai-dat");
+    const phone = await screen.findByLabelText(/Số điện thoại/);
+    fireEvent.change(phone, { target: { value: "abc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
+    expect(await screen.findByText("Số điện thoại không hợp lệ.")).toBeTruthy();
+  });
+
+  it("R7: settings.view is read-only; staff without it only sees the account tab", async () => {
+    svc.settings.mockResolvedValue(settingsData);
+    renderAdmin("/admin/cai-dat", "staff", ["settings.view"]);
+    const name = await screen.findByLabelText(/Tên cửa hàng/);
+    expect((name.closest("fieldset") as HTMLFieldSetElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "Lưu thay đổi" })).toBeNull();
+    expect(screen.getByText(/chỉ có quyền xem/)).toBeTruthy();
+  });
+
+  it("R7: staff without settings permission gets only the password tab", async () => {
+    renderAdmin("/admin/cai-dat", "staff", ["orders.view"]);
+    expect(await screen.findByRole("heading", { name: "Đổi mật khẩu" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: /Thông tin cửa hàng/ })).toBeNull();
+    expect(svc.settings).not.toHaveBeenCalled();
+  });
+
+  it("R7: password change validates locally and maps WRONG_PASSWORD", async () => {
+    renderAdmin("/admin/cai-dat?tab=account");
+    const cur = await screen.findByLabelText(/Mật khẩu hiện tại/);
+    const pw = screen.getByLabelText(/^Mật khẩu mới/);
+    const confirm = screen.getByLabelText(/Nhập lại mật khẩu mới/);
+    fireEvent.change(pw, { target: { value: "yeu" } });
+    fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+    expect(await screen.findByText("Mật khẩu mới chưa đủ mạnh.")).toBeTruthy();
+    expect(screen.getByText("Vui lòng nhập mật khẩu hiện tại.")).toBeTruthy();
+    expect(svc.changePassword).not.toHaveBeenCalled();
+
+    svc.changePassword.mockRejectedValue(new ApiError("Mật khẩu hiện tại không đúng.", { status: 422, code: "WRONG_PASSWORD" }));
+    fireEvent.change(cur, { target: { value: "sai-roi" } });
+    fireEvent.change(pw, { target: { value: "Manh-Hon-123" } });
+    fireEvent.change(confirm, { target: { value: "Manh-Hon-123" } });
+    expect(screen.getByRole("list", { name: "Yêu cầu mật khẩu" }).textContent).toContain("Ít nhất 10 ký tự: đạt");
+    fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+    await waitFor(() => expect(svc.changePassword.mock.calls[0]?.[0]).toEqual({ current_password: "sai-roi", password: "Manh-Hon-123", password_confirmation: "Manh-Hon-123" }));
+    expect((await screen.findAllByText("Mật khẩu hiện tại không đúng.")).length).toBeGreaterThan(0);
+
+    svc.changePassword.mockResolvedValue("Đã đổi mật khẩu.");
+    fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+    expect(await screen.findByText("Đã đổi mật khẩu.")).toBeTruthy();
+    await waitFor(() => expect((cur as HTMLInputElement).value).toBe(""));
   });
 
   it("shows server validation errors on the product form", async () => {

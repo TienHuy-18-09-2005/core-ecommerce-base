@@ -45,8 +45,8 @@ export interface AdminRoute {
   /** Chưa có màn hình thì để trống: mục bị ẩn khỏi menu và không có route. */
   component?: ComponentType;
   children?: AdminChildRoute[];
-  /** R6: quyền cần có để thấy menu & vào trang. */
-  permission: Permission;
+  /** R6: quyền cần có để thấy menu & vào trang (bỏ trống = mọi user vào được khu quản trị). */
+  permission?: Permission;
 }
 
 /** Nguồn duy nhất cho đường dẫn, nhãn, nhóm, icon và breadcrumb của khu quản trị. */
@@ -70,13 +70,13 @@ export const ADMIN_ROUTES: AdminRoute[] = [
   { path: "danh-gia", label: "Đánh giá", group: "customers", icon: MessageSquareText, component: ReviewsPage, permission: "reviews.view" },
   { path: "vai-tro", label: "Vai trò & phân quyền", group: "system", icon: ShieldCheck, component: RolesPage, permission: "roles.manage" },
   { path: "nhat-ky", label: "Nhật ký", group: "system", icon: ScrollText, permission: "audit.view" },
-  { path: "cai-dat", label: "Cài đặt", group: "system", icon: Settings, component: SettingsPage, permission: "settings.manage" },
+  { path: "cai-dat", label: "Cài đặt", group: "system", icon: Settings, component: SettingsPage },
 ];
 
 export const adminHref = (path: string) => (path ? `/admin/${path}` : "/admin");
 
 /** Các mục đã có màn hình, gom theo nhóm (bỏ nhóm rỗng). */
-export function navGroups(routes: AdminRoute[] = ADMIN_ROUTES, can: (p: Permission) => boolean = () => true) {
+export function navGroups(routes: AdminRoute[] = ADMIN_ROUTES, can: (p: Permission | undefined) => boolean = () => true) {
   return ADMIN_GROUPS.map((g) => ({ ...g, items: routes.filter((r) => r.group === g.id && r.component && can(r.permission)) }))
     .filter((g) => g.items.length > 0);
 }
@@ -102,7 +102,7 @@ export function breadcrumbFor(pathname: string, routes: AdminRoute[] = ADMIN_ROU
 }
 
 /** Trang đầu tiên user được vào (dùng khi không có quyền xem Tổng quan). */
-export function firstAllowedHref(can: (p: Permission) => boolean, routes: AdminRoute[] = ADMIN_ROUTES): string | null {
+export function firstAllowedHref(can: (p: Permission | undefined) => boolean, routes: AdminRoute[] = ADMIN_ROUTES): string | null {
   const r = routes.find((x) => x.component && can(x.permission));
   return r ? adminHref(r.path) : null;
 }

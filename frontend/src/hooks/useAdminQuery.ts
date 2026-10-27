@@ -182,3 +182,21 @@ export function useRoleMutations() {
     removeStaff: useMutation({ mutationFn: (id: number) => adminService.removeStaff(id), onSuccess }),
   };
 }
+
+export const useAdminSettingsQuery = (enabled = true) =>
+  useQuery({ queryKey: [...adminKeys.all, "settings"] as const, queryFn: ({ signal }) => adminService.settings(signal), enabled });
+
+/** Lưu cài đặt: làm mới cài đặt admin + dữ liệu shop phụ thuộc (giỏ, cài đặt công khai). */
+export function useSettingsMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: adminService.updateSettings,
+    onSuccess: (data) => {
+      client.setQueryData([...adminKeys.all, "settings"], data);
+      client.invalidateQueries({ queryKey: ["cart"] });
+      client.invalidateQueries({ queryKey: ["settings", "public"] });
+    },
+  });
+}
+
+export const useAdminPasswordMutation = () => useMutation({ mutationFn: adminService.changePassword });

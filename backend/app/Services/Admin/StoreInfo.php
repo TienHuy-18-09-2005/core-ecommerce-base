@@ -2,28 +2,20 @@
 
 namespace App\Services\Admin;
 
-use App\Models\Setting;
-use Illuminate\Support\Facades\Schema;
+use App\Services\Support\ShopSettings;
 
-/** Thông tin cửa hàng cho phiếu in: config/store.php, ghi đè bằng settings general.store_* (store_name, store_phone…) nếu có (R7 sẽ quản lý). */
+/** Thông tin cửa hàng cho phiếu in: cài đặt R7 (bảng settings), mặc định config/store.php. */
 class StoreInfo
 {
     public static function get(): array
     {
-        $info = config('store');
-        try {
-            if (Schema::hasTable('settings')) {
-                Setting::whereIn('key_name', array_map(fn ($k) => "store_$k", array_keys($info)))->get()
-                    ->each(function (Setting $s) use (&$info) {
-                        if ($s->value !== null && $s->value !== '') {
-                            $info[substr($s->key_name, 6)] = $s->value;
-                        }
-                    });
-            }
-        } catch (\Throwable) {
-            // bảng settings chưa sẵn sàng → dùng config
-        }
+        $s = app(ShopSettings::class)->all();
 
-        return $info;
+        return [
+            'name' => $s['store_name'],
+            'phone' => $s['store_phone'] !== '' ? $s['store_phone'] : null,
+            'address' => $s['store_address'] !== '' ? $s['store_address'] : null,
+            'email' => config('store.email') ?: null,
+        ];
     }
 }

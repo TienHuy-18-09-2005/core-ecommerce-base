@@ -21,6 +21,9 @@ export interface CartSummary {
   item_count: number;
   subtotal: number;
   shipping_fee: number;
+  /** R7: ngưỡng miễn phí ship (null = tắt) và số tiền còn thiếu để được miễn phí. */
+  free_shipping_threshold?: number | null;
+  free_shipping_remaining?: number | null;
   total: number;
   has_issues: boolean;
 }

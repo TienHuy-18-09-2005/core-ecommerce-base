@@ -10,7 +10,7 @@ export type Permission =
   | "orders.view" | "orders.update" | "orders.cancel" | "orders.note" | "orders.print"
   | "coupons.view" | "coupons.manage"
   | "reviews.view" | "reviews.moderate"
-  | "audit.view" | "roles.manage" | "settings.manage";
+  | "audit.view" | "roles.manage" | "settings.view" | "settings.manage";
 
 /** Quyền hiệu lực của user. Chỉ để ẩn/hiện giao diện — server luôn kiểm tra lại. */
 export function userCan(user: User | null | undefined, permission: Permission): boolean {

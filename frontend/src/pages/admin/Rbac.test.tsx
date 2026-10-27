@@ -68,9 +68,9 @@ describe("useCan helpers", () => {
   });
 
   it("filters sidebar groups by permission", () => {
-    const labels = navGroups(undefined, (p) => CSKH.includes(p)).flatMap((g) => g.items.map((i) => i.label));
-    expect(labels).toEqual(["Tổng quan", "Đơn hàng", "Mã giảm giá", "Sản phẩm", "Đánh giá"]);
-    const all = navGroups(undefined, (p) => ALL.includes(p)).flatMap((g) => g.items.map((i) => i.label));
+    const labels = navGroups(undefined, (p) => !p || CSKH.includes(p)).flatMap((g) => g.items.map((i) => i.label));
+    expect(labels).toEqual(["Tổng quan", "Đơn hàng", "Mã giảm giá", "Sản phẩm", "Đánh giá", "Cài đặt"]);
+    const all = navGroups(undefined, (p) => !p || ALL.includes(p)).flatMap((g) => g.items.map((i) => i.label));
     expect(all).toContain("Vai trò & phân quyền");
     expect(all).toContain("Cài đặt");
   });

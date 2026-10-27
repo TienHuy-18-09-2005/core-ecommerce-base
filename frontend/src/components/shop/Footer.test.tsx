@@ -1,17 +1,20 @@
 // @vitest-environment happy-dom
 
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { Footer } from "./Footer.tsx";
-import { footerLinks, shopContact } from "./shopContact.ts";
+import { contactFromSettings, footerLinks, shopContact } from "./shopContact.ts";
 
 describe("Footer", () => {
   it("only links to real pages, the hotline, and email", () => {
     render(
-      <MemoryRouter>
-        <Footer />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false } } })}>
+        <MemoryRouter>
+          <Footer />
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
@@ -27,5 +30,10 @@ describe("Footer", () => {
       expect(href).not.toBe("#");
       expect(allowed.has(href ?? "")).toBe(true);
     }
+  });
+
+  it("R7: dùng SĐT cửa hàng từ Cài đặt, rỗng thì về hotline mặc định", () => {
+    expect(contactFromSettings("028 1234-5678")).toEqual({ phoneDisplay: "028 1234-5678", phoneHref: "tel:02812345678" });
+    expect(contactFromSettings("  ").phoneHref).toBe(shopContact.phoneHref);
   });
 });

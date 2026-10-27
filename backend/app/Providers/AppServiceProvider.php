@@ -35,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
         foreach (\App\Support\Permissions::all() as $permission) {
             Gate::define($permission, fn (User $user): bool => $user->hasPermission($permission));
         }
+        // Sửa được cài đặt thì cũng xem được.
+        Gate::define('settings.view', fn (User $user): bool => $user->hasPermission('settings.view') || $user->hasPermission('settings.manage'));
 
         $this->configureRateLimiting();
     }

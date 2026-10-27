@@ -26,6 +26,10 @@ class CartPresenter
         $subtotal = (float) $purchasable->sum('line_total');
         $hasIssues = $items->contains(fn (array $line) => $line['warning'] !== null);
 
+        $settings = app(\App\Services\Support\ShopSettings::class);
+        $shipping = $settings->shippingFor($subtotal, $items->isEmpty());
+        $threshold = (int) $settings->get('free_shipping_threshold');
+
         return [
             'id' => $cart->id,
             'user_id' => $cart->user_id,
@@ -33,8 +37,10 @@ class CartPresenter
             'summary' => [
                 'item_count' => (int) $items->sum('quantity'),
                 'subtotal' => $subtotal,
-                'shipping_fee' => $items->isEmpty() ? 0 : (float) config('shop.shipping_fee'),
-                'total' => $items->isEmpty() ? 0 : $subtotal + (float) config('shop.shipping_fee'),
+                'shipping_fee' => $shipping,
+                'free_shipping_threshold' => $threshold > 0 ? $threshold : null,
+                'free_shipping_remaining' => $threshold > 0 && ! $items->isEmpty() ? max(0, $threshold - $subtotal) : null,
+                'total' => $items->isEmpty() ? 0 : $subtotal + $shipping,
                 'has_issues' => $hasIssues,
             ],
         ];

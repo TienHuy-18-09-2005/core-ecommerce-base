@@ -8,7 +8,7 @@ import AdminNotFound from "./AdminNotFound.tsx";
 import { ADMIN_ROUTES, firstAllowedHref } from "./adminRoutes.ts";
 
 /** Chặn route theo quyền (chỉ UX — server vẫn trả 403). Trang chủ admin chuyển sang mục đầu tiên được phép. */
-function Guard({ page: Page, permission, index }: { page: ComponentType; permission: Permission; index?: boolean }) {
+function Guard({ page: Page, permission, index }: { page: ComponentType; permission?: Permission; index?: boolean }) {
   const can = useCan();
   if (can(permission)) return <Page />;
   const first = index ? firstAllowedHref(can) : null;

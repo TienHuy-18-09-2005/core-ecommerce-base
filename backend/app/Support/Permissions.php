@@ -47,7 +47,8 @@ final class Permissions
         'system' => ['label' => 'Hệ thống', 'items' => [
             'audit.view' => 'Xem nhật ký thay đổi',
             'roles.manage' => 'Quản lý vai trò và phân quyền (chỉ admin)',
-            'settings.manage' => 'Cài đặt cửa hàng (chỉ admin)',
+            'settings.view' => 'Xem cài đặt cửa hàng',
+            'settings.manage' => 'Sửa cài đặt cửa hàng (chỉ admin)',
         ]],
     ];
 

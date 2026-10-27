@@ -252,3 +252,14 @@ export interface AdminStaff {
   is_active: boolean;
   roles: { id: number; name: string }[];
 }
+
+/** R7: cài đặt cửa hàng. */
+export interface ShopSettingsValues {
+  store_name: string;
+  store_phone: string;
+  store_address: string;
+  shipping_fee: number;
+  free_shipping_threshold: number;
+}
+export type AdminSettings = ShopSettingsValues & { defaults: ShopSettingsValues };
+export interface AdminPasswordInput { current_password: string; password: string; password_confirmation: string }

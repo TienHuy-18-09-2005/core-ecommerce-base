@@ -1,5 +1,5 @@
 import type {
-  AdminCategory, AdminCategoryInput, AdminRole, AdminRoleInput, AdminStaff, PermissionGroup, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
+  AdminCategory, AdminCategoryInput, AdminRole, AdminRoleInput, AdminSettings, AdminPasswordInput, ShopSettingsValues, AdminStaff, PermissionGroup, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
   AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated, ProductHistoryEntry } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
 
@@ -94,4 +94,8 @@ export const adminService = {
   updateStaffRoles: async (id: number, roleIds: number[]) =>
     (await apiClient.put<Envelope<AdminStaff>>(`/admin/staff/${id}/roles`, { role_ids: roleIds })).data.data,
   removeStaff: async (id: number) => { await apiClient.delete(`/admin/staff/${id}`); },
+
+  settings: (signal?: AbortSignal) => get<AdminSettings>("/admin/settings", signal),
+  updateSettings: async (input: Partial<ShopSettingsValues>) => (await apiClient.put<Envelope<AdminSettings>>("/admin/settings", input)).data.data,
+  changePassword: async (input: AdminPasswordInput) => (await apiClient.put<Envelope<null>>("/admin/account/password", input)).data.message,
 };

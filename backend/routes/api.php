@@ -20,6 +20,8 @@ use App\Http\Controllers\Shop\CouponController;
 use App\Http\Controllers\Shop\OrderController;
 use App\Http\Controllers\Shop\ProductController;
 use App\Http\Controllers\Shop\ReviewController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Shop\SettingsController as ShopSettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +60,7 @@ Route::middleware('throttle:public-read')->group(function () {
     Route::get('/products/{slug}', [ProductController::class, 'show']);
     Route::get('/products/{slug}/reviews', [ReviewController::class, 'index']);
     Route::get('/categories', [CategoryController::class, 'index']);
+    Route::get('/settings/public', [ShopSettingsController::class, 'public']);
     Route::get('/brands', [BrandController::class, 'index']);
 });
 
@@ -132,6 +135,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
     Route::get('/reviews', [AdminReviewController::class, 'index'])->middleware('can:viewAny,App\Models\ProductReview');
     Route::patch('/reviews/{review}', [AdminReviewController::class, 'moderate'])->middleware('can:moderate,review');
     Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('can:moderate,review');
+
+    // R7: cài đặt (xem: settings.view hoặc settings.manage; sửa: settings.manage). Đổi mật khẩu: mọi user vào được admin.
+    Route::get('/settings', [AdminSettingsController::class, 'show'])->middleware('can:settings.view');
+    Route::put('/settings', [AdminSettingsController::class, 'update'])->middleware('can:settings.manage');
+    Route::put('/account/password', [AdminSettingsController::class, 'password'])->middleware('throttle:password-change');
 
     // R6: vai trò & phân quyền, gán vai trò cho nhân viên (chỉ admin: roles.manage)
     Route::middleware('can:roles.manage')->group(function () {
