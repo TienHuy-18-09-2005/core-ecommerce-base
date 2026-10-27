@@ -14,7 +14,7 @@ class SettingsRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $trim = fn ($v) => is_string($v) ? trim($v) : $v;
-        $this->merge(array_map($trim, $this->only(['store_name', 'store_phone', 'store_address'])));
+        $this->merge(array_map($trim, $this->only(['store_name', 'store_phone', 'store_address', 'store_email'])));
         if ($this->input('free_shipping_threshold') === '') {
             $this->merge(['free_shipping_threshold' => null]);
         }
@@ -26,6 +26,7 @@ class SettingsRequest extends FormRequest
             'store_name' => ['sometimes', 'required', 'string', 'max:150'],
             'store_phone' => ['sometimes', 'required', 'string', 'max:20', 'regex:/^[0-9 +().-]{8,20}$/'],
             'store_address' => ['sometimes', 'required', 'string', 'max:500'],
+            'store_email' => ['sometimes', 'nullable', 'string', 'email', 'max:150'],
             'shipping_fee' => ['sometimes', 'required', 'integer', 'min:0', 'max:10000000'],
             'free_shipping_threshold' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:1000000000'],
         ];
@@ -41,7 +42,7 @@ class SettingsRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'store_name' => 'tên cửa hàng', 'store_phone' => 'số điện thoại', 'store_address' => 'địa chỉ',
+            'store_name' => 'tên cửa hàng', 'store_phone' => 'số điện thoại', 'store_address' => 'địa chỉ', 'store_email' => 'email liên hệ',
             'shipping_fee' => 'phí vận chuyển', 'free_shipping_threshold' => 'ngưỡng miễn phí vận chuyển',
         ];
     }

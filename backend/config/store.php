@@ -2,7 +2,7 @@
 
 /*
  * Thông tin cửa hàng dùng cho phiếu giao hàng.
- * Giá trị mặc định; R7 (Cài đặt) ghi đè từ bảng settings (store_name, store_phone, store_address).
+ * Giá trị mặc định; R7 (Cài đặt) ghi đè từ bảng settings (store_name, store_phone, store_address, store_email).
  */
 return [
     'name' => env('STORE_NAME', 'Đồ Điện Siêu Xịn'),

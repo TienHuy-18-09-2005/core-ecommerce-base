@@ -130,7 +130,7 @@ describe("admin panel", () => {
     await waitFor(() => expect(svc.orders).toHaveBeenLastCalledWith(expect.objectContaining({ sort: "total_amount", direction: "desc" }), expect.anything()));
   });
 
-  const settings = { store_name: "Đồ Điện Siêu Xịn", store_phone: "028 1234 5678", store_address: "1 Lê Lợi", shipping_fee: 30000, free_shipping_threshold: 0 };
+  const settings = { store_name: "Đồ Điện Siêu Xịn", store_phone: "028 1234 5678", store_address: "1 Lê Lợi", store_email: "", shipping_fee: 30000, free_shipping_threshold: 0 };
   const settingsData = { ...settings, defaults: settings };
 
   it("R7: admin edits shipping settings with Ctrl+S and sees a toast", async () => {

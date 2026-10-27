@@ -36,4 +36,15 @@ describe("Footer", () => {
     expect(contactFromSettings("028 1234-5678")).toEqual({ phoneDisplay: "028 1234-5678", phoneHref: "tel:02812345678" });
     expect(contactFromSettings("  ").phoneHref).toBe(shopContact.phoneHref);
   });
+
+  it("R7: dùng email cửa hàng từ /settings/public", async () => {
+    const client = new QueryClient();
+    client.setQueryData(["settings", "public"], { store: { name: "Shop A", phone: null, address: null, email: "lienhe@shop.vn" }, shipping: { fee: 0, free_threshold: null } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter><Footer /></MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect((await screen.findAllByRole("link", { name: "lienhe@shop.vn" }))[0].getAttribute("href")).toBe("mailto:lienhe@shop.vn");
+  });
 });

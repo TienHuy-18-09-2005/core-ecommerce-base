@@ -5,6 +5,7 @@ import { usePublicSettings } from "../../hooks/usePublicSettings.ts";
 export function Footer() {
   const { data } = usePublicSettings();
   const phone = contactFromSettings(data?.store.phone);
+  const email = data?.store.email?.trim() || shopContact.email;
   return (
     <footer className="theme-fixed mt-12 border-t border-slate-200 bg-slate-900 text-slate-100">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3">
@@ -35,7 +36,7 @@ export function Footer() {
               </a>
             </li>
             <li>
-              <a href={`mailto:${shopContact.email}`} className="hover:text-white">{shopContact.email}</a>
+              <a href={`mailto:${email}`} className="hover:text-white">{email}</a>
             </li>
           </ul>
         </div>

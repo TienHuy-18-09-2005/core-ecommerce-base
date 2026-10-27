@@ -78,15 +78,15 @@ class AdminSettingsR7Test extends TestCase
     public function test_admin_updates_settings_with_validation_audit_and_cache_flush(): void
     {
         app(ShopSettings::class)->all(); // nạp cache
-        $this->as($this->admin)->putJson('/api/admin/settings', ['store_phone' => 'abc', 'shipping_fee' => -1])
-            ->assertStatus(422)->assertJsonValidationErrors(['store_phone', 'shipping_fee']);
+        $this->as($this->admin)->putJson('/api/admin/settings', ['store_phone' => 'abc', 'shipping_fee' => -1, 'store_email' => 'khong-phai-email'])
+            ->assertStatus(422)->assertJsonValidationErrors(['store_phone', 'shipping_fee', 'store_email']);
 
         $this->as($this->admin)->putJson('/api/admin/settings', [
-            'store_name' => '  Đồ Điện ABC ', 'store_phone' => '0281 234 567', 'store_address' => '12 Lê Lợi, Q1',
+            'store_name' => '  Đồ Điện ABC ', 'store_phone' => '0281 234 567', 'store_address' => '12 Lê Lợi, Q1', 'store_email' => ' lienhe@dodien.vn ',
             'shipping_fee' => 25000, 'free_shipping_threshold' => 500000,
         ])->assertOk()->assertJsonPath('data.store_name', 'Đồ Điện ABC')->assertJsonPath('data.free_shipping_threshold', 500000);
 
-        $this->getJson('/api/settings/public')->assertJsonPath('data.shipping.fee', 25000)->assertJsonPath('data.store.phone', '0281 234 567');
+        $this->getJson('/api/settings/public')->assertJsonPath('data.shipping.fee', 25000)->assertJsonPath('data.store.phone', '0281 234 567')->assertJsonPath('data.store.email', 'lienhe@dodien.vn');
         $log = AdminAuditLog::where('action', 'settings.updated')->firstOrFail();
         $this->assertSame([30000, 25000], $log->changes['shipping_fee']);
         $this->assertTrue(Cache::has(ShopSettings::CACHE_KEY));
@@ -124,12 +124,21 @@ class AdminSettingsR7Test extends TestCase
 
     public function test_print_slip_uses_store_settings(): void
     {
-        app(ShopSettings::class)->update(['store_name' => 'Đồ Điện In', 'store_address' => '99 Hai Bà Trưng']);
+        app(ShopSettings::class)->update(['store_name' => 'Đồ Điện In', 'store_address' => '99 Hai Bà Trưng', 'store_email' => 'in@dodien.vn']);
         $o = Order::create(['order_code' => 'ORD-R7PRINT', 'customer_name' => 'A', 'customer_phone' => '0900000000',
             'shipping_province' => 'HN', 'shipping_district' => 'BĐ', 'shipping_ward' => 'ĐB', 'shipping_address' => '1',
             'subtotal' => 1, 'discount_amount' => 0, 'shipping_fee' => 0, 'total_amount' => 1, 'payment_method' => 'cod', 'payment_status' => 'unpaid', 'status' => 'pending']);
         $this->as($this->admin)->getJson('/api/admin/orders/print?ids[]='.$o->id)->assertOk()
-            ->assertJsonPath('data.store.name', 'Đồ Điện In')->assertJsonPath('data.store.address', '99 Hai Bà Trưng');
+            ->assertJsonPath('data.store.name', 'Đồ Điện In')->assertJsonPath('data.store.address', '99 Hai Bà Trưng')->assertJsonPath('data.store.email', 'in@dodien.vn');
+    }
+
+    public function test_store_email_falls_back_to_config(): void
+    {
+        config(['store.email' => 'hotro@config.vn']);
+        app(ShopSettings::class)->flush();
+        $this->getJson('/api/settings/public')->assertJsonPath('data.store.email', 'hotro@config.vn');
+        app(ShopSettings::class)->update(['store_email' => 'db@dodien.vn']);
+        $this->getJson('/api/settings/public')->assertJsonPath('data.store.email', 'db@dodien.vn');
     }
 
     public function test_settings_permissions(): void

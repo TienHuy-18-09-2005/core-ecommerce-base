@@ -19,6 +19,7 @@ class ShopSettings
         'store_name' => ['general', 'string'],
         'store_phone' => ['general', 'string'],
         'store_address' => ['general', 'string'],
+        'store_email' => ['general', 'string'],
         'shipping_fee' => ['shipping', 'int'],
         'free_shipping_threshold' => ['shipping', 'int'],
     ];
@@ -29,6 +30,7 @@ class ShopSettings
             'store_name' => (string) config('store.name'),
             'store_phone' => (string) config('store.phone'),
             'store_address' => (string) config('store.address'),
+            'store_email' => (string) config('store.email'),
             'shipping_fee' => (int) config('shop.shipping_fee'),
             'free_shipping_threshold' => (int) config('shop.free_shipping_threshold', 0),
         ];
@@ -104,7 +106,7 @@ class ShopSettings
         $a = $this->all();
 
         return [
-            'store' => ['name' => $a['store_name'], 'phone' => $a['store_phone'] ?: null, 'address' => $a['store_address'] ?: null],
+            'store' => ['name' => $a['store_name'], 'phone' => $a['store_phone'] ?: null, 'address' => $a['store_address'] ?: null, 'email' => $a['store_email'] ?: null],
             'shipping' => ['fee' => $a['shipping_fee'], 'free_threshold' => $a['free_shipping_threshold'] ?: null],
         ];
     }

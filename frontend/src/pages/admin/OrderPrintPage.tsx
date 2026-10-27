@@ -18,6 +18,12 @@ export function parseIds(raw: string | null | undefined): number[] {
   return [...new Set((raw ?? "").split(",").map((s) => Number(s.trim())).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 100);
 }
 
+/** R7: nhắc (chỉ trên màn hình) khi thiếu thông tin cửa hàng — không lộ tên biến môi trường. */
+export function missingStoreInfo(store: StoreInfo): string | null {
+  const miss = [!store.address && "địa chỉ", !store.phone && "số điện thoại"].filter(Boolean);
+  return miss.length ? `Phiếu chưa có ${miss.join(" và ")} cửa hàng. Vào Cài đặt › Thông tin cửa hàng để bổ sung.` : null;
+}
+
 function Slip({ order, store, paper }: { order: PrintOrder; store: StoreInfo; paper: Paper }) {
   const addr = [order.shipping.address, order.shipping.ward, order.shipping.district, order.shipping.province].filter(Boolean).join(", ");
   return (
@@ -25,7 +31,7 @@ function Slip({ order, store, paper }: { order: PrintOrder; store: StoreInfo; pa
       <header className="flex items-start justify-between gap-4 border-b border-black pb-3">
         <div>
           <p className="text-base font-bold uppercase">{store.name}</p>
-          <p>{store.address ?? "Địa chỉ cửa hàng (cấu hình STORE_ADDRESS)"}</p>
+          {store.address ? <p>{store.address}</p> : null}
           <p>ĐT: {store.phone ?? "—"}{store.email ? ` · ${store.email}` : ""}</p>
         </div>
         <div className="text-right">
@@ -100,6 +106,11 @@ export default function OrderPrintPage() {
       {isLoading && <SkeletonBlock lines={8} label="Đang chuẩn bị phiếu in..." />}
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       {data && data.orders.length === 0 && <p className="text-admin-muted">Không tìm thấy đơn để in.</p>}
+      {data && missingStoreInfo(data.store) && (
+        <p role="status" className="mb-4 rounded-lg border border-admin-border bg-admin-surface p-3 text-sm text-admin-fg-soft print:hidden">
+          {missingStoreInfo(data.store)} <Link to="/admin/cai-dat?tab=store" className="font-medium text-admin-primary underline">Mở Cài đặt</Link>
+        </p>
+      )}
       <div className="bg-admin-subtle py-6 print:bg-white print:py-0">
         {data?.orders.map((o) => <Slip key={o.id} order={o} store={data.store} paper={paper} />)}
       </div>

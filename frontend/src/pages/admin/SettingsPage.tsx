@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string; icon: typeof Store }[] = [
   { id: "account", label: "Tài khoản", icon: KeyRound },
 ];
 const SECTION_KEYS: Record<"store" | "shipping", (keyof ShopSettingsValues)[]> = {
-  store: ["store_name", "store_phone", "store_address"],
+  store: ["store_name", "store_phone", "store_address", "store_email"],
   shipping: ["shipping_fee", "free_shipping_threshold"],
 };
 
@@ -88,7 +88,7 @@ function Card({ title, description, children }: { title: string; description?: R
 
 type Draft = Record<keyof ShopSettingsValues, string>;
 const toDraft = (v: ShopSettingsValues): Draft => ({
-  store_name: v.store_name ?? "", store_phone: v.store_phone ?? "", store_address: v.store_address ?? "",
+  store_name: v.store_name ?? "", store_phone: v.store_phone ?? "", store_address: v.store_address ?? "", store_email: v.store_email ?? "",
   shipping_fee: String(v.shipping_fee ?? 0), free_shipping_threshold: v.free_shipping_threshold ? String(v.free_shipping_threshold) : "",
 });
 
@@ -116,7 +116,7 @@ function SettingsForm({ section, canEdit, initial, defaults }: { section: "store
     if (!canEdit) return;
     if (!isDirty()) { toast.showSuccess("Không có thay đổi để lưu."); return; }
     const body: Partial<ShopSettingsValues> = section === "store"
-      ? { store_name: draft.store_name, store_phone: draft.store_phone, store_address: draft.store_address }
+      ? { store_name: draft.store_name, store_phone: draft.store_phone, store_address: draft.store_address, store_email: draft.store_email }
       : { shipping_fee: Number(draft.shipping_fee || 0), free_shipping_threshold: draft.free_shipping_threshold === "" ? 0 : Number(draft.free_shipping_threshold) };
     setErrors({});
     save.mutate(body, {
@@ -140,6 +140,9 @@ function SettingsForm({ section, canEdit, initial, defaults }: { section: "store
             </FormField>
             <FormField label="Số điện thoại" required error={errors.store_phone} hint="Ví dụ: 028 1234 5678">
               <input className={inputClass} value={draft.store_phone} onChange={set("store_phone")} inputMode="tel" autoComplete="tel" maxLength={20} />
+            </FormField>
+            <FormField label="Email liên hệ" error={errors.store_email} hint={defaults.store_email ? `Để trống để dùng: ${defaults.store_email}` : "Hiện ở chân trang cửa hàng và phiếu giao hàng."}>
+              <input className={inputClass} type="email" value={draft.store_email} onChange={set("store_email")} maxLength={150} autoComplete="email" />
             </FormField>
             <FormField label="Địa chỉ" required error={errors.store_address} className="sm:col-span-2">
               <textarea className={`${inputClass} min-h-20`} value={draft.store_address} onChange={set("store_address")} maxLength={500} autoComplete="street-address" />

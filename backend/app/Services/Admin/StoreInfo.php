@@ -15,7 +15,7 @@ class StoreInfo
             'name' => $s['store_name'],
             'phone' => $s['store_phone'] !== '' ? $s['store_phone'] : null,
             'address' => $s['store_address'] !== '' ? $s['store_address'] : null,
-            'email' => config('store.email') ?: null,
+            'email' => $s['store_email'] !== '' ? $s['store_email'] : null,
         ];
     }
 }
