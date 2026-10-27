@@ -95,7 +95,7 @@ Sinh tự động từ cấu hình route (`adminRoutes.ts`: path, nhãn, nhóm, 
 Ctrl/⌘+K → hộp thoại: nhóm kết quả "Đơn hàng" (mã đơn, SĐT), "Sản phẩm" (tên, SKU), "Người dùng" (email) + "Lệnh nhanh" (Tạo sản phẩm, Tạo mã giảm giá). Debounce 250 ms, điều hướng bằng phím ↑↓ Enter.
 
 ### 4.6 Vai trò & phân quyền — RBAC theo quyền chi tiết (đã chốt)
-Nguyên tắc: **Quản trị viên** có mọi quyền, không thể bị giới hạn. Nhân viên được gán **một vai trò**, vai trò là tập hợp các **quyền chi tiết**. Ví dụ: Quản lý sản phẩm **không** thấy doanh thu, còn Kế toán **thấy**.
+Nguyên tắc: **Quản trị viên** có mọi quyền, không thể bị giới hạn. Nhân viên được gán **một hoặc nhiều vai trò**. Quyền hiệu lực là **hợp (union)** quyền của mọi vai trò được gán. Mỗi vai trò là tập hợp các **quyền chi tiết**. Ví dụ: Quản lý sản phẩm **không** thấy doanh thu, còn Kế toán **thấy**.
 
 **Danh mục quyền (permission key)**
 | Nhóm | Quyền | Ý nghĩa |
@@ -119,7 +119,7 @@ Nguyên tắc: **Quản trị viên** có mọi quyền, không thể bị giớ
 | orders.view | ❌ | ✅ | ✅ | ✅ |
 | orders.update | ❌ | ✅ | ❌ | ❌ |
 | orders.print | ❌ | ✅ | ✅ | ❌ |
-| orders.cancel | ❌ | ❌ | ❌ | ✅ |
+| orders.cancel | ❌ | ❌ | ❌ | ❌ |
 | orders.export | ❌ | ❌ | ✅ | ❌ |
 | products.view | ✅ | ✅ | ✅ | ✅ |
 | products.edit | ✅ | ❌ | ❌ | ❌ |
@@ -129,7 +129,7 @@ Nguyên tắc: **Quản trị viên** có mọi quyền, không thể bị giớ
 | coupons.manage | ❌ | ❌ | ❌ | ❌ |
 | reviews.moderate | ❌ | ❌ | ❌ | ✅ |
 | reviews.delete | ❌ | ❌ | ❌ | ❌ |
-| audit.view | ❌ | ❌ | ✅ | ❌ |
+| audit.view | ❌ | ❌ | ❌ | ❌ |
 | users / roles / settings | ❌ | ❌ | ❌ | ❌ |
 
 **Màn hình "Vai trò & phân quyền"** `/admin/vai-tro` (chỉ Quản trị viên, nhóm HỆ THỐNG):
@@ -141,21 +141,22 @@ Vai trò & phân quyền                               [+ Tạo vai trò]
 Sửa vai trò: Tên *, Mô tả; ma trận checkbox theo nhóm quyền (chọn cả nhóm);
              cảnh báo "3 nhân viên sẽ bị ảnh hưởng"  [Hủy] [Lưu]
 ```
-Không xóa được vai trò còn nhân viên (phải chuyển họ sang vai trò khác trước). Gán vai trò cho nhân viên ở màn hình Người dùng.
+Không xóa được vai trò còn nhân viên (phải gỡ vai trò khỏi họ trước). Gán vai trò ở màn hình Người dùng bằng **ô chọn nhiều vai trò** (multi-select dạng chip), kèm khung xem trước "Quyền hiệu lực" (hợp các vai trò, ghi rõ quyền nào đến từ vai trò nào).
+> Ghi chú: *Hủy đơn* (`orders.cancel`) không thuộc vai trò mẫu nào. Chăm sóc khách hàng chỉ tiếp nhận yêu cầu của khách rồi phối hợp với bộ phận liên quan, nên mặc định chỉ Quản trị viên hủy được, hoặc admin tự gán quyền này cho một vai trò tùy chỉnh.
 
 **Bảng điều khiển theo quyền:** widget doanh thu (KPI doanh thu, biểu đồ, tổng tiền trong "Đơn gần đây") chỉ render khi có `dashboard.revenue.view`. **Server cũng bỏ hẳn các trường doanh thu** khỏi `GET /admin/dashboard` và bỏ cột tổng tiền nếu thiếu quyền, nên không lộ qua DevTools.
 
 **Thực thi**
-- Server: `Gate::before` cho phép mọi thứ với admin; mỗi quyền là một Gate `Gate::define('orders.update', fn ($u) => $u->hasPermission('orders.update'))`. Các Policy hiện có chuyển sang gọi quyền. Middleware `/api/admin/*` đổi `can:admin` thành `can:admin-area` (admin, hoặc staff có ít nhất 1 quyền, và is_active). Quyền của user được cache theo `role_id + updated_at` (Redis).
+- Server: `Gate::before` cho phép mọi thứ với admin; mỗi quyền là một Gate `Gate::define('orders.update', fn ($u) => $u->hasPermission('orders.update'))`. Các Policy hiện có chuyển sang gọi quyền. Middleware `/api/admin/*` đổi `can:admin` thành `can:admin-area` (admin, hoặc staff có ít nhất 1 quyền, và is_active). Quyền hiệu lực (union) của user được cache trong Redis với khóa `perm:user:{id}`. Cache bị xóa khi: (a) gán hoặc gỡ vai trò của user; (b) sửa quyền của một vai trò, khi đó xóa cache của mọi user mang vai trò đó; (c) xóa vai trò; (d) khóa user.
 - Frontend: `/me` trả thêm `permissions: string[]` (admin trả `["*"]`); hook `useCan('orders.update')` ẩn menu, nút và cột. Route không có quyền hiện trang "Bạn không có quyền truy cập" (403). **Ẩn ở frontend chỉ để tiện dùng, server luôn chặn.**
-- Nhật ký: ghi audit khi tạo/sửa/xóa vai trò (diff danh sách quyền) và khi đổi vai trò của nhân viên.
+- Nhật ký: ghi audit khi tạo/sửa/xóa vai trò (diff danh sách quyền) và khi **gán/gỡ vai trò** của nhân viên (ghi danh sách vai trò trước và sau, cùng người thực hiện).
 
 **Mô hình dữ liệu**
 - `roles` (id, name, slug, description, is_preset, timestamps)
 - `permissions` (id, key unique, group, label). Seed từ một danh sách trong code (`config/permissions.php`), đồng bộ bằng seeder idempotent.
 - `role_permission` (role_id, permission_id) với PK kép
-- `users.role_id` (nullable FK → roles): một nhân viên một vai trò, đủ đơn giản. Nếu sau này cần nhiều vai trò thì đổi sang pivot `role_user`.
-- **Tương thích:** giữ cột `users.role` với giá trị `admin` / `customer` / `staff`. `admin` vẫn là siêu quyền và không cần `role_id`; `staff` bắt buộc có `role_id`. Migration chỉ thêm bảng và cột (không đổi dữ liệu cũ), nên Gate `admin` hiện tại vẫn chạy trong lúc chuyển đổi. Lệnh `admin:create` thêm `--role=staff --staff-role=ke-toan`.
+- `user_role` (user_id, role_id, assigned_by, created_at) với PK kép: quan hệ nhiều–nhiều giữa users và roles. Nhân viên có thể mang 1 hoặc nhiều vai trò.
+- **Tương thích:** giữ cột `users.role` với giá trị `admin` / `customer` / `staff`. `admin` vẫn là siêu quyền và không cần dòng trong `user_role`; `staff` phải có ít nhất 1 vai trò (validate khi lưu). Migration chỉ thêm bảng (không đổi dữ liệu cũ), nên Gate `admin` hiện tại vẫn chạy trong lúc chuyển đổi. Lệnh `admin:create` thêm `--role=staff` và `--staff-role` lặp lại được hoặc nhận danh sách cách nhau bởi dấu phẩy, ví dụ `--staff-role=ke-toan --staff-role=xu-ly-don` hoặc `--staff-role=ke-toan,xu-ly-don`.
 
 ### 4.5 Lối vào từ cửa hàng
 - Menu tài khoản ở header shop: mục **"Trang quản trị"** chỉ hiện khi `user.role === 'admin'`.
@@ -355,7 +356,7 @@ Thứ tự: **Nền tảng R0–R3 → Đơn hàng (R4) → Sản phẩm (R5) �
 | **R3** | DataTable v2 | Lọc chip, chọn nhiều + bulk bar, ẩn cột, xem đã lưu, URL, mật độ | Test chọn/bulk | 2 ngày |
 | **R4** | ⭐ Đơn hàng | Tab có đếm, lọc ngày/thanh toán, bulk đổi trạng thái, chi tiết + timeline + ghi chú + modal hủy, **in phiếu giao hàng** (đơn lẻ & nhiều đơn), **thông báo đơn mới + âm thanh nhẹ** | Xác nhận đơn ≤ 3 click; phiếu in đúng khổ; âm thanh chỉ khi có đơn mới | 3,5 ngày |
 | **R5** | ⭐ Sản phẩm | Trình soạn tab, **Tiptap**, biến thể sửa trực tiếp, sửa lỗi hoán đổi SKU, ảnh kéo thả, cảnh báo rời trang, nhân bản; shop hiển thị mô tả | Hoán đổi SKU thành công (test); HTML độc bị loại | 3 ngày |
-| **R6** | Phân quyền RBAC | Bảng roles/permissions/role_permission + `users.role_id`; seed quyền và 4 vai trò mẫu; Gate theo quyền, Policy chuyển sang quyền; `/me` trả `permissions`; `useCan` ẩn menu, nút và widget; dashboard bỏ trường doanh thu khi thiếu quyền; màn hình **Vai trò & phân quyền** (CRUD, ma trận checkbox); gán vai trò trong Người dùng (bản tối giản nếu R11 chưa làm); audit thay đổi quyền; `admin:create --role=staff` | Test API ma trận: mỗi vai trò mẫu bị 403 đúng chỗ; Quản lý sản phẩm gọi dashboard **không có** trường doanh thu, Kế toán có; admin không bị giới hạn; không xóa được vai trò còn người dùng; nhân viên không tự sửa được `roles.manage`; audit ghi diff | 4 ngày |
+| **R6** | Phân quyền RBAC | Bảng roles/permissions/role_permission + pivot `user_role` (nhiều vai trò); seed quyền và 4 vai trò mẫu; Gate theo quyền, Policy chuyển sang quyền; `/me` trả `permissions`; `useCan` ẩn menu, nút và widget; dashboard bỏ trường doanh thu khi thiếu quyền; màn hình **Vai trò & phân quyền** (CRUD, ma trận checkbox); gán **nhiều vai trò** (multi-select) trong Người dùng, bản tối giản nếu R11 chưa làm; xóa cache quyền khi đổi; audit thay đổi quyền và gán vai trò; `admin:create --role=staff --staff-role=a,b` | Test API ma trận: mỗi vai trò mẫu bị 403 đúng chỗ; Quản lý sản phẩm gọi dashboard **không có** trường doanh thu, Kế toán có; admin không bị giới hạn; không xóa được vai trò còn người dùng; nhân viên không tự sửa được `roles.manage`; **user mang 2 vai trò (vd. Quản lý sản phẩm + Kế toán) có đúng hợp quyền** (sửa sản phẩm được và thấy doanh thu); gỡ 1 vai trò thì mất quyền ngay ở request kế tiếp (cache đã xóa); staff không có vai trò nào bị 403 toàn khu admin; audit ghi diff | 4,5 ngày |
 | **R7** | Cài đặt | Thông tin cửa hàng, phí ship & ngưỡng miễn phí (checkout dùng), đổi mật khẩu admin | Phiếu giao hàng & checkout lấy từ cài đặt | 1,5 ngày |
 | **R8** | Bảng điều khiển | KPI so kỳ, khoảng ngày, **Recharts**, "Việc cần làm" | Lighthouse a11y ≥ 95 | 1,5 ngày |
 | **R9** | Catalog phụ | Cây danh mục kéo thả + API reorder; Thương hiệu | CRUD thương hiệu có test | 2 ngày |
@@ -366,7 +367,7 @@ Thứ tự: **Nền tảng R0–R3 → Đơn hàng (R4) → Sản phẩm (R5) �
 
 API bổ sung so với mục 9: `GET /admin/orders/latest-id` 🆕 (thông báo), `GET /admin/orders/{id}/print` hoặc dùng `show` ✅, `GET|PUT /admin/settings` 🆕, `GET /settings/public` 🆕.
 
-Tổng ước lượng: ~27,5 ngày công (R6 tăng từ 1,5 lên 4 ngày).
+Tổng ước lượng: ~28 ngày công (R6 4,5 ngày do hỗ trợ nhiều vai trò).
 
 ## 11. Rủi ro
 | Rủi ro | Giảm thiểu |
@@ -384,6 +385,8 @@ Tổng ước lượng: ~27,5 ngày công (R6 tăng từ 1,5 lên 4 ngày).
 1. **Vai trò:** RBAC theo quyền chi tiết. Quản trị viên có toàn quyền; nhân viên mang vai trò cấu hình được, với 4 vai trò mẫu (Quản lý sản phẩm, Xử lý đơn hàng, Kế toán, Chăm sóc khách hàng). Admin tạo/sửa vai trò ở màn hình Vai trò & phân quyền (mục 4.6).
    - Xem doanh thu tùy vai trò: Kế toán xem được, Quản lý sản phẩm thì không (`dashboard.revenue.view`, server cũng ẩn).
    - Mã giảm giá tách hai quyền xem / quản lý, gán theo vai trò.
+   - Kế toán **không** xem nhật ký thao tác. Chăm sóc khách hàng **không** hủy đơn: chỉ xem đơn, sản phẩm, mã giảm giá và kiểm duyệt đánh giá; yêu cầu của khách được chuyển cho bộ phận liên quan.
+   - Một nhân viên có thể mang **một hoặc nhiều** vai trò; quyền hiệu lực là hợp quyền các vai trò (pivot `user_role`).
 2. **Cài đặt:** Thông tin cửa hàng (tên, SĐT, địa chỉ — in trên phiếu giao hàng/hóa đơn); Cấu hình chung (phí ship mặc định, ngưỡng miễn phí ship); Tài khoản (đổi mật khẩu admin hiện tại).
 3. **Thương hiệu:** đổi "Core Điện" → **"Đồ Điện Siêu Xịn"** (làm ở R0).
 4. **Trình soạn mô tả:** WYSIWYG, ưu tiên **Tiptap**.
@@ -394,6 +397,4 @@ Tổng ước lượng: ~27,5 ngày công (R6 tăng từ 1,5 lên 4 ngày).
 9. **Ưu tiên:** Đơn hàng và Sản phẩm trước (sau nền tảng R0–R3), rồi các phần còn lại.
 10. **`php artisan admin:create`:** thêm ở R0.
 
-### Câu hỏi nhỏ còn lại
-- Ma trận vai trò mẫu ở mục 4.6 đã đúng ý chưa? Ví dụ: Chăm sóc khách hàng có được hủy đơn không, Kế toán có được xem nhật ký không.
-- Một nhân viên chỉ mang **một** vai trò có đủ không, hay cần kiêm nhiều vai trò?
+Không còn câu hỏi mở về phân quyền.
