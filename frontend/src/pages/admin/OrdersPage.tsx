@@ -63,13 +63,13 @@ export default function OrdersPage() {
   return (
     <>
       <PageHeader title="Đơn hàng" />
-      <nav aria-label="Lọc theo trạng thái" className="-mx-1 mb-3 flex gap-1 overflow-x-auto border-b border-admin-border px-1">
+      <nav aria-label="Lọc theo trạng thái" className="mb-3 flex flex-wrap gap-x-0.5 border-b border-admin-border">
         {TABS.map((st) => {
           const active = (values.status ?? "") === st;
           const n = counts?.[st === "" ? "all" : st];
           return (
             <button key={st || "all"} type="button" aria-pressed={active} onClick={() => set("status", st)}
-              className={`-mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm ${active ? "border-admin-primary font-semibold text-admin-primary" : "border-transparent text-admin-fg-soft hover:text-admin-fg"}`}>
+              className={`-mb-px inline-flex shrink-0 items-center gap-1 whitespace-nowrap border-b-2 px-1.5 py-2 text-sm xl:gap-1.5 xl:px-3 ${active ? "border-admin-primary font-semibold text-admin-primary" : "border-transparent text-admin-fg-soft hover:text-admin-fg"}`}>
               {st === "" ? "Tất cả" : ORDER_STATUS_LABELS[st]}
               {n !== undefined && <span className={`rounded-full px-1.5 text-xs leading-5 ${active ? "bg-admin-primary text-admin-on-primary" : st === "pending" && n > 0 ? "bg-admin-warning-subtle text-admin-fg" : "bg-admin-subtle text-admin-muted"}`}>{n}</span>}
             </button>
