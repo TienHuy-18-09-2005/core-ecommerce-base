@@ -135,3 +135,122 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ===== Token màu khu quản trị (R1) =====
+   Dùng qua lớp Tailwind: bg-admin-surface, text-admin-muted, border-admin-border…
+   Sáng/tối chỉ đổi giá trị biến, không cần `dark:` hay theme-fixed. */
+@theme inline {
+  --color-admin-bg: var(--admin-bg);
+  --color-admin-surface: var(--admin-surface);
+  --color-admin-subtle: var(--admin-subtle);
+  --color-admin-border: var(--admin-border);
+  --color-admin-border-strong: var(--admin-border-strong);
+  --color-admin-fg: var(--admin-fg);
+  --color-admin-fg-soft: var(--admin-fg-soft);
+  --color-admin-muted: var(--admin-muted);
+  --color-admin-primary: var(--admin-primary);
+  --color-admin-primary-hover: var(--admin-primary-hover);
+  --color-admin-primary-subtle: var(--admin-primary-subtle);
+  --color-admin-on-primary: var(--admin-on-primary);
+  --color-admin-danger: var(--admin-danger);
+  --color-admin-danger-subtle: var(--admin-danger-subtle);
+  --color-admin-danger-border: var(--admin-danger-border);
+  --color-admin-success: var(--admin-success);
+  --color-admin-warning-subtle: var(--admin-warning-subtle);
+  --color-admin-sidebar: var(--admin-sidebar);
+  --color-admin-sidebar-fg: var(--admin-sidebar-fg);
+  --color-admin-sidebar-muted: var(--admin-sidebar-muted);
+  --color-admin-sidebar-hover: var(--admin-sidebar-hover);
+  --color-admin-sidebar-active: var(--admin-sidebar-active);
+  --color-admin-status-pending-bg: var(--admin-status-pending-bg);
+  --color-admin-status-pending-fg: var(--admin-status-pending-fg);
+  --color-admin-status-confirmed-bg: var(--admin-status-confirmed-bg);
+  --color-admin-status-confirmed-fg: var(--admin-status-confirmed-fg);
+  --color-admin-status-processing-bg: var(--admin-status-processing-bg);
+  --color-admin-status-processing-fg: var(--admin-status-processing-fg);
+  --color-admin-status-shipping-bg: var(--admin-status-shipping-bg);
+  --color-admin-status-shipping-fg: var(--admin-status-shipping-fg);
+  --color-admin-status-success-bg: var(--admin-status-success-bg);
+  --color-admin-status-success-fg: var(--admin-status-success-fg);
+  --color-admin-status-danger-bg: var(--admin-status-danger-bg);
+  --color-admin-status-danger-fg: var(--admin-status-danger-fg);
+  --color-admin-status-neutral-bg: var(--admin-status-neutral-bg);
+  --color-admin-status-neutral-fg: var(--admin-status-neutral-fg);
+}
+
+:root {
+  --admin-bg: #f1f5f9;
+  --admin-surface: #ffffff;
+  --admin-subtle: #f8fafc;
+  --admin-border: #e2e8f0;
+  --admin-border-strong: #cbd5e1;
+  --admin-fg: #0f172a;
+  --admin-fg-soft: #334155;
+  --admin-muted: #64748b;
+  --admin-primary: #2563eb;
+  --admin-primary-hover: #1d4ed8;
+  --admin-primary-subtle: #eff6ff;
+  --admin-on-primary: #ffffff;
+  --admin-danger: #dc2626;
+  --admin-danger-subtle: #fef2f2;
+  --admin-danger-border: #fecaca;
+  --admin-success: #15803d;
+  --admin-warning-subtle: #fffbeb;
+  --admin-sidebar: #0f172a;
+  --admin-sidebar-fg: #e2e8f0;
+  --admin-sidebar-muted: #94a3b8;
+  --admin-sidebar-hover: #1e293b;
+  --admin-sidebar-active: #2563eb;
+  --admin-status-pending-bg: #fef3c7;
+  --admin-status-pending-fg: #92400e;
+  --admin-status-confirmed-bg: #dbeafe;
+  --admin-status-confirmed-fg: #1e40af;
+  --admin-status-processing-bg: #e0e7ff;
+  --admin-status-processing-fg: #3730a3;
+  --admin-status-shipping-bg: #cffafe;
+  --admin-status-shipping-fg: #155e75;
+  --admin-status-success-bg: #dcfce7;
+  --admin-status-success-fg: #166534;
+  --admin-status-danger-bg: #fee2e2;
+  --admin-status-danger-fg: #991b1b;
+  --admin-status-neutral-bg: #e2e8f0;
+  --admin-status-neutral-fg: #334155;
+}
+
+:root.dark {
+  --admin-bg: #0b1120;
+  --admin-surface: #111827;
+  --admin-subtle: #1a2333;
+  --admin-border: #263244;
+  --admin-border-strong: #3b4a60;
+  --admin-fg: #f1f5f9;
+  --admin-fg-soft: #cbd5e1;
+  --admin-muted: #94a3b8;
+  --admin-primary: #3b82f6;
+  --admin-primary-hover: #60a5fa;
+  --admin-primary-subtle: #172554;
+  --admin-danger: #f87171;
+  --admin-danger-subtle: #3f1212;
+  --admin-danger-border: #7f1d1d;
+  --admin-success: #4ade80;
+  --admin-warning-subtle: #3a2606;
+  --admin-sidebar: #070b14;
+  --admin-sidebar-fg: #e2e8f0;
+  --admin-sidebar-muted: #8391a7;
+  --admin-sidebar-hover: #162033;
+  --admin-sidebar-active: #2563eb;
+  --admin-status-pending-bg: #451a03;
+  --admin-status-pending-fg: #fcd34d;
+  --admin-status-confirmed-bg: #172554;
+  --admin-status-confirmed-fg: #93c5fd;
+  --admin-status-processing-bg: #1e1b4b;
+  --admin-status-processing-fg: #a5b4fc;
+  --admin-status-shipping-bg: #083344;
+  --admin-status-shipping-fg: #67e8f9;
+  --admin-status-success-bg: #052e16;
+  --admin-status-success-fg: #86efac;
+  --admin-status-danger-bg: #450a0a;
+  --admin-status-danger-fg: #fca5a5;
+  --admin-status-neutral-bg: #1e293b;
+  --admin-status-neutral-fg: #cbd5e1;
+}

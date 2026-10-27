@@ -47,18 +47,18 @@ export default function OrderDetailPage() {
       <PageHeader title={`Đơn ${order.order_code}`} actions={<Link to="/admin/don-hang" className={btnSecondary}>Quay lại</Link>} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <OrderStatusBadge status={order.status} />
-              <span className="text-sm text-slate-600">{PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status} · {order.payment_method.toUpperCase()}</span>
-              <span className="text-sm text-slate-500">Đặt lúc {formatDateTime(order.created_at)}</span>
+              <span className="text-sm text-admin-fg-soft">{PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status} · {order.payment_method.toUpperCase()}</span>
+              <span className="text-sm text-admin-muted">Đặt lúc {formatDateTime(order.created_at)}</span>
             </div>
             <table className="min-w-full text-sm">
-              <thead><tr className="text-left text-slate-500"><th className="py-2">Sản phẩm</th><th>Đơn giá</th><th>SL</th><th className="text-right">Thành tiền</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <thead><tr className="text-left text-admin-muted"><th className="py-2">Sản phẩm</th><th>Đơn giá</th><th>SL</th><th className="text-right">Thành tiền</th></tr></thead>
+              <tbody className="divide-y divide-admin-border">
                 {order.items.map((it, i) => (
                   <tr key={`${it.sku}-${i}`}>
-                    <td className="py-2">{it.product_name}{it.variant_name && <span className="text-slate-500"> — {it.variant_name}</span>}<p className="text-xs text-slate-400">{it.sku}</p></td>
+                    <td className="py-2">{it.product_name}{it.variant_name && <span className="text-admin-muted"> — {it.variant_name}</span>}<p className="text-xs text-admin-muted">{it.sku}</p></td>
                     <td>{formatCurrency(it.unit_price)}</td><td>{it.quantity}</td><td className="text-right">{formatCurrency(it.line_total)}</td>
                   </tr>
                 ))}
@@ -72,14 +72,14 @@ export default function OrderDetailPage() {
             </dl>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="mb-3 font-semibold">Lịch sử xử lý</h2>
-            <ol className="space-y-3 border-l-2 border-slate-200 pl-4 text-sm">
+            <ol className="space-y-3 border-l-2 border-admin-border pl-4 text-sm">
               {order.timeline.map((t, i) => (
                 <li key={i}>
                   <p className="font-medium">{t.label}</p>
-                  <p className="text-xs text-slate-500">{formatDateTime(t.at)}{t.by ? ` · ${t.by}` : ""}</p>
-                  {t.note && <p className="text-slate-600">{t.note}</p>}
+                  <p className="text-xs text-admin-muted">{formatDateTime(t.at)}{t.by ? ` · ${t.by}` : ""}</p>
+                  {t.note && <p className="text-admin-fg-soft">{t.note}</p>}
                 </li>
               ))}
             </ol>
@@ -87,21 +87,21 @@ export default function OrderDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <section className="rounded-xl border border-slate-200 bg-white p-5 text-sm">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
             <h2 className="mb-2 font-semibold">Khách hàng</h2>
             <p>{order.customer.name}</p>
             <p>{order.customer.phone}</p>
             {order.customer.email && <p>{order.customer.email}</p>}
-            <p className="mt-2 text-slate-600">{[order.shipping.address, order.shipping.ward, order.shipping.district, order.shipping.province].filter(Boolean).join(", ")}</p>
-            {order.customer_note && <p className="mt-2 rounded bg-amber-50 p-2">Ghi chú: {order.customer_note}</p>}
-            {order.cancel_reason && <p className="mt-2 rounded bg-red-50 p-2 text-red-700">Lý do hủy: {order.cancel_reason}</p>}
-            {order.admin_note && <p className="mt-2 rounded bg-slate-50 p-2">Ghi chú nội bộ: {order.admin_note}</p>}
+            <p className="mt-2 text-admin-fg-soft">{[order.shipping.address, order.shipping.ward, order.shipping.district, order.shipping.province].filter(Boolean).join(", ")}</p>
+            {order.customer_note && <p className="mt-2 rounded bg-admin-warning-subtle p-2">Ghi chú: {order.customer_note}</p>}
+            {order.cancel_reason && <p className="mt-2 rounded bg-admin-danger-subtle p-2 text-admin-danger">Lý do hủy: {order.cancel_reason}</p>}
+            {order.admin_note && <p className="mt-2 rounded bg-admin-subtle p-2">Ghi chú nội bộ: {order.admin_note}</p>}
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="mb-3 font-semibold">Cập nhật trạng thái</h2>
             {order.allowed_transitions.length === 0 ? (
-              <p className="text-sm text-slate-500">Đơn đã ở trạng thái cuối, không thể chuyển tiếp.</p>
+              <p className="text-sm text-admin-muted">Đơn đã ở trạng thái cuối, không thể chuyển tiếp.</p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-3 text-sm" noValidate>
                 <label className="block">
@@ -110,13 +110,13 @@ export default function OrderDetailPage() {
                     <option value="">— Chọn —</option>
                     {order.allowed_transitions.map((s) => <option key={s} value={s}>{ORDER_STATUS_LABELS[s] ?? s}</option>)}
                   </select>
-                  {errors.status && <span role="alert" className="text-xs text-red-600">{errors.status}</span>}
+                  {errors.status && <span role="alert" className="text-xs text-admin-danger">{errors.status}</span>}
                 </label>
                 {status === "cancelled" && (
                   <label className="block">
                     <span className="mb-1 block font-medium">Lý do hủy</span>
                     <input className={inputClass} value={reason} onChange={(e) => setReason(e.target.value)} />
-                    {errors.cancel_reason && <span role="alert" className="text-xs text-red-600">{errors.cancel_reason}</span>}
+                    {errors.cancel_reason && <span role="alert" className="text-xs text-admin-danger">{errors.cancel_reason}</span>}
                   </label>
                 )}
                 <label className="block">

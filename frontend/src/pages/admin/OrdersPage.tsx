@@ -30,9 +30,9 @@ export default function OrdersPage() {
       </div>
       <QueryError error={error} />
       <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(o) => o.id} empty="Không có đơn phù hợp." columns={[
-        { header: "Mã đơn", sortKey: "order_code", cell: (o) => <Link to={`/admin/don-hang/${o.id}`} className="font-medium text-blue-700">{o.order_code}</Link> },
-        { header: "Khách hàng", sortKey: "customer_name", cell: (o) => <>{o.customer_name}<p className="text-xs text-slate-500">{o.customer_phone}</p></> },
-        { header: "Tổng tiền", sortKey: "total_amount", cell: (o) => <>{formatCurrency(o.total_amount)}<p className="text-xs text-slate-500">{o.items_count} sản phẩm · {o.payment_method.toUpperCase()}</p></> },
+        { header: "Mã đơn", sortKey: "order_code", cell: (o) => <Link to={`/admin/don-hang/${o.id}`} className="font-medium text-admin-primary">{o.order_code}</Link> },
+        { header: "Khách hàng", sortKey: "customer_name", cell: (o) => <>{o.customer_name}<p className="text-xs text-admin-muted">{o.customer_phone}</p></> },
+        { header: "Tổng tiền", sortKey: "total_amount", cell: (o) => <>{formatCurrency(o.total_amount)}<p className="text-xs text-admin-muted">{o.items_count} sản phẩm · {o.payment_method.toUpperCase()}</p></> },
         { header: "Trạng thái", sortKey: "status", cell: (o) => <OrderStatusBadge status={o.status} /> },
         { header: "Thanh toán", cell: (o) => PAYMENT_STATUS_LABELS[o.payment_status] ?? o.payment_status },
         { header: "Ngày đặt", sortKey: "created_at", cell: (o) => formatDateTime(o.created_at) },

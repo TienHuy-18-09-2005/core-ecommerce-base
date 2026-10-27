@@ -47,18 +47,18 @@ export default function CategoriesPage() {
       <PageHeader title="Danh mục" />
       <QueryError error={error} />
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="rounded-xl border border-slate-200 bg-white lg:col-span-2">
+        <section className="rounded-xl border border-admin-border bg-admin-surface lg:col-span-2">
           {isLoading && <p className="p-4">Đang tải...</p>}
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-admin-border">
             {tree.map(({ cat, depth }) => (
               <li key={cat.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm" style={{ paddingLeft: 16 + depth * 24 }}>
                 <div>
                   <span className="font-medium">{depth > 0 && "└ "}{cat.name}</span>
-                  {!cat.is_active && <span className="ml-2 rounded bg-slate-200 px-1.5 text-xs">Ẩn</span>}
-                  <p className="text-xs text-slate-500">/{cat.slug} · {cat.products_count} sản phẩm · {cat.children_count} danh mục con</p>
+                  {!cat.is_active && <span className="ml-2 rounded bg-admin-status-neutral-bg px-1.5 text-xs">Ẩn</span>}
+                  <p className="text-xs text-admin-muted">/{cat.slug} · {cat.products_count} sản phẩm · {cat.children_count} danh mục con</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" className="text-blue-700" onClick={() => startEdit(cat)}>Sửa</button>
+                  <button type="button" className="text-admin-primary" onClick={() => startEdit(cat)}>Sửa</button>
                   <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(cat)}>Xóa</button>
                 </div>
               </li>
@@ -66,20 +66,20 @@ export default function CategoriesPage() {
           </ul>
         </section>
 
-        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 text-sm">
+        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
           <h2 className="font-semibold">{editing ? `Sửa: ${editing.name}` : "Thêm danh mục"}</h2>
           <label className="block"><span className="mb-1 block font-medium">Tên danh mục</span>
             <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            {errors.name && <span role="alert" className="text-xs text-red-600">{errors.name}</span>}</label>
+            {errors.name && <span role="alert" className="text-xs text-admin-danger">{errors.name}</span>}</label>
           <label className="block"><span className="mb-1 block font-medium">Slug (để trống sẽ tự tạo)</span>
             <input className={inputClass} value={form.slug ?? ""} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            {errors.slug && <span role="alert" className="text-xs text-red-600">{errors.slug}</span>}</label>
+            {errors.slug && <span role="alert" className="text-xs text-admin-danger">{errors.slug}</span>}</label>
           <label className="block"><span className="mb-1 block font-medium">Danh mục cha</span>
             <select className={inputClass} value={form.parent_id ?? ""} onChange={(e) => setForm({ ...form, parent_id: e.target.value ? Number(e.target.value) : null })}>
               <option value="">— Gốc —</option>
               {tree.filter(({ cat }) => cat.id !== editing?.id).map(({ cat, depth }) => <option key={cat.id} value={cat.id}>{"— ".repeat(depth)}{cat.name}</option>)}
             </select>
-            {errors.parent_id && <span role="alert" className="text-xs text-red-600">{errors.parent_id}</span>}</label>
+            {errors.parent_id && <span role="alert" className="text-xs text-admin-danger">{errors.parent_id}</span>}</label>
           <label className="block"><span className="mb-1 block font-medium">Mô tả</span>
             <textarea className={inputClass} rows={2} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
           <label className="block"><span className="mb-1 block font-medium">Thứ tự</span>

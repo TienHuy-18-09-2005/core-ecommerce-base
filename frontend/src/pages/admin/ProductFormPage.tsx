@@ -31,9 +31,9 @@ function toInput(p: AdminProduct): AdminProductInput {
 function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block font-medium text-slate-700">{label}</span>
+      <span className="mb-1 block font-medium text-admin-fg-soft">{label}</span>
       {children}
-      {error && <span role="alert" className="mt-1 block text-xs text-red-600">{error}</span>}
+      {error && <span role="alert" className="mt-1 block text-xs text-admin-danger">{error}</span>}
     </label>
   );
 }
@@ -106,7 +106,7 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+          <section className="space-y-4 rounded-xl border border-admin-border bg-admin-surface p-5">
             <Field label="Tên sản phẩm" error={errors.name}>
               <input className={inputClass} value={form.name} onChange={(e) => patch({ name: e.target.value })} />
             </Field>
@@ -121,16 +121,16 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
             </Field>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-semibold">Biến thể</h2>
               <button type="button" className={btnSecondary} onClick={() => patch({ variants: [...form.variants, { ...emptyVariant(false), name: "" }] })}>+ Thêm biến thể</button>
             </div>
-            {errors.variants && <p role="alert" className="mb-2 text-xs text-red-600">{errors.variants}</p>}
+            {errors.variants && <p role="alert" className="mb-2 text-xs text-admin-danger">{errors.variants}</p>}
             <div className="space-y-4">
               {form.variants.map((v, i) => (
-                <fieldset key={v.id ?? `new-${i}`} className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-4">
-                  <legend className="px-1 text-xs text-slate-500">Biến thể #{i + 1}{v.id ? ` (id ${v.id})` : " (mới)"}</legend>
+                <fieldset key={v.id ?? `new-${i}`} className="grid gap-3 rounded-lg border border-admin-border p-3 sm:grid-cols-4">
+                  <legend className="px-1 text-xs text-admin-muted">Biến thể #{i + 1}{v.id ? ` (id ${v.id})` : " (mới)"}</legend>
                   <Field label="SKU" error={errors[`variants.${i}.sku`]}><input className={inputClass} value={v.sku} onChange={(e) => patchVariant(i, { sku: e.target.value })} /></Field>
                   <Field label="Tên biến thể" error={errors[`variants.${i}.name`]}><input className={inputClass} value={v.name} onChange={(e) => patchVariant(i, { name: e.target.value })} /></Field>
                   <Field label="Giá bán" error={errors[`variants.${i}.price`]}><input type="number" min={0} className={inputClass} value={v.price} onChange={(e) => patchVariant(i, { price: Number(e.target.value) })} /></Field>
@@ -150,12 +150,12 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
             </div>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-semibold">Thông số kỹ thuật</h2>
               <button type="button" className={btnSecondary} onClick={() => setSpecs((s) => [...s, { key: "", value: "" }])}>+ Thêm dòng</button>
             </div>
-            {errors.specifications && <p role="alert" className="mb-2 text-xs text-red-600">{errors.specifications}</p>}
+            {errors.specifications && <p role="alert" className="mb-2 text-xs text-admin-danger">{errors.specifications}</p>}
             <div className="space-y-2">
               {specs.map((s, i) => (
                 <div key={i} className="flex gap-2">
@@ -169,14 +169,14 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
             </div>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-5">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="mb-3 font-semibold">Thư viện ảnh</h2>
-            {errors.media && <p role="alert" className="mb-2 text-xs text-red-600">{errors.media}</p>}
+            {errors.media && <p role="alert" className="mb-2 text-xs text-admin-danger">{errors.media}</p>}
             <div className="flex flex-wrap gap-3">
               {form.media.map((m, i) => (
                 <div key={`${m.url}-${i}`} className="w-28 text-xs">
                   <img src={safeImageUrl(m.url) ?? "/product-fallback.svg"} alt={m.alt_text ?? ""} className="h-28 w-28 rounded object-cover" />
-                  <button type="button" className="mt-1 text-red-600" onClick={() => patch({ media: form.media.filter((_, j) => j !== i) })}>Xóa ảnh</button>
+                  <button type="button" className="mt-1 text-admin-danger" onClick={() => patch({ media: form.media.filter((_, j) => j !== i) })}>Xóa ảnh</button>
                 </div>
               ))}
             </div>
@@ -185,12 +185,12 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
               <input type="file" accept="image/jpeg,image/png,image/webp" disabled={upload.isPending}
                 onChange={(e) => { uploadTo(e.target.files?.[0], (url) => patch({ media: [...form.media, { url, alt_text: form.name || null }] })); e.target.value = ""; }} />
             </label>
-            {upload.isPending && <p className="text-sm text-slate-500">Đang tải ảnh...</p>}
+            {upload.isPending && <p className="text-sm text-admin-muted">Đang tải ảnh...</p>}
           </section>
         </div>
 
         <div className="space-y-6">
-          <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+          <section className="space-y-4 rounded-xl border border-admin-border bg-admin-surface p-5">
             <Field label="Trạng thái" error={errors.status}>
               <select className={inputClass} value={form.status} onChange={(e) => patch({ status: e.target.value as AdminProductInput["status"] })}>
                 {Object.entries(PRODUCT_STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -204,8 +204,8 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
               </select>
             </Field>
             <fieldset>
-              <legend className="mb-1 text-sm font-medium text-slate-700">Danh mục</legend>
-              {errors.category_ids && <p role="alert" className="text-xs text-red-600">{errors.category_ids}</p>}
+              <legend className="mb-1 text-sm font-medium text-admin-fg-soft">Danh mục</legend>
+              {errors.category_ids && <p role="alert" className="text-xs text-admin-danger">{errors.category_ids}</p>}
               <div className="max-h-48 space-y-1 overflow-y-auto text-sm">
                 {categories.data?.map((c) => (
                   <label key={c.id} className="flex items-center gap-2" style={{ paddingLeft: c.parent_id ? 16 : 0 }}>
@@ -219,7 +219,7 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
             <Field label="Đơn vị" error={errors.unit}><input className={inputClass} value={form.unit ?? ""} onChange={(e) => patch({ unit: e.target.value })} /></Field>
           </section>
 
-          <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-5">
+          <section className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="font-semibold">Ảnh đại diện</h2>
             {form.thumbnail_url && <img src={safeImageUrl(form.thumbnail_url) ?? "/product-fallback.svg"} alt="Ảnh đại diện" className="h-40 w-full rounded object-cover" />}
             <Field label="URL ảnh" error={errors.thumbnail_url}>
@@ -229,7 +229,7 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
               onChange={(e) => { uploadTo(e.target.files?.[0], (url) => patch({ thumbnail_url: url })); e.target.value = ""; }} />
           </section>
 
-          <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-5">
+          <section className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5">
             <h2 className="font-semibold">SEO</h2>
             <Field label="Meta title" error={errors.meta_title}><input className={inputClass} value={form.meta_title ?? ""} onChange={(e) => patch({ meta_title: e.target.value })} /></Field>
             <Field label="Meta description" error={errors.meta_description}><textarea className={inputClass} rows={3} value={form.meta_description ?? ""} onChange={(e) => patch({ meta_description: e.target.value })} /></Field>

@@ -47,17 +47,17 @@ export default function ProductsPage() {
           <div className="flex items-center gap-3">
             <img src={safeImageUrl(p.thumbnail_url) ?? "/product-fallback.svg"} alt="" loading="lazy" decoding="async" width={40} height={40} className="h-10 w-10 rounded object-cover" />
             <div>
-              <Link to={`/admin/san-pham/${p.id}`} className="font-medium text-blue-700">{p.name}</Link>
-              <p className="text-xs text-slate-500">{p.brand?.name ?? "—"} · {p.categories.map((c) => c.name).join(", ") || "Chưa phân loại"}</p>
+              <Link to={`/admin/san-pham/${p.id}`} className="font-medium text-admin-primary">{p.name}</Link>
+              <p className="text-xs text-admin-muted">{p.brand?.name ?? "—"} · {p.categories.map((c) => c.name).join(", ") || "Chưa phân loại"}</p>
             </div>
           </div>
         ) },
         { header: "Giá từ", sortKey: "price_min", cell: (p) => formatCurrency(p.price_min) },
-        { header: "Tồn kho", sortKey: "stock_total", cell: (p) => <span className={p.stock_total <= 5 ? "font-semibold text-red-600" : ""}>{p.stock_total} ({p.variants_count} biến thể)</span> },
+        { header: "Tồn kho", sortKey: "stock_total", cell: (p) => <span className={p.stock_total <= 5 ? "font-semibold text-admin-danger" : ""}>{p.stock_total} ({p.variants_count} biến thể)</span> },
         { header: "Trạng thái", sortKey: "status", cell: (p) => PRODUCT_STATUS_LABELS[p.status] ?? p.status },
         { header: "Thao tác", cell: (p) => (
           <div className="flex gap-2">
-            <Link to={`/admin/san-pham/${p.id}`} className="text-sm text-blue-700">Sửa</Link>
+            <Link to={`/admin/san-pham/${p.id}`} className="text-sm text-admin-primary">Sửa</Link>
             <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(p.id, p.name)}>Xóa</button>
           </div>
         ) },

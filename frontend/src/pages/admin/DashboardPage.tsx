@@ -6,9 +6,9 @@ import { formatCurrency } from "../../utils/formatCurrency.ts";
 
 function Stat({ label, value, to }: { label: string; value: string | number; to?: string }) {
   const body = (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+    <div className="rounded-xl border border-admin-border bg-admin-surface p-4">
+      <p className="text-sm text-admin-muted">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-admin-fg">{value}</p>
     </div>
   );
   return to ? <Link to={to}>{body}</Link> : body;
@@ -35,13 +35,13 @@ export default function DashboardPage() {
             <Stat label="Đánh giá đang ẩn" value={data.stats.hidden_reviews} to="/admin/danh-gia?visibility=hidden" />
           </div>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4">
+          <section className="rounded-xl border border-admin-border bg-admin-surface p-4">
             <h2 className="mb-4 font-semibold">Doanh thu 14 ngày (không tính đơn hủy/trả)</h2>
             <ol className="flex h-48 items-end gap-1" aria-label="Biểu đồ doanh thu">
               {data.revenue_series.map((d) => (
                 <li key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${d.date}: ${formatCurrency(d.revenue)} · ${d.orders} đơn`}>
-                  <div className="w-full rounded-t bg-blue-500" style={{ height: `${(d.revenue / max) * 100}%`, minHeight: d.revenue > 0 ? 2 : 0 }} />
-                  <span className="text-[10px] text-slate-500">{d.date.slice(8, 10)}/{d.date.slice(5, 7)}</span>
+                  <div className="w-full rounded-t bg-admin-primary" style={{ height: `${(d.revenue / max) * 100}%`, minHeight: d.revenue > 0 ? 2 : 0 }} />
+                  <span className="text-[10px] text-admin-muted">{d.date.slice(8, 10)}/{d.date.slice(5, 7)}</span>
                 </li>
               ))}
             </ol>
@@ -51,7 +51,7 @@ export default function DashboardPage() {
             <section>
               <h2 className="mb-2 font-semibold">Đơn hàng gần đây</h2>
               <DataTable rows={data.recent_orders} rowKey={(o) => o.id} columns={[
-                { header: "Mã đơn", cell: (o) => <Link className="font-medium text-blue-700" to={`/admin/don-hang/${o.id}`}>{o.order_code}</Link> },
+                { header: "Mã đơn", cell: (o) => <Link className="font-medium text-admin-primary" to={`/admin/don-hang/${o.id}`}>{o.order_code}</Link> },
                 { header: "Khách", cell: (o) => o.customer_name },
                 { header: "Tổng", cell: (o) => formatCurrency(o.total_amount) },
                 { header: "Trạng thái", cell: (o) => <OrderStatusBadge status={o.status} /> },
@@ -61,9 +61,9 @@ export default function DashboardPage() {
             <section>
               <h2 className="mb-2 font-semibold">Sắp hết hàng</h2>
               <DataTable rows={data.low_stock} rowKey={(v) => v.variant_id} empty="Không có biến thể nào sắp hết." columns={[
-                { header: "Sản phẩm", cell: (v) => <Link className="text-blue-700" to={`/admin/san-pham/${v.product_id}`}>{v.product_name ?? "—"}</Link> },
+                { header: "Sản phẩm", cell: (v) => <Link className="text-admin-primary" to={`/admin/san-pham/${v.product_id}`}>{v.product_name ?? "—"}</Link> },
                 { header: "Biến thể", cell: (v) => `${v.variant_name} (${v.sku})` },
-                { header: "Tồn", cell: (v) => <span className="font-semibold text-red-600">{v.stock_quantity}</span> },
+                { header: "Tồn", cell: (v) => <span className="font-semibold text-admin-danger">{v.stock_quantity}</span> },
               ]} />
             </section>
           </div>

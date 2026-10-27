@@ -53,7 +53,7 @@ export default function CouponsPage() {
     }
   };
 
-  const err = (k: string) => errors[k] && <span role="alert" className="text-xs text-red-600">{errors[k]}</span>;
+  const err = (k: string) => errors[k] && <span role="alert" className="text-xs text-admin-danger">{errors[k]}</span>;
 
   return (
     <>
@@ -71,7 +71,7 @@ export default function CouponsPage() {
             { header: "Trạng thái", sortKey: "is_active", cell: (c) => (c.is_active ? "Đang bật" : "Tắt") },
             { header: "Thao tác", cell: (c) => (
               <div className="flex gap-2">
-                <button type="button" className="text-blue-700" onClick={() => startEdit(c)}>Sửa</button>
+                <button type="button" className="text-admin-primary" onClick={() => startEdit(c)}>Sửa</button>
                 <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(c)}>Xóa</button>
               </div>
             ) },
@@ -79,7 +79,7 @@ export default function CouponsPage() {
           <Pagination meta={data?.meta} onPage={setPage} />
         </div>
 
-        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 text-sm">
+        <form onSubmit={onSubmit} noValidate className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
           <h2 className="font-semibold">{editing ? `Sửa mã ${editing.code}` : "Tạo mã giảm giá"}</h2>
           <label className="block"><span className="mb-1 block font-medium">Mã</span>
             <input className={`${inputClass} uppercase`} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />{err("code")}</label>

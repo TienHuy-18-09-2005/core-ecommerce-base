@@ -175,7 +175,7 @@ describe("admin panel", () => {
     ]);
     svc.deleteCategory.mockRejectedValue(new ApiError("Danh mục còn danh mục con hoặc sản phẩm.", { status: 409, code: "CATEGORY_IN_USE" }));
     renderAdmin("/admin/danh-muc");
-    const items = await screen.findAllByRole("listitem");
+    const items = await within(screen.getByRole("main")).findAllByRole("listitem");
     expect(items[0].textContent).toContain("Đèn LED");
     expect(items[1].textContent).toContain("└ Đèn âm trần");
     fireEvent.click(within(items[0]).getByRole("button", { name: "Xóa" }));

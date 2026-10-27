@@ -33,10 +33,11 @@ const hasCompose = existsSync(composePath);
 
 describe("frontend client boundaries", () => {
   it("does not store auth or the cart in the browser, or send a session header", () => {
-    // Ngoại lệ duy nhất: utils/theme.ts lưu lựa chọn giao diện (sáng/tối), không phải dữ liệu nhạy cảm.
+    // Ngoại lệ: utils/theme.ts (sáng/tối) và utils/adminPrefs.ts (menu admin thu gọn) chỉ lưu lựa chọn giao diện, không nhạy cảm.
     const themeFile = path.join(frontendRoot, "src/utils/theme.ts");
+    const adminPrefsFile = path.join(frontendRoot, "src/utils/adminPrefs.ts");
     const source = sourceFiles(path.join(frontendRoot, "src"))
-      .filter((file) => file !== themeFile)
+      .filter((file) => file !== themeFile && file !== adminPrefsFile)
       .map((file) => readFileSync(file, "utf8"))
       .join("\n");
 
@@ -44,6 +45,10 @@ describe("frontend client boundaries", () => {
     const theme = readFileSync(themeFile, "utf8");
     expect([...theme.matchAll(/localStorage\.(\w+)\(([^,)]*)/g)].map((m) => `${m[1]}(${m[2]})`).sort()).toEqual(
       ["getItem(THEME_KEY)", "removeItem(THEME_KEY)", "setItem(THEME_KEY)"],
+    );
+    const adminPrefs = readFileSync(adminPrefsFile, "utf8");
+    expect([...adminPrefs.matchAll(/localStorage\.(\w+)\(([^,)]*)/g)].map((m) => `${m[1]}(${m[2]})`).sort()).toEqual(
+      ["getItem(SIDEBAR_KEY)", "setItem(SIDEBAR_KEY)"],
     );
     expect(source).not.toMatch(/sessionStorage/);
     expect(source).not.toMatch(/X-Session-ID/);

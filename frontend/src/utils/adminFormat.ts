@@ -1,9 +1,9 @@
 import type { AdminCategory } from "../types/admin.ts";
 
-export const inputClass = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none";
-export const btnPrimary = "rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50";
-export const btnSecondary = "rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50";
-export const btnDanger = "rounded-lg border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50";
+export const inputClass = "w-full rounded-lg border border-admin-border-strong px-3 py-2 text-sm focus:border-admin-primary focus:outline-none";
+export const btnPrimary = "rounded-lg bg-admin-primary px-4 py-2 text-sm font-semibold text-admin-on-primary hover:bg-admin-primary-hover disabled:opacity-50";
+export const btnSecondary = "rounded-lg border border-admin-border-strong bg-admin-surface px-4 py-2 text-sm font-medium text-admin-fg-soft hover:bg-admin-subtle disabled:opacity-50";
+export const btnDanger = "rounded-lg border border-admin-danger-border bg-admin-surface px-3 py-1.5 text-sm font-medium text-admin-danger hover:bg-admin-danger-subtle disabled:opacity-50";
 
 export const PRODUCT_STATUS_LABELS: Record<string, string> = { draft: "Nháp", published: "Đang bán", archived: "Lưu trữ" };
 export const PAYMENT_STATUS_LABELS: Record<string, string> = { unpaid: "Chưa thanh toán", paid: "Đã thanh toán", refunded: "Đã hoàn tiền", failed: "Thất bại" };

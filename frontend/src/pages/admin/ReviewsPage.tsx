@@ -43,7 +43,7 @@ export default function ReviewsPage() {
           <div className="max-w-md">
             <StarRating value={r.rating} size="sm" />
             {/* Văn bản thuần — render qua text node */}
-            <p className="mt-1 whitespace-pre-line text-slate-700">{r.comment || <em className="text-slate-400">(không có nội dung)</em>}</p>
+            <p className="mt-1 whitespace-pre-line text-admin-fg-soft">{r.comment || <em className="text-admin-muted">(không có nội dung)</em>}</p>
             {r.images.length > 0 && (
               <div className="mt-2 flex gap-2">
                 {r.images.map((src) => {
@@ -54,10 +54,10 @@ export default function ReviewsPage() {
             )}
           </div>
         ) },
-        { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham/${r.product.id}`} className="text-blue-700">{r.product.name}</Link> : "—") },
-        { header: "Khách hàng", cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-slate-500">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-green-700">Đã mua hàng</p>}</> },
+        { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham/${r.product.id}`} className="text-admin-primary">{r.product.name}</Link> : "—") },
+        { header: "Khách hàng", cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-admin-muted">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-admin-success">Đã mua hàng</p>}</> },
         { header: "Ngày", sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
-        { header: "Trạng thái", sortKey: "is_approved", cell: (r) => (r.is_approved ? <span className="text-green-700">Đang hiện</span> : <span className="text-slate-500">Đang ẩn</span>) },
+        { header: "Trạng thái", sortKey: "is_approved", cell: (r) => (r.is_approved ? <span className="text-admin-success">Đang hiện</span> : <span className="text-admin-muted">Đang ẩn</span>) },
         { header: "Thao tác", cell: (r) => (
           <div className="flex flex-col gap-2">
             <button type="button" className={btnSecondary} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)}>{r.is_approved ? "Ẩn" : "Hiện"}</button>
