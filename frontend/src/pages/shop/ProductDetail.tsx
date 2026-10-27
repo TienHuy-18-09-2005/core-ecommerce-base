@@ -12,7 +12,7 @@ import type { Product, ProductVariant } from '../../types/product';
 import { Breadcrumb } from '../../components/shop/catalog/Breadcrumb';
 import { formatCurrency } from '../../utils/formatCurrency';
 
-/** Task 2.9: state reset khi đổi slug (remount theo key), request cũ bị huỷ qua AbortSignal, 404 thật. */
+/** Task 2.9: state reset khi đổi slug (remount theo key), request cũ bị hủy qua AbortSignal, 404 thật. */
 export const ProductDetail: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const query = useProductDetailQuery(slug);
@@ -68,7 +68,7 @@ const ProductDetailView: React.FC<{ product: Product }> = ({ product }) => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
-            <Seo title={product.name} description={product.short_description || product.description || `${product.name} chính hãng tại Core Điện.`} image={product.thumbnail_url} type="product" />
+            <Seo title={product.name} description={product.short_description || product.description || `${product.name} chính hãng tại Đồ Điện Siêu Xịn.`} image={product.thumbnail_url} type="product" />
             <Breadcrumb items={[
                 { label: 'Trang chủ', to: '/' },
                 { label: 'Sản phẩm', to: '/san-pham' },

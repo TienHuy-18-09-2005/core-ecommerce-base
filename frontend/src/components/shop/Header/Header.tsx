@@ -1,4 +1,4 @@
-import { LogOut, Menu, ShoppingCart, UserRound } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, ShoppingCart, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCategoriesQuery } from "../../../hooks/useCatalogQuery.ts";
@@ -30,7 +30,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
         <Link to="/" className="text-lg font-bold text-blue-700">
-          Core Điện
+          Đồ Điện Siêu Xịn
         </Link>
         <SearchAutocomplete />
         <button
@@ -47,6 +47,12 @@ export function Header() {
         <ThemeToggle />
         {auth.user ? (
           <>
+            {auth.user.role === "admin" && (
+              <Link to="/admin" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-blue-700">
+                <LayoutDashboard className="h-5 w-5" aria-hidden="true" />
+                Trang quản trị
+              </Link>
+            )}
             <Link to="/tai-khoan" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-slate-800">
               <UserRound className="h-5 w-5" aria-hidden="true" />
               {auth.user.name}

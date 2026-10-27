@@ -177,7 +177,7 @@ class AdminProductService
                     $product->variants()->create($fields);
                 }
             }
-            // Biến thể bị bỏ khỏi form → xoá mềm (đơn cũ vẫn tham chiếu được)
+            // Biến thể bị bỏ khỏi form → xóa mềm (đơn cũ vẫn tham chiếu được)
             $removed = array_diff($existing, $ids);
             if ($removed) {
                 ProductVariant::whereIn('id', $removed)->delete();
@@ -196,7 +196,7 @@ class AdminProductService
     public function delete(Product $product): void
     {
         DB::transaction(function () use ($product) {
-            // Xoá mềm: ẩn khỏi shop, đơn cũ giữ snapshot
+            // Xóa mềm: ẩn khỏi shop, đơn cũ giữ snapshot
             $product->variants()->delete();
             $product->delete();
             $this->audit->record('product.deleted', $product, ['name' => $product->name]);
@@ -259,7 +259,7 @@ class AdminProductService
         }
     }
 
-    /** SKU unique toàn bảng (kể cả biến thể đã xoá mềm vì unique index không phân biệt). */
+    /** SKU unique toàn bảng (kể cả biến thể đã xóa mềm vì unique index không phân biệt). */
     private function assertSkusAvailable(array $skus, array $ownVariantIds): void
     {
         $skus = array_values(array_filter($skus));

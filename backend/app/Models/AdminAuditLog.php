@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** Nhật ký thao tác admin: chỉ ghi thêm, không sửa/xoá qua API. */
+/** Nhật ký thao tác admin: chỉ ghi thêm, không sửa/xóa qua API. */
 class AdminAuditLog extends Model
 {
     public const UPDATED_AT = null;

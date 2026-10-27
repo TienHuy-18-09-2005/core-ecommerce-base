@@ -152,6 +152,6 @@ describe("OrderTimeline", () => {
 
   it("shows the cancelled branch", () => {
     render(<OrderTimeline order={{ ...base, status: "cancelled" }} />);
-    expect(screen.getByRole("status").textContent).toContain("đã huỷ");
+    expect(screen.getByRole("status").textContent).toContain("đã hủy");
   });
 });

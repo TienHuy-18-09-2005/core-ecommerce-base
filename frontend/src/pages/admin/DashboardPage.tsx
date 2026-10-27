@@ -36,7 +36,7 @@ export default function DashboardPage() {
           </div>
 
           <section className="rounded-xl border border-slate-200 bg-white p-4">
-            <h2 className="mb-4 font-semibold">Doanh thu 14 ngày (không tính đơn huỷ/trả)</h2>
+            <h2 className="mb-4 font-semibold">Doanh thu 14 ngày (không tính đơn hủy/trả)</h2>
             <ol className="flex h-48 items-end gap-1" aria-label="Biểu đồ doanh thu">
               {data.revenue_series.map((d) => (
                 <li key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${d.date}: ${formatCurrency(d.revenue)} · ${d.orders} đơn`}>

@@ -17,8 +17,8 @@ export default function ReviewsPage() {
     moderate.mutate({ id, approved }, { onSuccess: () => toast.showSuccess(approved ? "Đã hiện đánh giá." : "Đã ẩn đánh giá."), onError: toast.showError });
 
   const onDelete = (id: number) => {
-    if (window.confirm("Xoá vĩnh viễn đánh giá này (kèm ảnh)?")) {
-      remove.mutate(id, { onSuccess: () => toast.showSuccess("Đã xoá đánh giá."), onError: toast.showError });
+    if (window.confirm("Xóa vĩnh viễn đánh giá này (kèm ảnh)?")) {
+      remove.mutate(id, { onSuccess: () => toast.showSuccess("Đã xóa đánh giá."), onError: toast.showError });
     }
   };
 
@@ -61,7 +61,7 @@ export default function ReviewsPage() {
         { header: "Thao tác", cell: (r) => (
           <div className="flex flex-col gap-2">
             <button type="button" className={btnSecondary} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)}>{r.is_approved ? "Ẩn" : "Hiện"}</button>
-            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(r.id)}>Xoá</button>
+            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(r.id)}>Xóa</button>
           </div>
         ) },
       ]} />

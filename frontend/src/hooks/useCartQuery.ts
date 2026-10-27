@@ -81,5 +81,5 @@ export function useUpdateCartItemMutation() {
 }
 
 export function useRemoveCartItemMutation() {
-  return useCartWrite((itemId: number) => cartService.removeItem(itemId), "Đã xoá sản phẩm khỏi giỏ hàng");
+  return useCartWrite((itemId: number) => cartService.removeItem(itemId), "Đã xóa sản phẩm khỏi giỏ hàng");
 }

@@ -31,7 +31,7 @@ class AdminOrderService
         'packing' => 'Đang đóng gói',
         'shipping' => 'Đang giao',
         'delivered' => 'Đã giao',
-        'cancelled' => 'Đã huỷ',
+        'cancelled' => 'Đã hủy',
         'returned' => 'Đã trả hàng',
     ];
 
@@ -109,7 +109,7 @@ class AdminOrderService
     }
 
     /**
-     * Đổi trạng thái có khoá: lock đơn → kiểm tra luồng → (huỷ) hoàn kho theo thứ tự id biến thể + trả lượt coupon.
+     * Đổi trạng thái có khoá: lock đơn → kiểm tra luồng → (hủy) hoàn kho theo thứ tự id biến thể + trả lượt coupon.
      * Hoàn trả (returned) KHÔNG tự cộng kho: hàng trả về cần kiểm tra trước khi nhập lại.
      */
     public function updateOrderStatus(int $orderId, string $newStatus, ?string $adminNote = null, ?string $cancelReason = null): Order

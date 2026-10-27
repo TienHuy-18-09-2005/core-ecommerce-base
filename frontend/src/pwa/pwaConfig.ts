@@ -8,9 +8,9 @@ export const pwaOptions: Partial<VitePWAOptions> = {
   injectRegister: false,
   includeAssets: ["favicon.svg", "apple-touch-icon.png", "product-fallback.svg"],
   manifest: {
-    name: "Cửa hàng trực tuyến",
-    short_name: "Cửa hàng",
-    description: "Mua sắm trực tuyến nhanh chóng, an toàn.",
+    name: "Đồ Điện Siêu Xịn",
+    short_name: "Đồ Điện Siêu Xịn",
+    description: "Đồ Điện Siêu Xịn — thiết bị điện chính hãng, giao nhanh.",
     lang: "vi",
     start_url: "/",
     scope: "/",

@@ -19,7 +19,7 @@ export function useBrandsQuery() {
 
 export const productsQueryOptions = (params: ProductListParams) => ({
   queryKey: ["products", params] as const,
-  // signal: huỷ request cũ khi filter đổi
+  // signal: hủy request cũ khi filter đổi
   queryFn: ({ signal }: { signal: AbortSignal }) => productService.getProducts(params, signal),
 });
 

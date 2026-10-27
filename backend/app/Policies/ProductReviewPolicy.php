@@ -17,7 +17,7 @@ class ProductReviewPolicy
             : Response::denyAsNotFound('Không tìm thấy dữ liệu.');
     }
 
-    /** Chủ đánh giá hoặc admin được xoá. */
+    /** Chủ đánh giá hoặc admin được xóa. */
     public function delete(User $user, ProductReview $review): Response
     {
         return $review->user_id === $user->id || Gate::forUser($user)->allows('admin')

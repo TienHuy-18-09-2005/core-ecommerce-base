@@ -163,7 +163,7 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
                     onChange={(e) => setSpecs((all) => all.map((x, j) => (j === i ? { ...x, key: e.target.value } : x)))} />
                   <input aria-label={`Giá trị thông số ${i + 1}`} placeholder="Giá trị (vd. 9W)" className={inputClass} value={s.value}
                     onChange={(e) => setSpecs((all) => all.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))} />
-                  <button type="button" className={btnDanger} aria-label={`Xoá thông số ${i + 1}`} onClick={() => setSpecs((all) => all.filter((_, j) => j !== i))}>×</button>
+                  <button type="button" className={btnDanger} aria-label={`Xóa thông số ${i + 1}`} onClick={() => setSpecs((all) => all.filter((_, j) => j !== i))}>×</button>
                 </div>
               ))}
             </div>
@@ -176,7 +176,7 @@ function ProductForm({ id, initial, slug }: { id: number | null; initial: AdminP
               {form.media.map((m, i) => (
                 <div key={`${m.url}-${i}`} className="w-28 text-xs">
                   <img src={safeImageUrl(m.url) ?? "/product-fallback.svg"} alt={m.alt_text ?? ""} className="h-28 w-28 rounded object-cover" />
-                  <button type="button" className="mt-1 text-red-600" onClick={() => patch({ media: form.media.filter((_, j) => j !== i) })}>Xoá ảnh</button>
+                  <button type="button" className="mt-1 text-red-600" onClick={() => patch({ media: form.media.filter((_, j) => j !== i) })}>Xóa ảnh</button>
                 </div>
               ))}
             </div>

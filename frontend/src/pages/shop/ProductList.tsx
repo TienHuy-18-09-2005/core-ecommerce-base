@@ -65,7 +65,7 @@ export function ProductList() {
     <section aria-labelledby="danh-sach-san-pham">
       <Seo
         title={filters.page > 1 ? `${title} - Trang ${filters.page}` : title}
-        description={filters.search ? `Kết quả tìm kiếm “${filters.search}” tại Core Điện.` : `Mua ${title.toLowerCase()} chính hãng tại Core Điện: giá tốt, giao nhanh, đổi trả dễ dàng.`}
+        description={filters.search ? `Kết quả tìm kiếm “${filters.search}” tại Đồ Điện Siêu Xịn.` : `Mua ${title.toLowerCase()} chính hãng tại Đồ Điện Siêu Xịn: giá tốt, giao nhanh, đổi trả dễ dàng.`}
         noindex={Boolean(filters.search)}
       />
       <Breadcrumb items={crumbs} />
@@ -147,7 +147,7 @@ export function ProductList() {
             <div className="rounded-xl bg-white p-6 text-center text-sm text-slate-600">
               <p>Không có sản phẩm khớp bộ lọc.</p>
               <button type="button" className="mt-2 text-blue-700 underline" onClick={() => setParams(new URLSearchParams())}>
-                Xoá bộ lọc
+                Xóa bộ lọc
               </button>
             </div>
           ) : null}

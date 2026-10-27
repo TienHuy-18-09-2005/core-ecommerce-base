@@ -15,7 +15,7 @@ export function RouteError() {
 
   return (
     <div role="alert" className="mx-auto my-10 max-w-xl rounded-2xl border border-red-200 bg-white p-8 text-center">
-      <title>Đã có lỗi — Core Điện</title>
+      <title>Đã có lỗi — Đồ Điện Siêu Xịn</title>
       <h1 className="text-xl font-bold text-slate-900">
         {notFound ? "Không tìm thấy trang" : chunk ? "Đã có phiên bản mới" : "Đã có lỗi xảy ra"}
       </h1>

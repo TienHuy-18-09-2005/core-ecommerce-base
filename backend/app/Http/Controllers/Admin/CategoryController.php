@@ -46,12 +46,12 @@ class CategoryController extends Controller
     public function destroy(Category $category): JsonResponse
     {
         if ($category->children()->exists() || $category->products()->exists()) {
-            throw new DomainException(DomainException::CATEGORY_IN_USE, 'Danh mục còn danh mục con hoặc sản phẩm, hãy chuyển chúng đi trước khi xoá.', 409);
+            throw new DomainException(DomainException::CATEGORY_IN_USE, 'Danh mục còn danh mục con hoặc sản phẩm, hãy chuyển chúng đi trước khi xóa.', 409);
         }
         $category->delete();
         $this->audit->record('category.deleted', $category, ['name' => $category->name]);
 
-        return response()->json(['success' => true, 'message' => 'Đã xoá danh mục.']);
+        return response()->json(['success' => true, 'message' => 'Đã xóa danh mục.']);
     }
 
     private function fields(array $d): array

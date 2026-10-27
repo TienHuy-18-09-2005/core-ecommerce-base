@@ -23,7 +23,7 @@ export function NotFound() {
 
   return (
     <section className="animate-fade-in mx-auto max-w-2xl rounded-2xl bg-white p-8 text-center shadow-sm sm:p-12">
-      <Seo title="Không tìm thấy trang" description="Trang bạn tìm không tồn tại trên Core Điện." noindex />
+      <Seo title="Không tìm thấy trang" description="Trang bạn tìm không tồn tại trên Đồ Điện Siêu Xịn." noindex />
       <p className="text-6xl font-black tracking-tight text-blue-600" aria-hidden="true">404</p>
       <h1 className="mt-4 text-3xl font-bold text-slate-900">Không tìm thấy trang</h1>
       <p className="mt-3 text-slate-600">

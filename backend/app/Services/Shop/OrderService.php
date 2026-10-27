@@ -60,7 +60,7 @@ class OrderService
             ->first();
 
         if (! $cart) {
-            // Có thể request cùng key vừa đặt xong và xoá giỏ
+            // Có thể request cùng key vừa đặt xong và xóa giỏ
             if ($existing = $this->findByIdempotency($scope, $dto->idempotencyKey)) {
                 return ['replayed' => $existing];
             }

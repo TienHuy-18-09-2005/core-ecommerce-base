@@ -37,7 +37,7 @@ export function AddressesTab() {
     onSuccess: () => done("Đã lưu địa chỉ."),
     onError: showError,
   });
-  const remove = useMutation({ mutationFn: (id: number) => accountService.deleteAddress(id), onSuccess: () => done("Đã xoá địa chỉ."), onError: showError });
+  const remove = useMutation({ mutationFn: (id: number) => accountService.deleteAddress(id), onSuccess: () => done("Đã xóa địa chỉ."), onError: showError });
 
   const open = (target: Address | "new") => {
     setEditing(target);
@@ -71,7 +71,7 @@ export function AddressesTab() {
             </div>
             <div className="flex gap-3">
               <button type="button" className="text-blue-700 underline" onClick={() => open(a)}>Sửa</button>
-              <button type="button" className="text-red-700 underline" disabled={remove.isPending} onClick={() => remove.mutate(a.id)} aria-label={`Xoá địa chỉ ${a.street_address}`}>Xoá</button>
+              <button type="button" className="text-red-700 underline" disabled={remove.isPending} onClick={() => remove.mutate(a.id)} aria-label={`Xóa địa chỉ ${a.street_address}`}>Xóa</button>
             </div>
           </li>
         ))}
@@ -86,7 +86,7 @@ export function AddressesTab() {
           </label>
           <div className="flex gap-2 sm:col-span-2">
             <button type="submit" disabled={save.isPending} className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:bg-slate-300">{save.isPending ? "Đang lưu..." : "Lưu địa chỉ"}</button>
-            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border px-4 py-2">Huỷ</button>
+            <button type="button" onClick={() => setEditing(null)} className="rounded-lg border px-4 py-2">Hủy</button>
           </div>
         </form>
       ) : (

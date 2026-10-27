@@ -52,7 +52,7 @@ class ReviewController extends Controller
         $this->reviews->delete($review);
         $this->audit->record('review.deleted', $review, $snapshot);
 
-        return response()->json(['success' => true, 'message' => 'Đã xoá đánh giá.']);
+        return response()->json(['success' => true, 'message' => 'Đã xóa đánh giá.']);
     }
 
     private function present(ProductReview $r): array

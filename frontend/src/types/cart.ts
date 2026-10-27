@@ -41,8 +41,8 @@ export function cartItemCount(cart: Cart | undefined): number {
 }
 
 export const CART_WARNING_LABELS: Record<CartLineWarning, string> = {
-  UNAVAILABLE: "Sản phẩm/biến thể đã ngừng bán — vui lòng xoá khỏi giỏ.",
-  OUT_OF_STOCK: "Đã hết hàng — vui lòng xoá khỏi giỏ.",
+  UNAVAILABLE: "Sản phẩm/biến thể đã ngừng bán — vui lòng xóa khỏi giỏ.",
+  OUT_OF_STOCK: "Đã hết hàng — vui lòng xóa khỏi giỏ.",
   INSUFFICIENT_STOCK: "Không đủ tồn kho — vui lòng giảm số lượng.",
 };
 

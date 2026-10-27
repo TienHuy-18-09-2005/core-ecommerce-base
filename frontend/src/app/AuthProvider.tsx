@@ -7,7 +7,7 @@ import { authService, type LoginInput, type RegisterInput } from "../services/au
 import type { AuthResult, CartAdjustment, User } from "../types/auth.ts";
 import { AuthContext, authQueryKey } from "./useAuth.ts";
 
-/** Dữ liệu cá nhân bị xoá khỏi cache khi đổi người dùng. */
+/** Dữ liệu cá nhân bị xóa khỏi cache khi đổi người dùng. */
 const PRIVATE_KEYS = [["orders"], ["account"]] as const;
 
 /** Task 4.1: user state lấy từ /api/user; KHÔNG giữ/persist token. */

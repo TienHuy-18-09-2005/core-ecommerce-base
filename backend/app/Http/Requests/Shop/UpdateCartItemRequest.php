@@ -13,7 +13,7 @@ class UpdateCartItemRequest extends FormRequest
 
     public function rules(): array
     {
-        // 0 = xoá dòng khỏi giỏ
+        // 0 = xóa dòng khỏi giỏ
         return [
             'quantity' => ['required', 'integer', 'min:0', 'max:999'],
         ];

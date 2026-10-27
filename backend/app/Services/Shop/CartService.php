@@ -161,7 +161,7 @@ class CartService
         ];
     }
 
-    /** Xoá giỏ khách không hoạt động quá $days ngày. Trả về số giỏ đã xoá. */
+    /** Xóa giỏ khách không hoạt động quá $days ngày. Trả về số giỏ đã xóa. */
     public function pruneGuestCarts(int $days): int
     {
         $ids = Cart::whereNull('user_id')->where('updated_at', '<', now()->subDays($days))->pluck('id');

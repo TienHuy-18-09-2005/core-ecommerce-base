@@ -67,7 +67,7 @@ class ReviewController extends Controller
         Gate::authorize('delete', $review);
         $this->reviews->delete($review);
 
-        return response()->json(['success' => true, 'message' => 'Đã xoá đánh giá.']);
+        return response()->json(['success' => true, 'message' => 'Đã xóa đánh giá.']);
     }
 
     /** Admin ẩn/hiện đánh giá. */

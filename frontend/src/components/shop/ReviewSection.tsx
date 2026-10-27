@@ -189,12 +189,12 @@ function MyReviewBody({ slug, data }: { slug: string; data: ReviewEligibility })
             type="button"
             disabled={remove.isPending}
             onClick={() => {
-              if (!window.confirm("Xoá đánh giá này?")) return;
-              remove.mutate(review.id, { onSuccess: () => showSuccess("Đã xoá đánh giá."), onError: showError });
+              if (!window.confirm("Xóa đánh giá này?")) return;
+              remove.mutate(review.id, { onSuccess: () => showSuccess("Đã xóa đánh giá."), onError: showError });
             }}
             className="rounded-lg border border-red-200 bg-white px-3 py-1 text-sm text-red-700"
           >
-            Xoá
+            Xóa
           </button>
         </div>
       </div>

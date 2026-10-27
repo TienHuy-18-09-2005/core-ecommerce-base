@@ -54,6 +54,6 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   packing: "Đang đóng gói",
   shipping: "Đang giao",
   delivered: "Đã giao",
-  cancelled: "Đã huỷ",
+  cancelled: "Đã hủy",
   returned: "Đã trả hàng",
 };

@@ -11,7 +11,7 @@ interface Props {
   onChange: (patch: Partial<CatalogFilters>) => void;
   onSearch: (value: string | undefined) => void;
   onReset: () => void;
-  /** Trong drawer: bỏ khung/nút xoá riêng (drawer có thanh hành động). */
+  /** Trong drawer: bỏ khung/nút xóa riêng (drawer có thanh hành động). */
   embedded?: boolean;
 }
 
@@ -76,7 +76,7 @@ export function FilterPanel({ filters, categories, brands, onChange, onSearch, o
         ) : null}
       </section>
       {embedded ? null : (<button type="button" onClick={onReset} className="w-full rounded border border-slate-300 px-3 py-1 text-sm text-slate-700">
-        Xoá bộ lọc
+        Xóa bộ lọc
       </button>)}
     </aside>
   );

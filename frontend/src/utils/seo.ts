@@ -1,5 +1,5 @@
-export const SITE_NAME = "Core Điện";
-export const DEFAULT_DESCRIPTION = "Core Điện — cửa hàng thiết bị điện chính hãng: đèn LED, dây cáp, công tắc, ổ cắm. Giao nhanh, đổi trả dễ dàng.";
+export const SITE_NAME = "Đồ Điện Siêu Xịn";
+export const DEFAULT_DESCRIPTION = "Đồ Điện Siêu Xịn — cửa hàng thiết bị điện chính hãng: đèn LED, dây cáp, công tắc, ổ cắm. Giao nhanh, đổi trả dễ dàng.";
 
 export interface SeoMeta {
   title?: string;

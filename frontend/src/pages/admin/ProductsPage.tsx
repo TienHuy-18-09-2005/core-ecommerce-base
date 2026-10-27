@@ -15,10 +15,10 @@ export default function ProductsPage() {
   const toast = useToast();
 
   const onDelete = (id: number, name: string) => {
-    if (!window.confirm(`Xoá sản phẩm "${name}"? Đơn hàng cũ vẫn giữ nguyên thông tin.`)) {
+    if (!window.confirm(`Xóa sản phẩm "${name}"? Đơn hàng cũ vẫn giữ nguyên thông tin.`)) {
       return;
     }
-    remove.mutate(id, { onSuccess: () => toast.showSuccess("Đã xoá sản phẩm."), onError: toast.showError });
+    remove.mutate(id, { onSuccess: () => toast.showSuccess("Đã xóa sản phẩm."), onError: toast.showError });
   };
 
   return (
@@ -58,7 +58,7 @@ export default function ProductsPage() {
         { header: "Thao tác", cell: (p) => (
           <div className="flex gap-2">
             <Link to={`/admin/san-pham/${p.id}`} className="text-sm text-blue-700">Sửa</Link>
-            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(p.id, p.name)}>Xoá</button>
+            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(p.id, p.name)}>Xóa</button>
           </div>
         ) },
       ]} />

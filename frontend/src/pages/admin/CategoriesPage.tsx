@@ -37,8 +37,8 @@ export default function CategoriesPage() {
   };
 
   const onDelete = (c: AdminCategory) => {
-    if (window.confirm(`Xoá danh mục "${c.name}"?`)) {
-      remove.mutate(c.id, { onSuccess: () => toast.showSuccess("Đã xoá danh mục."), onError: toast.showError });
+    if (window.confirm(`Xóa danh mục "${c.name}"?`)) {
+      remove.mutate(c.id, { onSuccess: () => toast.showSuccess("Đã xóa danh mục."), onError: toast.showError });
     }
   };
 
@@ -59,7 +59,7 @@ export default function CategoriesPage() {
                 </div>
                 <div className="flex gap-2">
                   <button type="button" className="text-blue-700" onClick={() => startEdit(cat)}>Sửa</button>
-                  <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(cat)}>Xoá</button>
+                  <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(cat)}>Xóa</button>
                 </div>
               </li>
             ))}
@@ -87,7 +87,7 @@ export default function CategoriesPage() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />Hiển thị trên shop</label>
           <div className="flex gap-2">
             <button type="submit" className={btnPrimary} disabled={active.isPending}>{editing ? "Lưu" : "Thêm"}</button>
-            {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Huỷ</button>}
+            {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Hủy</button>}
           </div>
         </form>
       </div>

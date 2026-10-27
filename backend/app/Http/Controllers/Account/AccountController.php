@@ -132,7 +132,7 @@ class AccountController extends Controller
             $user->addresses()->orderBy('id')->first()?->update(['is_default' => true]);
         }
 
-        return response()->json(['success' => true, 'message' => 'Đã xoá địa chỉ.']);
+        return response()->json(['success' => true, 'message' => 'Đã xóa địa chỉ.']);
     }
 
     private function addressData(array $v): array

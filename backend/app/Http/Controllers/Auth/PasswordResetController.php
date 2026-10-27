@@ -36,7 +36,7 @@ class PasswordResetController extends Controller
 
         $status = Password::broker()->reset($data, function (User $user, string $password) {
             // Đổi mật khẩu + remember_token → mọi phiên/cookie "ghi nhớ" cũ mất hiệu lực
-            // (Sanctum AuthenticateSession so password hash ở mỗi request), xoá token API.
+            // (Sanctum AuthenticateSession so password hash ở mỗi request), xóa token API.
             $user->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save();
             $user->tokens()->delete();
             event(new PasswordReset($user));

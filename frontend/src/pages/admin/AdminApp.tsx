@@ -12,6 +12,7 @@ import ReviewsPage from "./ReviewsPage.tsx";
 import { ThemeToggle } from "../../components/common/ThemeToggle.tsx";
 import { Seo } from "../../components/common/Seo.tsx";
 import SettingsPage from "./SettingsPage.tsx";
+import AdminNotFound from "./AdminNotFound.tsx";
 const NAV = [
   { to: "/admin", label: "Tổng quan", end: true },
   { to: "/admin/san-pham", label: "Sản phẩm" },
@@ -62,7 +63,7 @@ export default function AdminApp() {
             <Route path="ma-giam-gia" element={<CouponsPage />} />
             <Route path="danh-gia" element={<ReviewsPage />} />
             <Route path="cai-dat" element={<SettingsPage />} />
-            <Route path="*" element={<p>Không tìm thấy trang quản trị.</p>} />
+            <Route path="*" element={<AdminNotFound />} />
           </Routes>
         </main>
       </div>

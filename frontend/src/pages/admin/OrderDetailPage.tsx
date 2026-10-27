@@ -30,7 +30,7 @@ export default function OrderDetailPage() {
     if (!status) {
       return;
     }
-    if (status === "cancelled" && !window.confirm("Huỷ đơn sẽ hoàn lại tồn kho và lượt dùng mã giảm giá. Tiếp tục?")) {
+    if (status === "cancelled" && !window.confirm("Hủy đơn sẽ hoàn lại tồn kho và lượt dùng mã giảm giá. Tiếp tục?")) {
       return;
     }
     mutation.mutate(
@@ -94,7 +94,7 @@ export default function OrderDetailPage() {
             {order.customer.email && <p>{order.customer.email}</p>}
             <p className="mt-2 text-slate-600">{[order.shipping.address, order.shipping.ward, order.shipping.district, order.shipping.province].filter(Boolean).join(", ")}</p>
             {order.customer_note && <p className="mt-2 rounded bg-amber-50 p-2">Ghi chú: {order.customer_note}</p>}
-            {order.cancel_reason && <p className="mt-2 rounded bg-red-50 p-2 text-red-700">Lý do huỷ: {order.cancel_reason}</p>}
+            {order.cancel_reason && <p className="mt-2 rounded bg-red-50 p-2 text-red-700">Lý do hủy: {order.cancel_reason}</p>}
             {order.admin_note && <p className="mt-2 rounded bg-slate-50 p-2">Ghi chú nội bộ: {order.admin_note}</p>}
           </section>
 
@@ -114,7 +114,7 @@ export default function OrderDetailPage() {
                 </label>
                 {status === "cancelled" && (
                   <label className="block">
-                    <span className="mb-1 block font-medium">Lý do huỷ</span>
+                    <span className="mb-1 block font-medium">Lý do hủy</span>
                     <input className={inputClass} value={reason} onChange={(e) => setReason(e.target.value)} />
                     {errors.cancel_reason && <span role="alert" className="text-xs text-red-600">{errors.cancel_reason}</span>}
                   </label>

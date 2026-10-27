@@ -134,7 +134,7 @@ describe("admin panel", () => {
     renderAdmin("/admin/don-hang/7");
     const select = await screen.findByLabelText("Trạng thái mới");
     const options = within(select).getAllByRole("option").map((o) => o.textContent);
-    expect(options).toEqual(["— Chọn —", "Đã xác nhận", "Đã huỷ"]);
+    expect(options).toEqual(["— Chọn —", "Đã xác nhận", "Đã hủy"]);
     fireEvent.change(select, { target: { value: "confirmed" } });
     fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
     await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "confirmed", admin_note: undefined, cancel_reason: undefined }));
@@ -145,7 +145,7 @@ describe("admin panel", () => {
     svc.updateOrderStatus.mockResolvedValue(order as never);
     renderAdmin("/admin/don-hang/7");
     fireEvent.change(await screen.findByLabelText("Trạng thái mới"), { target: { value: "cancelled" } });
-    fireEvent.change(screen.getByLabelText("Lý do huỷ"), { target: { value: "Khách đổi ý" } });
+    fireEvent.change(screen.getByLabelText("Lý do hủy"), { target: { value: "Khách đổi ý" } });
     fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
     await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "cancelled", admin_note: undefined, cancel_reason: "Khách đổi ý" }));
   });
@@ -164,7 +164,7 @@ describe("admin panel", () => {
     await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledWith(1, false));
     fireEvent.click(screen.getByRole("button", { name: "Hiện" }));
     await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledWith(2, true));
-    fireEvent.click(screen.getAllByRole("button", { name: "Xoá" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Xóa" })[0]);
     await waitFor(() => expect(svc.deleteReview).toHaveBeenCalledWith(1));
   });
 
@@ -178,7 +178,7 @@ describe("admin panel", () => {
     const items = await screen.findAllByRole("listitem");
     expect(items[0].textContent).toContain("Đèn LED");
     expect(items[1].textContent).toContain("└ Đèn âm trần");
-    fireEvent.click(within(items[0]).getByRole("button", { name: "Xoá" }));
+    fireEvent.click(within(items[0]).getByRole("button", { name: "Xóa" }));
     expect(await screen.findByText("Danh mục còn danh mục con hoặc sản phẩm.")).toBeTruthy();
   });
 

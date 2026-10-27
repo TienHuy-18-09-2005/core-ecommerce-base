@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="theme-fixed mt-12 border-t border-slate-200 bg-slate-900 text-slate-100">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-3">
         <div>
-          <p className="text-lg font-bold">Core Điện</p>
+          <p className="text-lg font-bold">Đồ Điện Siêu Xịn</p>
           <p className="mt-2 text-sm text-slate-300">
             Thiết bị điện dân dụng và công trình. Giá trên trang là giá niêm yết từ máy chủ.
           </p>

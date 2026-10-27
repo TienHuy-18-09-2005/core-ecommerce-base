@@ -2,7 +2,7 @@ const pages = {
   "gioi-thieu": {
     title: "Về chúng tôi",
     paragraphs: [
-      "Core Điện bán thiết bị điện dân dụng và công trình.",
+      "Đồ Điện Siêu Xịn bán thiết bị điện dân dụng và công trình.",
       "Giá, tồn kho và đơn hàng do máy chủ xác nhận.",
     ],
   },

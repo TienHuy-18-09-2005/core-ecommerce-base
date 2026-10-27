@@ -34,7 +34,7 @@ describe("ProductList – drawer bộ lọc (< lg)", () => {
     } as never);
   });
 
-  it("nút Bộ lọc hiện số bộ lọc, chip xoá từng bộ lọc", async () => {
+  it("nút Bộ lọc hiện số bộ lọc, chip xóa từng bộ lọc", async () => {
     const router = setup("/san-pham?brand_id=7&min_rating=4&sort_by=price_desc");
     const btn = await screen.findByRole("button", { name: /^Bộ lọc/ });
     expect(btn.textContent).toContain("2");
@@ -64,7 +64,7 @@ describe("ProductList – drawer bộ lọc (< lg)", () => {
     expect(document.activeElement?.textContent).toContain("Bộ lọc");
   });
 
-  it("ESC / nút đóng huỷ bản nháp; Xóa bộ lọc giữ sort", async () => {
+  it("ESC / nút đóng hủy bản nháp; Xóa bộ lọc giữ sort", async () => {
     const router = setup("/san-pham?brand_id=7&sort_by=name_desc");
     let dialog = await openDrawer();
     fireEvent.click(within(dialog).getByLabelText(/Từ 3 sao/));

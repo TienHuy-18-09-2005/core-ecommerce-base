@@ -35,8 +35,9 @@ class InfrastructureConfigTest extends TestCase
         $this->assertStringContainsString('X-Content-Type-Options "nosniff"', $nginx);
         $this->assertStringContainsString('Referrer-Policy', $nginx);
 
-        $this->assertStringContainsString('127.0.0.1:8025:8025', $compose);
-        $this->assertStringContainsString('127.0.0.1:1025:1025', $compose);
+        $this->assertStringContainsString('"127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"', $compose);
+        // SMTP chỉ đi trong mạng Docker, không map cổng 1025 ra host (xung đột trên Windows)
+        $this->assertStringNotContainsString(':1025"', $compose);
         $this->assertStringNotContainsString('"8025:8025"', $compose);
         $this->assertMatchesRegularExpression('/^MAIL_HOST=mailpit$/m', $env);
         $this->assertMatchesRegularExpression('/^MAIL_PORT=1025$/m', $env);

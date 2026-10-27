@@ -9,7 +9,7 @@ const MIN_CHARS = 2;
 
 /**
  * Ô tìm kiếm có gợi ý (task 2.4) theo mẫu ARIA combobox 1.2:
- * debounce 300ms, huỷ request cũ (AbortSignal), ↑/↓ chọn, Enter mở, Esc đóng.
+ * debounce 300ms, hủy request cũ (AbortSignal), ↑/↓ chọn, Enter mở, Esc đóng.
  * Tên sản phẩm render dạng text thuần.
  */
 export function SearchAutocomplete({ delayMs = 300 }: { delayMs?: number }) {

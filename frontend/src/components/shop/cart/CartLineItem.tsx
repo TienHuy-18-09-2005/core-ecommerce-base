@@ -42,9 +42,9 @@ export function CartLineItem({ line, compact = false }: { line: CartLine; compac
             className="inline-flex items-center gap-1 text-sm font-medium text-red-700 disabled:opacity-50"
             onClick={() => remove.mutate(line.id)}
             disabled={remove.isPending}
-            aria-label={`Xoá ${name} khỏi giỏ`}
+            aria-label={`Xóa ${name} khỏi giỏ`}
           >
-            <Trash2 className="h-4 w-4" aria-hidden="true" /> Xoá
+            <Trash2 className="h-4 w-4" aria-hidden="true" /> Xóa
           </button>
           <span className="ml-auto font-semibold tabular-nums">{formatCurrency(line.line_total ?? 0)}</span>
         </div>

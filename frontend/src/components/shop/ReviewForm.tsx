@@ -159,7 +159,7 @@ export function ReviewForm({ slug, existing, onDone, onCancel }: Props) {
           {mutation.isPending ? "Đang gửi..." : existing ? "Lưu đánh giá" : "Gửi đánh giá"}
         </button>
         {onCancel ? (
-          <button type="button" onClick={onCancel} className="rounded-lg border px-4 py-2">Huỷ</button>
+          <button type="button" onClick={onCancel} className="rounded-lg border px-4 py-2">Hủy</button>
         ) : null}
       </div>
     </form>

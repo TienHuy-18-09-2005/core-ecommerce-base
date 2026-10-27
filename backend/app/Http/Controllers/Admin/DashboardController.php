@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
-    /** Doanh thu tính trên đơn không bị huỷ/hoàn trả, theo ngày đặt (giờ app). */
+    /** Doanh thu tính trên đơn không bị hủy/hoàn trả, theo ngày đặt (giờ app). */
     private const REVENUE_EXCLUDED = ['cancelled', 'returned'];
 
     public function __invoke(AdminOrderService $orders): JsonResponse

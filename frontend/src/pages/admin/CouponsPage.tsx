@@ -48,8 +48,8 @@ export default function CouponsPage() {
   };
 
   const onDelete = (c: AdminCoupon) => {
-    if (window.confirm(`Xoá mã ${c.code}?`)) {
-      remove.mutate(c.id, { onSuccess: () => toast.showSuccess("Đã xoá mã giảm giá."), onError: toast.showError });
+    if (window.confirm(`Xóa mã ${c.code}?`)) {
+      remove.mutate(c.id, { onSuccess: () => toast.showSuccess("Đã xóa mã giảm giá."), onError: toast.showError });
     }
   };
 
@@ -72,7 +72,7 @@ export default function CouponsPage() {
             { header: "Thao tác", cell: (c) => (
               <div className="flex gap-2">
                 <button type="button" className="text-blue-700" onClick={() => startEdit(c)}>Sửa</button>
-                <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(c)}>Xoá</button>
+                <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(c)}>Xóa</button>
               </div>
             ) },
           ]} />
@@ -106,7 +106,7 @@ export default function CouponsPage() {
           <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />Đang bật</label>
           <div className="flex gap-2">
             <button type="submit" className={btnPrimary} disabled={active.isPending}>{editing ? "Lưu" : "Tạo mã"}</button>
-            {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Huỷ</button>}
+            {editing && <button type="button" className={btnSecondary} onClick={() => startEdit(null)}>Hủy</button>}
           </div>
         </form>
       </div>

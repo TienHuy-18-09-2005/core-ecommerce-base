@@ -28,7 +28,7 @@ export function SearchBar({ value, onSearch, delayMs = 300 }: Props) {
     onSearchRef.current = onSearch;
   }, [onSearch]);
 
-  // Chỉ chạy khi giá trị debounce đổi (không chạy lại khi URL/onSearch đổi → không ghi đè back/forward hay "Xoá bộ lọc")
+  // Chỉ chạy khi giá trị debounce đổi (không chạy lại khi URL/onSearch đổi → không ghi đè back/forward hay "Xóa bộ lọc")
   useEffect(() => {
     const next = debounced.trim().slice(0, 100);
     if (next === lastSent.current) return;

@@ -51,12 +51,12 @@ class CouponController extends Controller
     public function destroy(Coupon $coupon): JsonResponse
     {
         if ($coupon->used_count > 0 || Order::where('coupon_id', $coupon->id)->exists()) {
-            throw new DomainException(DomainException::COUPON_IN_USE, 'Mã đã được dùng trong đơn hàng, hãy tắt mã thay vì xoá.', 409);
+            throw new DomainException(DomainException::COUPON_IN_USE, 'Mã đã được dùng trong đơn hàng, hãy tắt mã thay vì xóa.', 409);
         }
         $coupon->delete();
         $this->audit->record('coupon.deleted', $coupon, ['code' => $coupon->code]);
 
-        return response()->json(['success' => true, 'message' => 'Đã xoá mã giảm giá.']);
+        return response()->json(['success' => true, 'message' => 'Đã xóa mã giảm giá.']);
     }
 
     private function fields(array $d): array

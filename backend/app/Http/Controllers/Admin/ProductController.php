@@ -54,7 +54,7 @@ class ProductController extends Controller
     {
         $this->productService->delete($product);
 
-        return response()->json(['success' => true, 'message' => 'Đã xoá sản phẩm.']);
+        return response()->json(['success' => true, 'message' => 'Đã xóa sản phẩm.']);
     }
 
     /** Upload ảnh sản phẩm: mã hoá lại để bỏ metadata, trả URL công khai. */

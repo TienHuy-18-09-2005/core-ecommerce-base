@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
  *
  * Quyết định: chỉ user đã xác thực email và có ít nhất 1 đơn ĐÃ GIAO (status = delivered)
  * chứa sản phẩm mới được đánh giá; mỗi user 1 đánh giá / sản phẩm. Đánh giá của người mua
- * đã xác minh được duyệt ngay (is_approved = true); admin có thể ẩn/xoá.
+ * đã xác minh được duyệt ngay (is_approved = true); admin có thể ẩn/xóa.
  */
 class ReviewService
 {

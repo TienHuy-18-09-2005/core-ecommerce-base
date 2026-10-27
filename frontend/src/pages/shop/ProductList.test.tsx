@@ -62,7 +62,7 @@ describe("ProductList", () => {
     vi.mocked(productService.getProducts).mockResolvedValue(page(1, 1, 0));
     const router = setup("/san-pham?search=khongco");
     expect(await screen.findByText("Không có sản phẩm khớp bộ lọc.")).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("button", { name: "Xoá bộ lọc" })[1]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Xóa bộ lọc" })[1]!);
     await waitFor(() => expect(router.state.location.search).toBe(""));
   });
 
