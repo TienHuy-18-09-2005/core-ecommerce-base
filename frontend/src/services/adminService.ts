@@ -1,6 +1,6 @@
 import type {
   AdminCategory, AdminCategoryInput, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
-  AdminProductInput, AdminProductRow, AdminReview, DashboardData, OrderSummaryRow, Paginated,
+  AdminProductInput, AdminProductRow, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated,
 } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
 
@@ -58,6 +58,16 @@ export const adminService = {
   order: (id: number, signal?: AbortSignal) => get<AdminOrderDetail>(`/admin/orders/${id}`, signal),
   updateOrderStatus: async (id: number, body: { status: string; admin_note?: string; cancel_reason?: string }) =>
     (await apiClient.patch<Envelope<AdminOrderDetail>>(`/admin/orders/${id}/status`, body)).data.data,
+  orderStatusCounts: async (params: QueryParams, signal?: AbortSignal) =>
+    (await apiClient.get<Envelope<OrderStatusCounts>>("/admin/orders/status-counts", { params: cleanParams(params), signal })).data.data,
+  latestOrders: async (since: number | null, signal?: AbortSignal) =>
+    (await apiClient.get<Envelope<LatestOrders>>("/admin/orders/latest-id", { params: since === null ? {} : { since }, signal })).data.data,
+  bulkOrderStatus: async (body: { ids: number[]; status: string; cancel_reason?: string; admin_note?: string }) =>
+    (await apiClient.post<Envelope<BulkStatusResult>>("/admin/orders/bulk-status", body)).data.data,
+  addOrderNote: async (id: number, body: string) =>
+    (await apiClient.post<Envelope<OrderNote>>(`/admin/orders/${id}/notes`, { body })).data.data,
+  printOrders: async (ids: number[], signal?: AbortSignal) =>
+    (await apiClient.get<Envelope<PrintData>>("/admin/orders/print", { params: { ids }, signal })).data.data,
 
   reviews: (params: QueryParams, signal?: AbortSignal) => page<AdminReview>("/admin/reviews", params, signal),
   moderateReview: async (id: number, isApproved: boolean) =>

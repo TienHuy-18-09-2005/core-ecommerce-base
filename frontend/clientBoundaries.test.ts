@@ -33,7 +33,7 @@ const hasCompose = existsSync(composePath);
 
 describe("frontend client boundaries", () => {
   it("does not store auth or the cart in the browser, or send a session header", () => {
-    // Ngoại lệ: utils/theme.ts (sáng/tối) và utils/adminPrefs.ts (menu thu gọn, cột ẩn, mật độ, chế độ xem bảng) chỉ lưu lựa chọn giao diện, không nhạy cảm.
+    // Ngoại lệ: utils/theme.ts (sáng/tối) và utils/adminPrefs.ts (menu thu gọn, cột ẩn, mật độ, chế độ xem bảng, âm thanh/mốc đơn mới, khổ giấy in) chỉ lưu lựa chọn giao diện, không nhạy cảm.
     const themeFile = path.join(frontendRoot, "src/utils/theme.ts");
     const adminPrefsFile = path.join(frontendRoot, "src/utils/adminPrefs.ts");
     const source = sourceFiles(path.join(frontendRoot, "src"))
@@ -48,7 +48,7 @@ describe("frontend client boundaries", () => {
     );
     const adminPrefs = readFileSync(adminPrefsFile, "utf8");
     expect([...adminPrefs.matchAll(/localStorage\.(\w+)\(([^,)]*)/g)].map((m) => `${m[1]}(${m[2]})`).sort()).toEqual(
-      ["getItem(SIDEBAR_KEY)", "getItem(tablePrefKey(name)", "setItem(SIDEBAR_KEY)", "setItem(tablePrefKey(name)"],
+      ["getItem(SIDEBAR_KEY)", "getItem(prefKey(name)", "getItem(tablePrefKey(name)", "setItem(SIDEBAR_KEY)", "setItem(prefKey(name)", "setItem(tablePrefKey(name)"],
     );
     expect(source).not.toMatch(/sessionStorage/);
     expect(source).not.toMatch(/X-Session-ID/);

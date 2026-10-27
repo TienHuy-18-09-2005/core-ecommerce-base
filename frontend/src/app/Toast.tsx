@@ -1,7 +1,7 @@
 import { CheckCircle2, Info, XCircle } from "lucide-react";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ApiError, mapApiError } from "../services/apiError.ts";
-import { ToastContext } from "./useToast.ts";
+import { ToastContext, type ToastAction, type ToastOptions } from "./useToast.ts";
 
 type ToastKind = "error" | "success" | "info";
 
@@ -9,6 +9,7 @@ interface ToastItem {
   id: number;
   kind: ToastKind;
   message: string;
+  action?: ToastAction;
 }
 
 let nextToastId = 1;
@@ -20,11 +21,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const push = useCallback((kind: ToastKind, message: string) => {
+  const push = useCallback((kind: ToastKind, message: string, options?: ToastOptions) => {
     const id = nextToastId;
     nextToastId += 1;
-    setToasts((current) => [...current, { id, kind, message }]);
-    window.setTimeout(() => dismiss(id), kind === "error" ? 7000 : 4000);
+    setToasts((current) => [...current, { id, kind, message, action: options?.action }]);
+    // Có nút hành động thì để lâu hơn cho kịp bấm.
+    window.setTimeout(() => dismiss(id), options?.duration ?? (kind === "error" ? 7000 : options?.action ? 10000 : 4000));
   }, [dismiss]);
 
   const showError = useCallback((error: unknown) => {
@@ -36,8 +38,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     push("success", message);
   }, [push]);
 
-  const showInfo = useCallback((message: string) => {
-    push("info", message);
+  const showInfo = useCallback((message: string, options?: ToastOptions) => {
+    push("info", message, options);
   }, [push]);
 
   const value = useMemo(
@@ -75,6 +77,10 @@ function ToastView({ toast, onClose }: { toast: ToastItem; onClose: (id: number)
       <div className="flex items-start gap-3">
         <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />
         <p className="flex-1 text-admin-fg">{toast.message}</p>
+        {toast.action && (
+          <button type="button" onClick={() => { toast.action!.onClick(); onClose(toast.id); }}
+            className="text-xs font-semibold text-admin-primary hover:underline">{toast.action.label}</button>
+        )}
         <button type="button" onClick={() => onClose(toast.id)} className="text-xs font-medium text-admin-muted hover:text-admin-fg">Đóng</button>
       </div>
     </div>

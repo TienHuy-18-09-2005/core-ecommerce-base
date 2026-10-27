@@ -11,6 +11,9 @@ export const adminKeys = {
   coupons: (p: QueryParams) => ["admin", "coupons", cleanParams(p)] as const,
   orders: (p: QueryParams) => ["admin", "orders", cleanParams(p)] as const,
   order: (id: number) => ["admin", "order", id] as const,
+  orderCounts: (p: QueryParams) => ["admin", "order-counts", cleanParams(p)] as const,
+  orderPrint: (ids: number[]) => ["admin", "order-print", ids] as const,
+  latestOrders: ["admin", "latest-orders"] as const,
   reviews: (p: QueryParams) => ["admin", "reviews", cleanParams(p)] as const,
 };
 
@@ -86,6 +89,22 @@ export function useOrderStatusMutation(id: number) {
     mutationFn: (body: { status: string; admin_note?: string; cancel_reason?: string }) => adminService.updateOrderStatus(id, body),
     onSuccess,
   });
+}
+
+export const useOrderStatusCountsQuery = (p: QueryParams) =>
+  useQuery({ queryKey: adminKeys.orderCounts(p), queryFn: ({ signal }) => adminService.orderStatusCounts(p, signal), placeholderData: keepPreviousData });
+
+export const useOrderPrintQuery = (ids: number[]) =>
+  useQuery({ queryKey: adminKeys.orderPrint(ids), queryFn: ({ signal }) => adminService.printOrders(ids, signal), enabled: ids.length > 0 });
+
+export function useBulkOrderStatusMutation() {
+  const onSuccess = useInvalidateAdmin();
+  return useMutation({ mutationFn: adminService.bulkOrderStatus, onSettled: onSuccess });
+}
+
+export function useOrderNoteMutation(id: number) {
+  const onSuccess = useInvalidateAdmin();
+  return useMutation({ mutationFn: (body: string) => adminService.addOrderNote(id, body), onSuccess });
 }
 
 export function useReviewModeration() {

@@ -46,12 +46,16 @@ const order = {
   customer: { name: "Nguyễn An", phone: "0901234567", email: null }, shipping: { province: "Hà Nội", district: "Ba Đình", ward: null, address: "1 Kim Mã" },
   customer_note: null, admin_note: null, cancel_reason: null, coupon_code: null, user_id: null,
   allowed_transitions: ["confirmed", "cancelled"],
-  timeline: [{ type: "created", status: "pending", label: "Đặt hàng", by: null, note: null, at: "2026-10-26T09:00:00+07:00" }],
+  timeline: [{ type: "created", status: "pending", from: null, label: "Đặt hàng", by: null, note: null, backfilled: false, at: "2026-10-26T09:00:00+07:00" }],
+  notes: [] as { id: number; body: string; by: string | null; at: string | null }[],
   items: [{ product_name: "Đèn LED", variant_name: null, sku: "LED-1", unit_price: 100000, quantity: 1, line_total: 100000, thumbnail_url: null }],
 } as const;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
+  svc.latestOrders.mockResolvedValue({ latest_id: 7, new_count: 0, pending_count: 1 });
+  svc.orderStatusCounts.mockResolvedValue({ all: 3, pending: 1, confirmed: 1, packing: 0, shipping: 1, delivered: 0, cancelled: 0, returned: 0 });
 });
 
 describe("admin panel", () => {
@@ -143,31 +147,80 @@ describe("admin panel", () => {
     expect(screen.getByText("Mã SKU đã tồn tại.")).toBeTruthy();
   });
 
-  it("changes order status using only allowed transitions", async () => {
+  it("confirms an order with the next-step primary button and shows the timeline", async () => {
     svc.order.mockResolvedValue(order as never);
     svc.updateOrderStatus.mockResolvedValue({ ...order, status: "confirmed" } as never);
     renderAdmin("/admin/don-hang/7");
-    const select = await screen.findByLabelText("Trạng thái mới");
+    const primary = await screen.findByRole("button", { name: "Xác nhận đơn" });
     expect(await seriousViolations()).toEqual([]);
-    const options = within(select).getAllByRole("option").map((o) => o.textContent);
-    expect(options).toEqual(["— Chọn —", "Đã xác nhận", "Đã hủy"]);
-    fireEvent.change(select, { target: { value: "confirmed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
-    await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "confirmed", admin_note: undefined, cancel_reason: undefined }));
+    expect(screen.getByText("Đặt hàng")).toBeTruthy();
+    expect(screen.getByText("Đã giao")).toBeTruthy(); // bước sắp tới
+    expect(screen.getByRole("link", { name: "In phiếu" }).getAttribute("href")).toBe("/admin/don-hang/7/in");
+    fireEvent.click(primary);
+    await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "confirmed", cancel_reason: undefined }));
   });
 
-  it("asks for a cancel reason when cancelling", async () => {
+  it("requires a cancel reason in a modal when cancelling", async () => {
     svc.order.mockResolvedValue(order as never);
     svc.updateOrderStatus.mockResolvedValue(order as never);
     renderAdmin("/admin/don-hang/7");
-    fireEvent.change(await screen.findByLabelText("Trạng thái mới"), { target: { value: "cancelled" } });
-    fireEvent.change(screen.getByLabelText("Lý do hủy"), { target: { value: "Khách đổi ý" } });
-    fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Hủy đơn" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Hủy đơn hàng?" });
-    expect(document.activeElement?.textContent).toBe("Không");
-    expect(svc.updateOrderStatus).not.toHaveBeenCalled();
+    expect(await seriousViolations()).toEqual([]);
     fireEvent.click(within(dialog).getByRole("button", { name: "Hủy đơn" }));
-    await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "cancelled", admin_note: undefined, cancel_reason: "Khách đổi ý" }));
+    expect(await within(dialog).findByText("Vui lòng nhập lý do hủy (ít nhất 3 ký tự).")).toBeTruthy();
+    expect(svc.updateOrderStatus).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hết hàng" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hủy đơn" }));
+    await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "cancelled", cancel_reason: "Hết hàng" }));
+  });
+
+  it("adds an internal note", async () => {
+    svc.order.mockResolvedValue({ ...order, notes: [{ id: 1, body: "Khách hẹn chiều", by: "Quản trị", at: null }] } as never);
+    svc.addOrderNote.mockResolvedValue({ id: 2, body: "Gọi lại", by: "Quản trị", at: null });
+    renderAdmin("/admin/don-hang/7");
+    expect(await screen.findByText("Khách hẹn chiều")).toBeTruthy();
+    expect(screen.getByText("Chỉ quản trị viên thấy, khách hàng không xem được.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Thêm ghi chú"), { target: { value: " Gọi lại " } });
+    fireEvent.click(screen.getByRole("button", { name: "Lưu ghi chú" }));
+    await waitFor(() => expect(svc.addOrderNote).toHaveBeenCalledWith(7, "Gọi lại"));
+  });
+
+  it("orders list: status tabs with counts, bulk status with partial-success report", async () => {
+    svc.orders.mockResolvedValue({ data: [
+      { id: 7, order_code: "DH001", customer_name: "An", customer_phone: "09", status: "pending", payment_method: "cod", payment_status: "unpaid", total_amount: 1, items_count: 1, created_at: null },
+      { id: 8, order_code: "DH002", customer_name: "Bình", customer_phone: "09", status: "shipping", payment_method: "vnpay", payment_status: "paid", total_amount: 1, items_count: 1, created_at: null },
+    ], meta: { ...meta, total: 2 } } as never);
+    svc.bulkOrderStatus.mockResolvedValue({ succeeded: 1, failed: 1, results: [
+      { id: 7, order_code: "DH001", ok: true, message: null },
+      { id: 8, order_code: "DH002", ok: false, message: "Không thể chuyển từ Đang giao sang Đã xác nhận." },
+    ] });
+    const router = renderAdmin("/admin/don-hang");
+    const tab = await screen.findByRole("button", { name: /Chờ xác nhận\s*1/ });
+    expect(screen.getByRole("button", { name: /Tất cả\s*3/ }).getAttribute("aria-pressed")).toBe("true");
+    await screen.findByText("DH001");
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.click(screen.getByLabelText("Chọn tất cả hàng trên trang"));
+    fireEvent.click(screen.getByRole("button", { name: "Xác nhận" }));
+    await waitFor(() => expect(svc.bulkOrderStatus).toHaveBeenCalledWith({ ids: [7, 8], status: "confirmed", cancel_reason: undefined }, expect.anything()));
+    const report = await screen.findByRole("dialog", { name: "Kết quả cập nhật hàng loạt" });
+    expect(within(report).getByText(/Không thể chuyển từ Đang giao/)).toBeTruthy();
+    fireEvent.click(within(report).getAllByRole("button", { name: "Đóng" })[0]);
+    fireEvent.click(tab);
+    await waitFor(() => expect(router.state.location.search).toContain("status=pending"));
+  });
+
+  it("prints delivery slips with store info, COD amount and a barcode", async () => {
+    svc.printOrders.mockResolvedValue({ store: { name: "Đồ Điện Siêu Xịn", phone: "0281234567", address: "1 Lê Lợi", email: null },
+      orders: [{ ...order, cod_amount: 130000 }] } as never);
+    renderAdmin("/admin/don-hang/in?ids=7,7,abc");
+    expect(await screen.findByText(/THU HỘ \(COD\)/)).toBeTruthy();
+    expect(svc.printOrders).toHaveBeenCalledWith([7], expect.anything());
+    expect(screen.getByRole("img", { name: "Mã vạch DH001" })).toBeTruthy();
+    expect(screen.getByText("PHIẾU GIAO HÀNG")).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "A4" }));
+    expect(localStorage.getItem("admin-print-paper")).toBe("A4");
   });
 
   it("hides, shows and deletes reviews; comments render as text", async () => {

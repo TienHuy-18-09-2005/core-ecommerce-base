@@ -25,3 +25,12 @@ export function readTablePref<T>(name: string, fallback: T): T {
 export function saveTablePref(name: string, value: unknown): void {
   try { localStorage.setItem(tablePrefKey(name), JSON.stringify(value)); } catch { /* chế độ riêng tư */ }
 }
+
+/** Tùy chọn nhỏ khác của khu quản trị (âm thanh đơn mới, mốc đơn đã thấy, khổ giấy in) — không nhạy cảm. Khóa: `admin-<name>`. */
+const prefKey = (name: string) => `admin-${name}`;
+export function readAdminPref(name: string): string | null {
+  try { return localStorage.getItem(prefKey(name)); } catch { return null; }
+}
+export function saveAdminPref(name: string, value: string) {
+  try { localStorage.setItem(prefKey(name), value); } catch { /* bỏ qua */ }
+}

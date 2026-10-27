@@ -8,6 +8,7 @@ import ProductsPage from "./ProductsPage.tsx";
 import { ProductCreateRedirect, ProductEditRedirect } from "./productRedirects.tsx";
 import OrdersPage from "./OrdersPage.tsx";
 import OrderDetailPage from "./OrderDetailPage.tsx";
+import OrderPrintPage from "./OrderPrintPage.tsx";
 import CategoriesPage from "./CategoriesPage.tsx";
 import CouponsPage from "./CouponsPage.tsx";
 import ReviewsPage from "./ReviewsPage.tsx";
@@ -45,7 +46,11 @@ export interface AdminRoute {
 export const ADMIN_ROUTES: AdminRoute[] = [
   { path: "", label: "Tổng quan", group: "overview", icon: LayoutDashboard, component: DashboardPage },
   { path: "don-hang", label: "Đơn hàng", group: "sales", icon: ShoppingCart, component: OrdersPage,
-    children: [{ path: ":id", label: "Chi tiết đơn", component: OrderDetailPage }] },
+    children: [
+      { path: "in", label: "In phiếu giao hàng", component: OrderPrintPage },
+      { path: ":id", label: "Chi tiết đơn", component: OrderDetailPage },
+      { path: ":id/in", label: "In phiếu giao hàng", component: OrderPrintPage },
+    ] },
   { path: "ma-giam-gia", label: "Mã giảm giá", group: "sales", icon: BadgePercent, component: CouponsPage },
   { path: "san-pham", label: "Sản phẩm", group: "catalog", icon: Boxes, component: ProductsPage,
     children: [
@@ -81,6 +86,10 @@ export function breadcrumbFor(pathname: string, routes: AdminRoute[] = ADMIN_ROU
   const crumbs: Crumb[] = [{ label: "Tổng quan", to: "/admin" }];
   if (tail.length === 0) return [...crumbs, { label: route.label }];
   const sub = tail.join("/");
-  const child = route.children?.find((c) => c.path === sub) ?? route.children?.find((c) => c.path.startsWith(":") && tail.length === 1);
+  const matches = (pattern: string) => {
+    const parts = pattern.split("/");
+    return parts.length === tail.length && parts.every((p, i) => p.startsWith(":") || p === tail[i]);
+  };
+  const child = route.children?.find((c) => c.path === sub) ?? route.children?.find((c) => matches(c.path));
   return [...crumbs, { label: route.label, to: adminHref(route.path) }, { label: child?.label ?? "Không tìm thấy" }];
 }

@@ -136,11 +136,32 @@ export type AdminCouponInput = Omit<AdminCoupon, "id" | "used_count">;
 export interface TimelineEntry {
   type: "created" | "status_changed";
   status: string | null;
+  from?: string | null;
   label: string;
   by: string | null;
   note: string | null;
+  /** Mốc suy ra từ dữ liệu cũ (trước khi có bảng lịch sử). */
+  backfilled?: boolean;
   at: string | null;
 }
+
+export interface OrderNote { id: number; body: string; by: string | null; at: string | null }
+
+export type OrderStatusCounts = Record<string, number> & { all: number };
+
+export interface LatestOrders { latest_id: number; new_count: number; pending_count: number }
+
+export interface BulkStatusResult {
+  results: { id: number; order_code: string | null; ok: boolean; message: string | null }[];
+  succeeded: number;
+  failed: number;
+}
+
+export interface StoreInfo { name: string; phone: string | null; address: string | null; email: string | null }
+
+export type PrintOrder = Omit<AdminOrderDetail, "allowed_transitions" | "timeline" | "notes" | "admin_note" | "cancel_reason" | "user_id"> & { cod_amount: number };
+
+export interface PrintData { store: StoreInfo; orders: PrintOrder[] }
 
 export interface AdminOrderDetail {
   id: number;
@@ -162,6 +183,7 @@ export interface AdminOrderDetail {
   user_id: number | null;
   allowed_transitions: string[];
   timeline: TimelineEntry[];
+  notes: OrderNote[];
   items: { product_name: string; variant_name: string | null; sku: string | null; unit_price: number; quantity: number; line_total: number; thumbnail_url: string | null }[];
 }
 

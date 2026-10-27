@@ -1,22 +1,31 @@
 // @vitest-environment happy-dom
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthContext, type AuthContextValue } from "../../../app/useAuth.ts";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastProvider } from "../../../app/Toast.tsx";
+import { adminService } from "../../../services/adminService.ts";
 import { AdminLayout, SIDEBAR_KEY } from "./AdminLayout.tsx";
 import { ADMIN_ROUTES, breadcrumbFor, navGroups } from "../../../pages/admin/adminRoutes.ts";
 
 const auth = { user: { id: 1, name: "Quản trị", email: "a@x.vn", role: "admin" }, isLoading: false, login: vi.fn(), register: vi.fn(), logout: vi.fn(), setUser: vi.fn(), cartAdjustments: [], dismissCartAdjustments: vi.fn() } as unknown as AuthContextValue;
 
 function renderLayout(path = "/admin") {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <AuthContext.Provider value={auth}>
-      <MemoryRouter initialEntries={[path]}><AdminLayout><p>nội dung</p></AdminLayout></MemoryRouter>
-    </AuthContext.Provider>,
+    <QueryClientProvider client={client}>
+      <AuthContext.Provider value={auth}>
+        <ToastProvider><MemoryRouter initialEntries={[path]}><AdminLayout><p>nội dung</p></AdminLayout></MemoryRouter></ToastProvider>
+      </AuthContext.Provider>
+    </QueryClientProvider>,
   );
 }
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  vi.spyOn(adminService, "latestOrders").mockResolvedValue({ latest_id: 10, new_count: 0, pending_count: 3 });
+});
 
 describe("adminRoutes", () => {
   it("groups nav and hides screens not built yet", () => {
@@ -32,6 +41,7 @@ describe("adminRoutes", () => {
     expect(breadcrumbFor("/admin").map((c) => c.label)).toEqual(["Tổng quan"]);
     expect(breadcrumbFor("/admin/don-hang").map((c) => c.label)).toEqual(["Tổng quan", "Đơn hàng"]);
     expect(breadcrumbFor("/admin/don-hang/7")).toEqual([{ label: "Tổng quan", to: "/admin" }, { label: "Đơn hàng", to: "/admin/don-hang" }, { label: "Chi tiết đơn" }]);
+    expect(breadcrumbFor("/admin/don-hang/7/in").at(-1)?.label).toBe("In phiếu giao hàng");
     expect(breadcrumbFor("/admin/san-pham/moi").at(-1)?.label).toBe("Thêm sản phẩm");
     expect(breadcrumbFor("/admin/san-pham/12").at(-1)?.label).toBe("Sửa sản phẩm");
     expect(breadcrumbFor("/admin/nhat-ky").at(-1)?.label).toBe("Không tìm thấy");
@@ -70,5 +80,32 @@ describe("AdminLayout", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(opener);
+  });
+
+  it("shows pending badge on Đơn hàng and toggles notification sound per user", async () => {
+    renderLayout();
+    const link = await screen.findByRole("link", { name: /3 đơn chờ xác nhận/ });
+    expect(link).toBeTruthy();
+    const sound = screen.getByRole("button", { name: "Âm thanh thông báo đơn mới" });
+    expect(sound.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(sound);
+    expect(sound.getAttribute("aria-pressed")).toBe("false");
+    expect(localStorage.getItem("admin-order-sound:1")).toBe("off");
+  });
+
+  it("first visit only records the last order; later polls toast genuinely new orders once", async () => {
+    renderLayout();
+    await waitFor(() => expect(localStorage.getItem("admin-order-last-seen:1")).toBe("10"));
+    expect(screen.queryByText(/đơn hàng mới/)).toBeNull();
+  });
+
+  it("toasts 'Có N đơn hàng mới' with a Xem action when newer orders exist", async () => {
+    localStorage.setItem("admin-order-last-seen:1", "8");
+    vi.mocked(adminService.latestOrders).mockResolvedValue({ latest_id: 10, new_count: 2, pending_count: 3 });
+    renderLayout();
+    expect(await screen.findByText("Có 2 đơn hàng mới")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Xem" })).toBeTruthy();
+    expect(adminService.latestOrders).toHaveBeenCalledWith(8, expect.anything());
+    expect(localStorage.getItem("admin-order-last-seen:1")).toBe("10");
   });
 });

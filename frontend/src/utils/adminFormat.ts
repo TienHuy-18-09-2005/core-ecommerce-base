@@ -39,3 +39,4 @@ export function flattenTree(list: AdminCategory[]): { cat: AdminCategory; depth:
   return out;
 }
 
+export const PAYMENT_METHOD_LABELS: Record<string, string> = { cod: "COD", vnpay: "VNPay", momo: "MoMo", vietqr: "VietQR" };
