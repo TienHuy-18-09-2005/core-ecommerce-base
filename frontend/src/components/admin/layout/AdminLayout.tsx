@@ -6,6 +6,7 @@ import { Drawer } from "../overlay/Drawer.tsx";
 import { Tooltip } from "../ui/IconButton.tsx";
 import { ConfirmProvider } from "../overlay/Modal.tsx";
 import { useOrderNotifier } from "../../../hooks/useOrderNotifier.ts";
+import { useCan } from "../../../hooks/useCan.ts";
 import { ThemeToggle } from "../../common/ThemeToggle.tsx";
 import { readSidebarCollapsed, saveSidebarCollapsed } from "../../../utils/adminPrefs.ts";
 import { adminHref, breadcrumbFor, navGroups } from "../../../pages/admin/adminRoutes.ts";
@@ -31,11 +32,12 @@ function useIsXl() {
 /** Danh sách nhóm + mục menu. `compact` = chỉ icon (rail 64px). */
 function SidebarNav({ compact, compactBelowXl, onNavigate, badges = {} }: { compact: boolean; compactBelowXl?: boolean; onNavigate?: () => void; badges?: Record<string, number | null> }) {
   // Nhãn ẩn khi thu gọn; ở tablet (lg) luôn là rail, desktop rộng (xl) mới mở đủ.
+  const can = useCan();
   const labelCls = compact ? "sr-only" : compactBelowXl ? "sr-only xl:not-sr-only" : "";
   const groupCls = compact ? "sr-only" : compactBelowXl ? "sr-only xl:not-sr-only xl:block" : "block";
   return (
     <nav aria-label="Menu quản trị" className="flex flex-col gap-4 px-2 py-3">
-      {navGroups().map((g) => (
+      {navGroups(undefined, can).map((g) => (
         <div key={g.id} role="group" aria-labelledby={`admin-nav-${g.id}`}>
           <p id={`admin-nav-${g.id}`} className={`px-3 pb-1 text-[11px] font-semibold tracking-wider text-admin-sidebar-muted ${groupCls}`}>{g.label}</p>
           <ul className="flex flex-col gap-0.5">
@@ -104,7 +106,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const closeDrawer = useCallback(() => setDrawer(false), []);
   useEffect(() => { setDrawer(false); }, [pathname]);
-  const notifier = useOrderNotifier(user?.id);
+  const can = useCan();
+  // Chỉ người xem được đơn mới thăm dò đơn mới (tránh 403 lặp lại).
+  const notifier = useOrderNotifier(can("orders.view") ? user?.id : undefined);
   const badges = { "don-hang": notifier.pendingCount };
 
   const isXl = useIsXl();
@@ -146,11 +150,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             <Link to="/" className="hidden items-center gap-1 rounded-lg px-2 py-2 font-medium text-admin-primary hover:bg-admin-subtle sm:inline-flex">
               <ExternalLink aria-hidden className="size-4" />Về cửa hàng
             </Link>
-            <button type="button" onClick={notifier.toggleSound} aria-pressed={notifier.soundOn}
+            {can("orders.view") && <button type="button" onClick={notifier.toggleSound} aria-pressed={notifier.soundOn}
               aria-label="Âm thanh thông báo đơn mới" title={notifier.soundOn ? "Tắt âm thanh thông báo đơn mới" : "Bật âm thanh thông báo đơn mới"}
               className="rounded-lg p-2 text-admin-fg-soft hover:bg-admin-subtle">
               {notifier.soundOn ? <Bell aria-hidden className="size-5" /> : <BellOff aria-hidden className="size-5" />}
-            </button>
+            </button>}
             <ThemeToggle className="text-admin-fg-soft! hover:bg-admin-subtle!" />
             <span className="hidden max-w-40 truncate px-2 text-admin-fg-soft md:inline">{user?.name}</span>
             <button type="button" onClick={() => void logout()} className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-admin-muted hover:bg-admin-subtle hover:text-admin-fg">

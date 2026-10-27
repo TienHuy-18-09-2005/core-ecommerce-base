@@ -9,6 +9,7 @@ use App\Services\Support\ImageSanitizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -104,6 +105,39 @@ class ProductImageService
             $this->syncThumbnail($product);
             $this->audit->record('product.images_reordered', $product, ['order' => [$before, $given->all()], 'primary_id' => $primaryId]);
         });
+    }
+
+    /**
+     * Nhân bản ảnh sang sản phẩm mới: sao chép FILE (không dùng chung file), để xóa ảnh ở bản sao không làm mất ảnh bản gốc.
+     * Ảnh URL cũ (không có file_path) được giữ nguyên URL. Trả về danh sách file đã tạo để dọn nếu giao dịch lỗi.
+     *
+     * @param  list<string>  $created
+     */
+    public function copyAll(Product $from, Product $to, array &$created = []): void
+    {
+        $disk = Storage::disk(ImageSanitizer::DISK);
+        foreach ($from->media()->orderBy('sort_order')->orderBy('id')->get() as $m) {
+            $path = null;
+            if ($m->file_path && $disk->exists($m->file_path)) {
+                $ext = pathinfo($m->file_path, PATHINFO_EXTENSION) ?: 'webp';
+                $path = 'products/'.Str::uuid()->toString().'.'.$ext;
+                if (! $disk->copy($m->file_path, $path)) {
+                    throw new \RuntimeException('Không sao chép được ảnh sản phẩm.');
+                }
+                $created[] = $path;
+            } elseif ($m->file_path) {
+                continue; // file gốc đã mất: bỏ qua thay vì tạo ảnh hỏng
+            }
+            $to->media()->create([
+                'file_url' => $path ? '/storage/'.$path : $m->file_url, 'file_path' => $path,
+                'media_type' => $m->media_type ?: 'image', 'alt_text' => $m->alt_text,
+                'sort_order' => $m->sort_order, 'is_primary' => (bool) $m->is_primary,
+            ]);
+        }
+        if ($to->media()->exists() && ! $to->media()->where('is_primary', true)->exists()) {
+            $to->media()->orderBy('sort_order')->orderBy('id')->first()?->update(['is_primary' => true]);
+        }
+        $this->syncThumbnail($to);
     }
 
     private function syncThumbnail(Product $product): void

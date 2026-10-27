@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
@@ -25,6 +26,7 @@ const empty: AdminCouponInput = {
 const numOrNull = (v: string) => (v === "" ? null : Number(v));
 
 export default function CouponsPage() {
+  const can = useCan();
   const { values, page, set, setPage, sort, toggleSort, sortParams, query } = useListParams(["q"] as const);
   const { data, error, isLoading, refetch, isRefetching } = useAdminCouponsQuery({ ...values, ...sortParams, page });
   const confirm = useConfirm();
@@ -48,29 +50,29 @@ export default function CouponsPage() {
 
   return (
     <>
-      <PageHeader title="Mã giảm giá" actions={<button type="button" className={btnPrimary} onClick={modal.openCreate}>+ Tạo mã giảm giá</button>} />
+      <PageHeader title="Mã giảm giá" actions={can("coupons.manage") ? <button type="button" className={btnPrimary} onClick={modal.openCreate}>+ Tạo mã giảm giá</button> : undefined} />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <div>
-          <DataTable tableId="coupons" selection={selection} rowLabel={(c) => `mã ${c.code}`}
+          <DataTable tableId="coupons" selection={can("coupons.manage") ? selection : undefined} rowLabel={(c) => `mã ${c.code}`}
             toolbar={<SearchBox label="Tìm mã" placeholder="Tìm mã..." value={values.q} onChange={(v) => set("q", v)} />}
-            bulkActions={<button type="button" className={btnDanger} disabled={bulkDelete.isPending} onClick={() => void onBulkDelete()}>Xóa đã chọn</button>}
+            bulkActions={can("coupons.manage") && <button type="button" className={btnDanger} disabled={bulkDelete.isPending} onClick={() => void onBulkDelete()}>Xóa đã chọn</button>}
             sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(c) => c.id} empty="Chưa có mã giảm giá." columns={[
             { header: "Mã", sortKey: "code", hideable: false, cell: (c) => <span className="font-mono font-semibold">{c.code}</span> },
             { header: "Giảm", sortKey: "value", cell: (c) => (c.type === "percent" ? `${c.value}%${c.max_discount_amount ? ` (tối đa ${formatCurrency(c.max_discount_amount)})` : ""}` : formatCurrency(c.value)) },
             { header: "Đã dùng", sortKey: "used_count", align: "right", cell: (c) => `${c.used_count}${c.usage_limit !== null ? `/${c.usage_limit}` : ""}` },
             { header: "Hiệu lực", secondary: true, sortKey: "expires_at", cell: (c) => <span className="text-xs">{formatDateTime(c.starts_at)} → {formatDateTime(c.expires_at)}</span> },
             { header: "Trạng thái", sortKey: "is_active", cell: (c) => (c.is_active ? "Đang bật" : "Tắt") },
-            { header: "Thao tác", hideable: false, cell: (c) => (
+            ...(!can("coupons.manage") ? [] : [{ header: "Thao tác", hideable: false, cell: (c: AdminCoupon) => (
               <IconActions>
                 <IconButton label="Sửa" ariaLabel={`Sửa mã ${c.code}`} icon={<Pencil />} onClick={() => modal.openEdit(c.id)} />
                 <IconButton label="Xóa" ariaLabel={`Xóa mã ${c.code}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(c)} />
               </IconActions>
-            ) },
+            ) }]),
           ]} />
           <Pagination meta={data?.meta} onPage={setPage} />
       </div>
-      {modal.mode === "create" && <CouponFormModal key="new" onClose={modal.close} />}
-      {modal.mode === "edit" && editing && <CouponFormModal key={editing.id} editing={editing} onClose={modal.close} />}
+      {can("coupons.manage") && modal.mode === "create" && <CouponFormModal key="new" onClose={modal.close} />}
+      {can("coupons.manage") && modal.mode === "edit" && editing && <CouponFormModal key={editing.id} editing={editing} onClose={modal.close} />}
     </>
   );
 }

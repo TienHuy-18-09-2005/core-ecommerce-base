@@ -14,6 +14,8 @@ import CategoriesPage from "./CategoriesPage.tsx";
 import CouponsPage from "./CouponsPage.tsx";
 import ReviewsPage from "./ReviewsPage.tsx";
 import SettingsPage from "./SettingsPage.tsx";
+import RolesPage from "./RolesPage.tsx";
+import type { Permission } from "../../hooks/useCan.ts";
 
 /** Nhóm menu bên trái, theo thứ tự hiển thị. */
 export const ADMIN_GROUPS = [
@@ -30,6 +32,8 @@ export interface AdminChildRoute {
   path: string;
   label: string;
   component: ComponentType;
+  /** Quyền cần có để vào (mặc định theo mục cha). */
+  permission?: Permission;
 }
 
 export interface AdminRoute {
@@ -41,37 +45,39 @@ export interface AdminRoute {
   /** Chưa có màn hình thì để trống: mục bị ẩn khỏi menu và không có route. */
   component?: ComponentType;
   children?: AdminChildRoute[];
+  /** R6: quyền cần có để thấy menu & vào trang. */
+  permission: Permission;
 }
 
 /** Nguồn duy nhất cho đường dẫn, nhãn, nhóm, icon và breadcrumb của khu quản trị. */
 export const ADMIN_ROUTES: AdminRoute[] = [
-  { path: "", label: "Tổng quan", group: "overview", icon: LayoutDashboard, component: DashboardPage },
-  { path: "don-hang", label: "Đơn hàng", group: "sales", icon: ShoppingCart, component: OrdersPage,
+  { path: "", label: "Tổng quan", group: "overview", icon: LayoutDashboard, component: DashboardPage, permission: "dashboard.view" },
+  { path: "don-hang", label: "Đơn hàng", group: "sales", icon: ShoppingCart, component: OrdersPage, permission: "orders.view",
     children: [
-      { path: "in", label: "In phiếu giao hàng", component: OrderPrintPage },
+      { path: "in", label: "In phiếu giao hàng", component: OrderPrintPage, permission: "orders.print" },
       { path: ":id", label: "Chi tiết đơn", component: OrderDetailPage },
-      { path: ":id/in", label: "In phiếu giao hàng", component: OrderPrintPage },
+      { path: ":id/in", label: "In phiếu giao hàng", component: OrderPrintPage, permission: "orders.print" },
     ] },
-  { path: "ma-giam-gia", label: "Mã giảm giá", group: "sales", icon: BadgePercent, component: CouponsPage },
-  { path: "san-pham", label: "Sản phẩm", group: "catalog", icon: Boxes, component: ProductsPage,
+  { path: "ma-giam-gia", label: "Mã giảm giá", group: "sales", icon: BadgePercent, component: CouponsPage, permission: "coupons.view" },
+  { path: "san-pham", label: "Sản phẩm", group: "catalog", icon: Boxes, component: ProductsPage, permission: "products.view",
     children: [
-      { path: "moi", label: "Thêm sản phẩm", component: ProductCreateRedirect },
+      { path: "moi", label: "Thêm sản phẩm", component: ProductCreateRedirect, permission: "products.edit" },
       { path: ":id", label: "Chi tiết sản phẩm", component: ProductDetailPage },
     ] },
-  { path: "danh-muc", label: "Danh mục", group: "catalog", icon: FolderTree, component: CategoriesPage },
-  { path: "thuong-hieu", label: "Thương hiệu", group: "catalog", icon: Tag },
-  { path: "nguoi-dung", label: "Người dùng", group: "customers", icon: Users },
-  { path: "danh-gia", label: "Đánh giá", group: "customers", icon: MessageSquareText, component: ReviewsPage },
-  { path: "vai-tro", label: "Vai trò & phân quyền", group: "system", icon: ShieldCheck },
-  { path: "nhat-ky", label: "Nhật ký", group: "system", icon: ScrollText },
-  { path: "cai-dat", label: "Cài đặt", group: "system", icon: Settings, component: SettingsPage },
+  { path: "danh-muc", label: "Danh mục", group: "catalog", icon: FolderTree, component: CategoriesPage, permission: "categories.view" },
+  { path: "thuong-hieu", label: "Thương hiệu", group: "catalog", icon: Tag, permission: "products.view" },
+  { path: "nguoi-dung", label: "Người dùng", group: "customers", icon: Users, permission: "roles.manage" },
+  { path: "danh-gia", label: "Đánh giá", group: "customers", icon: MessageSquareText, component: ReviewsPage, permission: "reviews.view" },
+  { path: "vai-tro", label: "Vai trò & phân quyền", group: "system", icon: ShieldCheck, component: RolesPage, permission: "roles.manage" },
+  { path: "nhat-ky", label: "Nhật ký", group: "system", icon: ScrollText, permission: "audit.view" },
+  { path: "cai-dat", label: "Cài đặt", group: "system", icon: Settings, component: SettingsPage, permission: "settings.manage" },
 ];
 
 export const adminHref = (path: string) => (path ? `/admin/${path}` : "/admin");
 
 /** Các mục đã có màn hình, gom theo nhóm (bỏ nhóm rỗng). */
-export function navGroups(routes: AdminRoute[] = ADMIN_ROUTES) {
-  return ADMIN_GROUPS.map((g) => ({ ...g, items: routes.filter((r) => r.group === g.id && r.component) }))
+export function navGroups(routes: AdminRoute[] = ADMIN_ROUTES, can: (p: Permission) => boolean = () => true) {
+  return ADMIN_GROUPS.map((g) => ({ ...g, items: routes.filter((r) => r.group === g.id && r.component && can(r.permission)) }))
     .filter((g) => g.items.length > 0);
 }
 
@@ -93,4 +99,10 @@ export function breadcrumbFor(pathname: string, routes: AdminRoute[] = ADMIN_ROU
   };
   const child = route.children?.find((c) => c.path === sub) ?? route.children?.find((c) => matches(c.path));
   return [...crumbs, { label: route.label, to: adminHref(route.path) }, { label: child?.label ?? "Không tìm thấy" }];
+}
+
+/** Trang đầu tiên user được vào (dùng khi không có quyền xem Tổng quan). */
+export function firstAllowedHref(can: (p: Permission) => boolean, routes: AdminRoute[] = ADMIN_ROUTES): string | null {
+  const r = routes.find((x) => x.component && can(x.permission));
+  return r ? adminHref(r.path) : null;
 }

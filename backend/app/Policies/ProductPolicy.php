@@ -46,6 +46,6 @@ class ProductPolicy
     /** Điểm cắm R6: ánh xạ quyền chi tiết. */
     private function can(User $user, string $permission): bool
     {
-        return Gate::forUser($user)->allows('admin');
+        return $user->hasPermission($permission);
     }
 }

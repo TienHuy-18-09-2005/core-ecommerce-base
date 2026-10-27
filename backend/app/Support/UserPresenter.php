@@ -17,6 +17,8 @@ class UserPresenter
             'role' => $user->role,
             'avatar_url' => $user->avatar_url,
             'email_verified' => $user->hasVerifiedEmail(),
+            // R6: quyền hiệu lực (admin = tất cả; nhân viên = hợp quyền các vai trò; khách = rỗng)
+            'permissions' => in_array($user->role, ['admin', 'staff'], true) ? $user->permissions() : [],
         ];
     }
 }

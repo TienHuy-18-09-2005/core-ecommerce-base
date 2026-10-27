@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, btnSecondary, formatDateTime } from "../../utils/adminFormat.ts";
@@ -36,6 +37,7 @@ const BULK = [
 ];
 
 export default function OrdersPage() {
+  const can = useCan();
   const { values, page, set, setMany, setPage, sort, toggleSort, sortParams, query, applyQuery } = useListParams(KEYS);
   const { data, error, isLoading, refetch, isRefetching } = useAdminOrdersQuery({ ...values, ...sortParams, page });
   const { status: _s, ...countFilters } = values;
@@ -78,14 +80,14 @@ export default function OrdersPage() {
       </nav>
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable tableId="orders" sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(o) => o.id} empty="Không có đơn phù hợp."
-        selection={selection} rowLabel={(o) => `đơn ${o.order_code}`}
+        selection={can(["orders.update", "orders.print", "orders.cancel"]) ? selection : undefined} rowLabel={(o) => `đơn ${o.order_code}`}
         bulkActions={<>
-          {BULK.map((b) => (
+          {can("orders.update") && BULK.map((b) => (
             <button key={b.status} type="button" className={btnSecondary} disabled={bulk.isPending} onClick={() => run(b.status, b.label)}>{b.label}</button>
           ))}
-          <button type="button" className={btnSecondary} onClick={() => navigate(`/admin/don-hang/in?ids=${(selection.ids as number[]).join(",")}`)}>In phiếu</button>
-          <button type="button" className="rounded-lg border border-admin-danger-border bg-admin-surface px-4 py-2 text-sm font-medium text-admin-danger hover:bg-admin-danger-subtle disabled:opacity-50"
-            disabled={bulk.isPending} onClick={() => setCancelOpen(true)}>Hủy đơn</button>
+          {can("orders.print") && <button type="button" className={btnSecondary} onClick={() => navigate(`/admin/don-hang/in?ids=${(selection.ids as number[]).join(",")}`)}>In phiếu</button>}
+          {can("orders.cancel") && <button type="button" className="rounded-lg border border-admin-danger-border bg-admin-surface px-4 py-2 text-sm font-medium text-admin-danger hover:bg-admin-danger-subtle disabled:opacity-50"
+            disabled={bulk.isPending} onClick={() => setCancelOpen(true)}>Hủy đơn</button>}
         </>}
         actions={<SavedViews tableId="orders" presets={PRESETS} query={query} onApply={applyQuery} />}
         toolbar={<>

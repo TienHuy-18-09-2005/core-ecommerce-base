@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Check, Printer } from "lucide-react";
@@ -56,6 +57,7 @@ function Timeline({ order }: { order: AdminOrderDetail }) {
 }
 
 function NotesPanel({ order }: { order: AdminOrderDetail }) {
+  const can = useCan();
   const [body, setBody] = useState("");
   const mutation = useOrderNoteMutation(order.id);
   const toast = useToast();
@@ -69,12 +71,12 @@ function NotesPanel({ order }: { order: AdminOrderDetail }) {
     <section aria-labelledby="notes-h" className="rounded-xl border border-admin-border bg-admin-surface p-5 text-sm">
       <h2 id="notes-h" className="font-semibold">Ghi chú nội bộ</h2>
       <p className="mb-3 text-xs text-admin-muted">Chỉ quản trị viên thấy, khách hàng không xem được.</p>
-      <form onSubmit={submit} className="space-y-2" noValidate>
+      {can("orders.note") && <form onSubmit={submit} className="space-y-2" noValidate>
         <FormField label="Thêm ghi chú" error={err}>
           <textarea className={inputClass} rows={2} maxLength={2000} value={body} onChange={(e) => setBody(e.target.value)} />
         </FormField>
         <button type="submit" className={btnSecondary} disabled={!body.trim() || mutation.isPending}>{mutation.isPending ? "Đang lưu..." : "Lưu ghi chú"}</button>
-      </form>
+      </form>}
       {order.notes.length > 0 && (
         <ul className="mt-4 space-y-3 border-t border-admin-border pt-3">
           {order.notes.map((n) => (
@@ -90,6 +92,7 @@ function NotesPanel({ order }: { order: AdminOrderDetail }) {
 }
 
 export default function OrderDetailPage() {
+  const can = useCan();
   const id = Number(useParams().id);
   const { data: order, error, isLoading, refetch, isRefetching } = useAdminOrderQuery(id);
   const confirm = useConfirm();
@@ -110,8 +113,8 @@ export default function OrderDetailPage() {
       onError: (e) => { if (!firstFieldErrors(e).cancel_reason) toast.showError(e); },
     });
   const next = nextStep(order);
-  const canCancel = order.allowed_transitions.includes("cancelled");
-  const canReturn = order.allowed_transitions.includes("returned");
+  const canCancel = can("orders.cancel") && order.allowed_transitions.includes("cancelled");
+  const canReturn = can("orders.update") && order.allowed_transitions.includes("returned");
   const onReturn = async () => {
     if (await confirm({ title: "Ghi nhận trả hàng?", message: "Hàng trả về không tự cộng lại tồn kho — kiểm tra hàng rồi nhập kho thủ công.", confirmLabel: "Ghi nhận trả hàng", cancelLabel: "Không", danger: true })) change("returned");
   };
@@ -120,10 +123,10 @@ export default function OrderDetailPage() {
     <>
       <PageHeader title={`Đơn ${order.order_code}`} actions={<div className="flex flex-wrap items-center gap-2">
         <Link to="/admin/don-hang" className={btnSecondary}>Quay lại</Link>
-        <Link to={`/admin/don-hang/${order.id}/in`} className={`${btnSecondary} inline-flex items-center gap-1.5`}><Printer aria-hidden className="size-4" />In phiếu</Link>
+        {can("orders.print") && <Link to={`/admin/don-hang/${order.id}/in`} className={`${btnSecondary} inline-flex items-center gap-1.5`}><Printer aria-hidden className="size-4" />In phiếu</Link>}
         {canReturn && <button type="button" className={btnSecondary} disabled={mutation.isPending} onClick={() => void onReturn()}>Trả hàng</button>}
         {canCancel && <button type="button" className="rounded-lg border border-admin-danger-border bg-admin-surface px-4 py-2 text-sm font-medium text-admin-danger hover:bg-admin-danger-subtle disabled:opacity-50" disabled={mutation.isPending} onClick={() => setCancelOpen(true)}>Hủy đơn</button>}
-        {next && <button type="button" className={btnPrimary} disabled={mutation.isPending} onClick={() => change(next)}>{mutation.isPending ? "Đang cập nhật..." : NEXT_STEP_LABELS[next]}</button>}
+        {next && can("orders.update") && <button type="button" className={btnPrimary} disabled={mutation.isPending} onClick={() => change(next)}>{mutation.isPending ? "Đang cập nhật..." : NEXT_STEP_LABELS[next]}</button>}
       </div>} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

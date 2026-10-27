@@ -258,7 +258,19 @@ class AdminProductService
     {
         $src->load(['variants' => fn ($v) => $v->orderByDesc('is_default')->orderBy('id'), 'categories:id']);
 
-        return DB::transaction(function () use ($src) {
+        $copiedFiles = [];
+        try {
+            return $this->duplicateRows($src, $copiedFiles);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Storage::disk(\App\Services\Support\ImageSanitizer::DISK)->delete($copiedFiles);
+            throw $e;
+        }
+    }
+
+    /** @param  list<string>  $copiedFiles */
+    private function duplicateRows(Product $src, array &$copiedFiles): Product
+    {
+        return DB::transaction(function () use ($src, &$copiedFiles) {
             $name = mb_substr($src->name, 0, 240).' (bản sao)';
             $copy = Product::create([
                 'brand_id' => $src->brand_id, 'name' => $name, 'slug' => $this->uniqueSlug(null, $name),
@@ -275,7 +287,8 @@ class AdminProductService
                     'weight_grams' => $v->weight_grams, 'image_url' => null, 'is_default' => $v->is_default, 'is_active' => $v->is_active,
                 ]);
             }
-            $this->audit->record('product.duplicated', $copy, ['from' => $src->id]);
+            app(ProductImageService::class)->copyAll($src, $copy, $copiedFiles);
+            $this->audit->record('product.duplicated', $copy, ['from' => $src->id, 'images' => $copy->media()->count()]);
 
             return $copy;
         });

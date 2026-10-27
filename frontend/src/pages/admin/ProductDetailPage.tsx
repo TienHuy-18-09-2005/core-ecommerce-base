@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -36,14 +37,6 @@ const FIELD_LABELS: Record<string, string> = {
   short_description: "mô tả ngắn", description: "mô tả", unit: "đơn vị", specifications: "thông số", meta_title: "tiêu đề SEO", meta_description: "mô tả SEO",
   variants: "biến thể", category_added: "gán danh mục", order: "thứ tự ảnh", primary_id: "ảnh chính", media_id: "ảnh", from: "nguồn",
 };
-
-/**
- * TODO(R6): khi có useCan(), ẩn Sửa/Nhân bản khi thiếu products.edit và Xóa khi thiếu products.delete.
- * Hiện mọi tài khoản admin đều có đủ quyền nên luôn trả về true.
- */
-function useProductPermissions() {
-  return { canEdit: true, canDelete: true };
-}
 
 function summarize(entry: ProductHistoryEntry): string | null {
   const c = entry.changes;
@@ -161,7 +154,9 @@ export default function ProductDetailPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const { remove, duplicate } = useProductMutations();
-  const { canEdit, canDelete } = useProductPermissions();
+  const can = useCan();
+  const canEdit = can("products.edit");
+  const canDelete = can("products.delete");
 
   if (id === null) return <EmptyState title="Không tìm thấy sản phẩm" action={<Link to="/admin/san-pham" className={btnSecondary}>Về danh sách</Link>} />;
   if (isLoading) {
@@ -272,7 +267,7 @@ export default function ProductDetailPage() {
 
           <div className="grid gap-6 xl:grid-cols-2">
             <Reviews productId={product.id} />
-            <History productId={product.id} />
+            {can("audit.view") && <History productId={product.id} />}
           </div>
         </div>
       </div>

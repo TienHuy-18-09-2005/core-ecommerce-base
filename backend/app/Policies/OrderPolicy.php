@@ -28,10 +28,16 @@ class OrderPolicy
         return $this->can($user, 'orders.view');
     }
 
-    /** Đổi trạng thái (trừ hủy) và thêm ghi chú nội bộ. */
+    /** Đổi trạng thái (trừ hủy). */
     public function update(User $user, Order $order): bool
     {
         return $this->can($user, 'orders.update');
+    }
+
+    /** Ghi chú nội bộ: CSKH ghi lại việc liên hệ khách mà không đổi trạng thái. */
+    public function note(User $user, Order $order): bool
+    {
+        return $this->can($user, 'orders.note');
     }
 
     public function updateAny(User $user): bool
@@ -55,6 +61,6 @@ class OrderPolicy
      */
     private function can(User $user, string $permission): bool
     {
-        return Gate::forUser($user)->allows('admin');
+        return $user->hasPermission($permission);
     }
 }

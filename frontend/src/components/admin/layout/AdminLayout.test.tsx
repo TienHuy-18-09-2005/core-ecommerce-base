@@ -32,7 +32,7 @@ describe("adminRoutes", () => {
     const groups = navGroups();
     expect(groups.map((g) => g.label)).toEqual(["TỔNG QUAN", "BÁN HÀNG", "CATALOG", "KHÁCH HÀNG", "HỆ THỐNG"]);
     const labels = groups.flatMap((g) => g.items.map((i) => i.label));
-    for (const hidden of ["Thương hiệu", "Người dùng", "Vai trò & phân quyền", "Nhật ký"]) expect(labels).not.toContain(hidden);
+    for (const hidden of ["Thương hiệu", "Người dùng", "Nhật ký"]) expect(labels).not.toContain(hidden);
     expect(labels).toEqual(expect.arrayContaining(["Tổng quan", "Sản phẩm", "Đơn hàng", "Danh mục", "Mã giảm giá", "Đánh giá", "Cài đặt"]));
     expect(new Set(ADMIN_ROUTES.map((r) => r.path)).size).toBe(ADMIN_ROUTES.length);
   });

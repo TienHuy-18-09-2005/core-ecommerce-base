@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { ProtectedRoute } from "../components/common/ProtectedRoute.tsx";
 import { useAuth } from "./useAuth.ts";
+import { canEnterAdmin } from "../hooks/useCan.ts";
 
 // Bundle admin tách riêng: khách/khách hàng không tải mã quản trị.
 const AdminApp = lazy(() => import("../pages/admin/AdminApp.tsx"));
@@ -26,7 +27,7 @@ function AdminForbidden() {
 /** Chỉ là UX — quyền thật kiểm ở server (Gate admin + Policy trên từng route). */
 function AdminGuard() {
   const { user } = useAuth();
-  if (user?.role !== "admin") {
+  if (!canEnterAdmin(user)) {
     return <AdminForbidden />;
   }
   return (

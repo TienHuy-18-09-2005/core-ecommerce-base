@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
@@ -16,6 +17,7 @@ import { firstFieldErrors } from "../../utils/fieldErrors.ts";
 const empty: AdminCategoryInput = { name: "", slug: "", parent_id: null, description: "", image_url: null, is_active: true, sort_order: 0 };
 
 export default function CategoriesPage() {
+  const can = useCan();
   const { data, error, isLoading, refetch, isRefetching } = useAdminCategoriesQuery();
   const confirm = useConfirm();
   const { remove } = useCategoryMutations();
@@ -32,7 +34,7 @@ export default function CategoriesPage() {
 
   return (
     <>
-      <PageHeader title="Danh mục" actions={<button type="button" className={btnPrimary} onClick={modal.openCreate}>+ Thêm danh mục</button>} />
+      <PageHeader title="Danh mục" actions={can("categories.manage") ? <button type="button" className={btnPrimary} onClick={modal.openCreate}>+ Thêm danh mục</button> : undefined} />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <section className="rounded-xl border border-admin-border bg-admin-surface">
         {isLoading && <SkeletonBlock lines={4} className="border-0" />}
@@ -45,16 +47,16 @@ export default function CategoriesPage() {
                 {!cat.is_active && <span className="ml-2 rounded bg-admin-status-neutral-bg px-1.5 text-xs">Ẩn</span>}
                 <p className="text-xs text-admin-muted">/{cat.slug} · {cat.products_count} sản phẩm · {cat.children_count} danh mục con</p>
               </div>
-              <IconActions>
+              {can("categories.manage") && <IconActions>
                 <IconButton label="Sửa" ariaLabel={`Sửa danh mục ${cat.name}`} icon={<Pencil />} onClick={() => modal.openEdit(cat.id)} />
                 <IconButton label="Xóa" ariaLabel={`Xóa danh mục ${cat.name}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(cat)} />
-              </IconActions>
+              </IconActions>}
             </li>
           ))}
         </ul>
       </section>
-      {modal.mode === "create" && <CategoryFormModal key="new" tree={tree} onClose={modal.close} />}
-      {modal.mode === "edit" && editing && <CategoryFormModal key={editing.id} editing={editing} tree={tree} onClose={modal.close} />}
+      {can("categories.manage") && modal.mode === "create" && <CategoryFormModal key="new" tree={tree} onClose={modal.close} />}
+      {can("categories.manage") && modal.mode === "edit" && editing && <CategoryFormModal key={editing.id} editing={editing} tree={tree} onClose={modal.close} />}
     </>
   );
 }

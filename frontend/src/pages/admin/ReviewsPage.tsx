@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { IconActions, IconButton } from "../../components/admin/ui/IconButton.tsx";
 import { Link } from "react-router-dom";
@@ -26,6 +27,7 @@ const PRESETS = [
 ];
 
 export default function ReviewsPage() {
+  const can = useCan();
   const { values, page, set, setMany, setPage, sort, toggleSort, sortParams, query, applyQuery } = useListParams(KEYS);
   const { data, error, isLoading, refetch, isRefetching } = useAdminReviewsQuery({ ...values, ...sortParams, page });
   const confirm = useConfirm();
@@ -59,13 +61,13 @@ export default function ReviewsPage() {
     <>
       <PageHeader title="Đánh giá" />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
-      <DataTable tableId="reviews" selection={selection} rowLabel={(r) => `đánh giá ${r.id} của ${r.user?.name ?? "khách"}`}
+      <DataTable tableId="reviews" selection={can("reviews.moderate") ? selection : undefined} rowLabel={(r) => `đánh giá ${r.id} của ${r.user?.name ?? "khách"}`}
         actions={<SavedViews tableId="reviews" presets={PRESETS} query={query} onApply={applyQuery} />}
         toolbar={<>
           <SearchBox label="Tìm đánh giá" placeholder="Nội dung, sản phẩm, khách..." value={values.q} onChange={(v) => set("q", v)} />
           <FilterChips filters={FILTERS} values={values} onChange={(k, v) => set(k as (typeof KEYS)[number], v)} onClear={() => setMany({ visibility: "", rating: "" })} />
         </>}
-        bulkActions={<>
+        bulkActions={can("reviews.moderate") && <>
           <button type="button" className={btnSecondary} disabled={busy} onClick={() => onBulkModerate(false)}>Ẩn</button>
           <button type="button" className={btnSecondary} disabled={busy} onClick={() => onBulkModerate(true)}>Hiện</button>
           <button type="button" className={btnDanger} disabled={busy} onClick={() => void onBulkDelete()}>Xóa</button>
@@ -92,8 +94,10 @@ export default function ReviewsPage() {
         { header: "Trạng thái", sortKey: "is_approved", cell: (r) => <ReviewStatusBadge approved={r.is_approved} /> },
         { header: "Thao tác", hideable: false, cell: (r) => (
           <IconActions>
+            {can("reviews.moderate") && <>
             <IconButton label={r.is_approved ? "Ẩn đánh giá" : "Hiện đánh giá"} icon={r.is_approved ? <EyeOff /> : <Eye />} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)} />
             <IconButton label="Xóa đánh giá" tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(r.id)} />
+            </>}
           </IconActions>
         ) },
       ]} />

@@ -62,8 +62,8 @@ export function VariantsTable({ variants, onChange, errors, dupRows, productName
           <thead className="bg-admin-subtle text-left text-xs font-medium text-admin-muted">
             <tr>
               <th scope="col" className="w-8 px-2 py-2"><input type="checkbox" aria-label="Chọn tất cả biến thể" checked={all} onChange={() => setPicked(all ? new Set() : new Set(variants.map((_, i) => i)))} /></th>
-              <th scope="col" className="px-2 py-2">Tên biến thể *</th>
-              <th scope="col" className="px-2 py-2">SKU *</th>
+              <th scope="col" className="min-w-40 px-2 py-2">Tên biến thể *</th>
+              <th scope="col" className="min-w-44 px-2 py-2">SKU *</th>
               <th scope="col" className="px-2 py-2 text-right">Giá bán *</th>
               <th scope="col" className="px-2 py-2 text-right">Giá gốc</th>
               <th scope="col" className="px-2 py-2 text-right">Giá vốn</th>
@@ -79,10 +79,10 @@ export function VariantsTable({ variants, onChange, errors, dupRows, productName
               const n = i + 1;
               const skuErr = err(i, "sku") ?? (dupRows.has(i) ? "SKU bị trùng." : undefined);
               const field = (f: keyof AdminVariant, label: string, value: string | number, set: (s: string) => void, type = "number", e = err(i, f)) => (
-                <td className="px-1.5 py-1.5 align-top">
-                  <input type={type} min={type === "number" ? 0 : undefined} inputMode={type === "number" ? "numeric" : undefined}
+                <td className={`px-1.5 py-1.5 align-top ${type === "number" ? "w-28" : ""}`}>
+                  <input type={type} title={type === "text" && value ? String(value) : undefined} min={type === "number" ? 0 : undefined} inputMode={type === "number" ? "numeric" : undefined}
                     aria-label={`${label} biến thể ${n}`} aria-invalid={e ? true : undefined} aria-describedby={e ? `${uid}-${i}-${f}` : undefined}
-                    className={`${cell} ${type === "number" ? "text-right" : ""} ${e ? "!border-admin-danger" : ""}`} value={value} onChange={(ev) => set(ev.target.value)} />
+                    className={`${cell} ${type === "number" ? "text-right" : "truncate"} ${e ? "!border-admin-danger" : ""}`} value={value} onChange={(ev) => set(ev.target.value)} />
                   {e && <p id={`${uid}-${i}-${f}`} className="mt-0.5 text-xs text-admin-danger">{e}</p>}
                 </td>
               );

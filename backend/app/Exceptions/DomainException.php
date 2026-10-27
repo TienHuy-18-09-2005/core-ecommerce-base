@@ -38,6 +38,10 @@ class DomainException extends RuntimeException
 
     public const COUPON_IN_USE = 'COUPON_IN_USE';
 
+    public const ROLE_IN_USE = 'ROLE_IN_USE';
+
+    public const STAFF_INVALID = 'STAFF_INVALID';
+
     public function __construct(
         public readonly string $errorCode,
         string $message,

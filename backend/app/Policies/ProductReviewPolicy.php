@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Models\ProductReview;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
-use Illuminate\Support\Facades\Gate;
 
 class ProductReviewPolicy
 {
@@ -20,18 +19,18 @@ class ProductReviewPolicy
     /** Chủ đánh giá hoặc admin được xóa. */
     public function delete(User $user, ProductReview $review): Response
     {
-        return $review->user_id === $user->id || Gate::forUser($user)->allows('admin')
+        return $review->user_id === $user->id || $user->hasPermission('reviews.moderate')
             ? Response::allow()
             : Response::denyAsNotFound('Không tìm thấy dữ liệu.');
     }
 
     public function viewAny(User $user): bool
     {
-        return Gate::forUser($user)->allows('admin');
+        return $user->hasPermission('reviews.view');
     }
 
     public function moderate(User $user, ProductReview $review): bool
     {
-        return Gate::forUser($user)->allows('admin');
+        return $user->hasPermission('reviews.moderate');
     }
 }

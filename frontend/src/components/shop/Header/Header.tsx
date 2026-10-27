@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCategoriesQuery } from "../../../hooks/useCatalogQuery.ts";
 import { useAuth } from "../../../app/useAuth.ts";
+import { canEnterAdmin } from "../../../hooks/useCan.ts";
 import { useCartDrawer } from "../../../app/useCartDrawer.ts";
 import { useCartQuery } from "../../../hooks/useCartQuery.ts";
 import { ThemeToggle } from "../../common/ThemeToggle.tsx";
@@ -47,7 +48,7 @@ export function Header() {
         <ThemeToggle />
         {auth.user ? (
           <>
-            {auth.user.role === "admin" && (
+            {canEnterAdmin(auth.user) && (
               <Link to="/admin" className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-semibold text-blue-700">
                 <LayoutDashboard className="h-5 w-5" aria-hidden="true" />
                 Trang quản trị

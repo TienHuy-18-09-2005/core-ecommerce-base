@@ -6,7 +6,9 @@ use App\Notifications\ResetPasswordVi;
 use App\Notifications\VerifyEmailVi;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Services\Admin\PermissionService;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -54,6 +56,23 @@ class User extends Authenticatable implements MustVerifyEmail
     public function reviews(): HasMany
     {
         return $this->hasMany(ProductReview::class);
+    }
+
+    /** Vai trò RBAC (chỉ có tác dụng với role=staff; admin luôn có mọi quyền). */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'user_role');
+    }
+
+    /** @return list<string> */
+    public function permissions(): array
+    {
+        return app(PermissionService::class)->for($this);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return app(PermissionService::class)->has($this, $permission);
     }
 
     public function cart()

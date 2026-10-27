@@ -1,3 +1,4 @@
+import { useCan } from "../../hooks/useCan.ts";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useModalParam } from "../../hooks/useModalParam.ts";
@@ -34,6 +35,7 @@ const priceRange = (p: AdminProductRow) =>
   p.price_min === null ? "—" : p.price_max !== null && p.price_max !== p.price_min ? `${formatCurrency(p.price_min)} – ${formatCurrency(p.price_max)}` : formatCurrency(p.price_min);
 
 export default function ProductsPage() {
+  const can = useCan();
   const modal = useModalParam();
   const { values, page, set, setMany, setPage, sort, toggleSort, sortParams, query, applyQuery } = useListParams(KEYS);
   const { data, error, isLoading, refetch, isRefetching } = useAdminProductsQuery({ ...values, ...sortParams, page });
@@ -86,16 +88,17 @@ export default function ProductsPage() {
   const busy = bulk.isPending || bulkDelete.isPending;
   return (
     <>
-      <PageHeader title="Sản phẩm" actions={<button type="button" onClick={modal.openCreate} className={btnPrimary}>+ Thêm sản phẩm</button>} />
+      <PageHeader title="Sản phẩm" actions={can("products.edit") ? <button type="button" onClick={modal.openCreate} className={btnPrimary}>+ Thêm sản phẩm</button> : undefined} />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable tableId="products" sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp."
-        selection={selection} rowLabel={(p) => p.name}
+        selection={can(["products.edit", "products.delete"]) ? selection : undefined} rowLabel={(p) => p.name}
         actions={<SavedViews tableId="products" presets={PRESETS} query={query} onApply={applyQuery} />}
         toolbar={<>
           <SearchBox label="Tìm sản phẩm" placeholder="Tên hoặc SKU..." value={values.q} onChange={(v) => set("q", v)} />
           <FilterChips filters={filters} values={values} onChange={(k, v) => set(k as (typeof KEYS)[number], v)} onClear={() => setMany({ status: "", category_id: "", brand_id: "", low_stock: "" })} />
         </>}
         bulkActions={<>
+          {can("products.edit") && <>
           <button type="button" className={btnSecondary} disabled={busy} onClick={() => runBulk("Hiện (đang bán)", { action: "status", status: "published" })}>Hiện</button>
           <button type="button" className={btnSecondary} disabled={busy} onClick={() => runBulk("Ẩn (lưu trữ)", { action: "status", status: "archived" })}>Ẩn</button>
           <Popover label="Gán danh mục" button="Gán danh mục" buttonClass={btnSecondary} panelClass="w-72">
@@ -114,7 +117,8 @@ export default function ProductsPage() {
               </div>
             )}
           </Popover>
-          <button type="button" className={btnDanger} disabled={busy} onClick={() => void onBulkDelete()}>{bulkDelete.isPending ? "Đang xóa..." : "Xóa"}</button>
+          </>}
+          {can("products.delete") && <button type="button" className={btnDanger} disabled={busy} onClick={() => void onBulkDelete()}>{bulkDelete.isPending ? "Đang xóa..." : "Xóa"}</button>}
         </>}
         columns={[
           { header: "Ảnh", id: "image", cell: (p) => (
@@ -137,14 +141,14 @@ export default function ProductsPage() {
           { header: "Thao tác", hideable: false, cell: (p) => (
             <IconActions>
               <IconButton label="Xem chi tiết" ariaLabel={`Xem chi tiết ${p.name}`} icon={<Eye />} href={`/admin/san-pham/${p.id}`} />
-              <IconButton label="Sửa" ariaLabel={`Sửa ${p.name}`} icon={<Pencil />} onClick={() => modal.openEdit(p.id)} />
-              <IconButton label="Nhân bản" ariaLabel={`Nhân bản ${p.name}`} icon={<Copy />} disabled={duplicate.isPending} onClick={() => onDuplicate(p)} />
-              <IconButton label="Xóa" ariaLabel={`Xóa ${p.name}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(p.id, p.name)} />
+              {can("products.edit") && <IconButton label="Sửa" ariaLabel={`Sửa ${p.name}`} icon={<Pencil />} onClick={() => modal.openEdit(p.id)} />}
+              {can("products.edit") && <IconButton label="Nhân bản" ariaLabel={`Nhân bản ${p.name}`} icon={<Copy />} disabled={duplicate.isPending} onClick={() => onDuplicate(p)} />}
+              {can("products.delete") && <IconButton label="Xóa" ariaLabel={`Xóa ${p.name}`} tone="danger" icon={<Trash2 />} disabled={remove.isPending} onClick={() => void onDelete(p.id, p.name)} />}
             </IconActions>
           ) },
         ]} />
       <Pagination meta={data?.meta} onPage={setPage} />
-      {modal.mode && <ProductFormModal key={modal.editId ?? "new"} id={modal.editId} onClose={modal.close} />}
+      {modal.mode && can("products.edit") && <ProductFormModal key={modal.editId ?? "new"} id={modal.editId} onClose={modal.close} />}
       <Modal open={report !== null} onClose={() => setReport(null)} title="Kết quả thao tác hàng loạt"
         footer={<button type="button" className={btnSecondary} onClick={() => setReport(null)}>Đóng</button>}>
         {report && <>

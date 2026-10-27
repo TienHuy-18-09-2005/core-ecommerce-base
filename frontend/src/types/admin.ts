@@ -27,13 +27,14 @@ export interface DashboardData {
   stats: {
     orders_total: number;
     orders_today: number;
-    revenue_today: number;
-    revenue_14d: number;
+    /** Không có khi thiếu quyền revenue.view (server ẩn). */
+    revenue_today?: number;
+    revenue_14d?: number;
     pending_orders: number;
     low_stock_variants: number;
     hidden_reviews: number;
   };
-  revenue_series: { date: string; orders: number; revenue: number }[];
+  revenue_series: { date: string; orders: number; revenue?: number }[];
   recent_orders: OrderSummaryRow[];
   low_stock: { variant_id: number; product_id: number; product_name: string | null; variant_name: string; sku: string; stock_quantity: number }[];
 }
@@ -217,4 +218,37 @@ export interface AdminReview {
   created_at: string | null;
   product: { id: number; name: string; slug: string } | null;
   user: { id: number; name: string; email: string } | null;
+}
+
+/** R6: vai trò & phân quyền */
+export interface PermissionGroup {
+  id: string;
+  label: string;
+  items: { key: string; label: string; admin_only: boolean }[];
+}
+
+export interface AdminRole {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  permissions: string[];
+  users_count: number;
+  updated_at: string | null;
+}
+
+export interface AdminRoleInput {
+  name: string;
+  description: string;
+  permissions: string[];
+}
+
+export interface AdminStaff {
+  id: number;
+  name: string;
+  email: string;
+  role: "admin" | "staff";
+  is_active: boolean;
+  roles: { id: number; name: string }[];
 }

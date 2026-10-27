@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -87,7 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Mọi route admin: đăng nhập + Gate admin + throttle; thêm policy theo từng tài nguyên.
 Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin'])->group(function () {
-    Route::get('/dashboard', AdminDashboardController::class);
+    Route::get('/dashboard', AdminDashboardController::class)->middleware('can:dashboard.view');
 
     Route::get('/products', [AdminProductController::class, 'index'])->middleware('can:viewAny,App\Models\Product');
     Route::post('/products', [AdminProductController::class, 'store'])->middleware('can:create,App\Models\Product');
@@ -96,7 +98,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
         ->middleware(['can:create,App\Models\Product', 'throttle:admin-upload']);
     Route::post('/products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->middleware('can:create,App\Models\Product');
     Route::get('/products/{product}', [AdminProductController::class, 'show'])->middleware('can:view,product');
-    Route::get('/products/{product}/history', [AdminProductController::class, 'history'])->middleware('can:view,product');
+    Route::get('/products/{product}/history', [AdminProductController::class, 'history'])->middleware(['can:view,product', 'can:audit.view']);
     Route::put('/products/{product}', [AdminProductController::class, 'update'])->middleware('can:update,product');
     Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->middleware('can:delete,product');
     // Ảnh sản phẩm: tải từng file (để có tiến độ), sắp thứ tự + ảnh chính, xóa kèm file
@@ -125,9 +127,22 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'can:admin', 'throttle:admin
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->middleware('can:manage,order');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
         ->middleware('can:update,order');
-    Route::post('/orders/{order}/notes', [AdminOrderController::class, 'addNote'])->middleware('can:update,order');
+    Route::post('/orders/{order}/notes', [AdminOrderController::class, 'addNote'])->middleware('can:note,order');
 
     Route::get('/reviews', [AdminReviewController::class, 'index'])->middleware('can:viewAny,App\Models\ProductReview');
     Route::patch('/reviews/{review}', [AdminReviewController::class, 'moderate'])->middleware('can:moderate,review');
     Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('can:moderate,review');
+
+    // R6: vai trò & phân quyền, gán vai trò cho nhân viên (chỉ admin: roles.manage)
+    Route::middleware('can:roles.manage')->group(function () {
+        Route::get('/permissions', [AdminRoleController::class, 'permissions']);
+        Route::get('/roles', [AdminRoleController::class, 'index']);
+        Route::post('/roles', [AdminRoleController::class, 'store']);
+        Route::put('/roles/{role}', [AdminRoleController::class, 'update']);
+        Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy']);
+        Route::get('/staff', [AdminStaffController::class, 'index']);
+        Route::post('/staff', [AdminStaffController::class, 'store']);
+        Route::put('/staff/{user}/roles', [AdminStaffController::class, 'updateRoles']);
+        Route::delete('/staff/{user}', [AdminStaffController::class, 'destroy']);
+    });
 });

@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminService, cleanParams, type QueryParams } from "../services/adminService.ts";
-import type { AdminCategoryInput, AdminCouponInput, AdminProductInput, BulkProductInput } from "../types/admin.ts";
+import type { AdminRoleInput, AdminCategoryInput, AdminCouponInput, AdminProductInput, BulkProductInput } from "../types/admin.ts";
 
 export const adminKeys = {
   all: ["admin"] as const,
@@ -16,6 +16,9 @@ export const adminKeys = {
   orderPrint: (ids: number[]) => ["admin", "order-print", ids] as const,
   latestOrders: ["admin", "latest-orders"] as const,
   reviews: (p: QueryParams) => ["admin", "reviews", cleanParams(p)] as const,
+  permissionCatalog: ["admin", "permission-catalog"] as const,
+  roles: (p: QueryParams) => ["admin", "roles", cleanParams(p)] as const,
+  staff: (p: QueryParams) => ["admin", "staff", cleanParams(p)] as const,
 };
 
 export const useDashboardQuery = () => useQuery({ queryKey: adminKeys.dashboard, queryFn: ({ signal }) => adminService.dashboard(signal) });
@@ -154,4 +157,28 @@ export function useBulkActionWith<Id, A>(fn: (id: Id, arg: A) => Promise<unknown
     },
     onSettled: onSuccess,
   });
+}
+
+export const usePermissionCatalogQuery = () =>
+  useQuery({ queryKey: adminKeys.permissionCatalog, queryFn: ({ signal }) => adminService.permissionCatalog(signal), staleTime: Infinity });
+
+export const useAdminRolesQuery = (p: QueryParams = {}) =>
+  useQuery({ queryKey: adminKeys.roles(p), queryFn: ({ signal }) => adminService.roles(p, signal), placeholderData: keepPreviousData });
+
+export const useAdminStaffQuery = (p: QueryParams) =>
+  useQuery({ queryKey: adminKeys.staff(p), queryFn: ({ signal }) => adminService.staff(p, signal), placeholderData: keepPreviousData });
+
+/** Vai trò & nhân viên: đổi xong làm mới cache admin và phiên của chính mình (quyền có thể đổi). */
+export function useRoleMutations() {
+  const invalidate = useInvalidateAdmin();
+  const client = useQueryClient();
+  const onSuccess = async () => { await Promise.all([invalidate(), client.invalidateQueries({ queryKey: ["auth", "me"] })]); };
+  return {
+    create: useMutation({ mutationFn: (input: AdminRoleInput) => adminService.createRole(input), onSuccess }),
+    update: useMutation({ mutationFn: ({ id, input }: { id: number; input: AdminRoleInput }) => adminService.updateRole(id, input), onSuccess }),
+    remove: useMutation({ mutationFn: (id: number) => adminService.deleteRole(id), onSuccess }),
+    addStaff: useMutation({ mutationFn: ({ email, roleIds }: { email: string; roleIds: number[] }) => adminService.addStaff(email, roleIds), onSuccess }),
+    updateStaff: useMutation({ mutationFn: ({ id, roleIds }: { id: number; roleIds: number[] }) => adminService.updateStaffRoles(id, roleIds), onSuccess }),
+    removeStaff: useMutation({ mutationFn: (id: number) => adminService.removeStaff(id), onSuccess }),
+  };
 }

@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         // Tài khoản mẫu chỉ được tạo khi mật khẩu nằm trong env. Không có mật khẩu mặc định.
         $this->call([
+            RbacSeeder::class,
             AdminUserSeeder::class,
             CustomerUserSeeder::class,
         ]);

@@ -29,9 +29,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('admin', function (User $user): bool {
-            return $user->role === 'admin' && (bool) $user->is_active;
-        });
+        // Vào khu quản trị: admin đang hoạt động, hoặc nhân viên có ít nhất một quyền.
+        Gate::define('admin', fn (User $user): bool => $user->permissions() !== []);
+        // Mỗi quyền R6 là một ability: can:revenue.view, Gate::allows('orders.cancel')...
+        foreach (\App\Support\Permissions::all() as $permission) {
+            Gate::define($permission, fn (User $user): bool => $user->hasPermission($permission));
+        }
 
         $this->configureRateLimiting();
     }

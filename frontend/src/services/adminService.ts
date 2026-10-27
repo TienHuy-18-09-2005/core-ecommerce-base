@@ -1,5 +1,5 @@
 import type {
-  AdminCategory, AdminCategoryInput, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
+  AdminCategory, AdminCategoryInput, AdminRole, AdminRoleInput, AdminStaff, PermissionGroup, AdminCoupon, AdminCouponInput, AdminOrderDetail, AdminProduct, AdminProductImage,
   AdminProductInput, AdminProductRow, BulkProductInput, BulkProductResult, AdminReview, BulkStatusResult, DashboardData, LatestOrders, OrderNote, OrderStatusCounts, PrintData, OrderSummaryRow, Paginated, ProductHistoryEntry } from "../types/admin.ts";
 import { apiClient } from "./apiClient.ts";
 
@@ -81,4 +81,17 @@ export const adminService = {
   moderateReview: async (id: number, isApproved: boolean) =>
     (await apiClient.patch<Envelope<AdminReview>>(`/admin/reviews/${id}`, { is_approved: isApproved })).data.data,
   deleteReview: async (id: number) => { await apiClient.delete(`/admin/reviews/${id}`); },
+
+  permissionCatalog: (signal?: AbortSignal) => get<PermissionGroup[]>("/admin/permissions", signal),
+  roles: async (params: QueryParams, signal?: AbortSignal) =>
+    (await apiClient.get<Envelope<AdminRole[]>>("/admin/roles", { params: cleanParams(params), signal })).data.data,
+  createRole: async (input: AdminRoleInput) => (await apiClient.post<Envelope<AdminRole>>("/admin/roles", input)).data.data,
+  updateRole: async (id: number, input: AdminRoleInput) => (await apiClient.put<Envelope<AdminRole>>(`/admin/roles/${id}`, input)).data.data,
+  deleteRole: async (id: number) => { await apiClient.delete(`/admin/roles/${id}`); },
+  staff: (params: QueryParams, signal?: AbortSignal) => page<AdminStaff>("/admin/staff", params, signal),
+  addStaff: async (email: string, roleIds: number[]) =>
+    (await apiClient.post<Envelope<AdminStaff>>("/admin/staff", { email, role_ids: roleIds })).data.data,
+  updateStaffRoles: async (id: number, roleIds: number[]) =>
+    (await apiClient.put<Envelope<AdminStaff>>(`/admin/staff/${id}/roles`, { role_ids: roleIds })).data.data,
+  removeStaff: async (id: number) => { await apiClient.delete(`/admin/staff/${id}`); },
 };

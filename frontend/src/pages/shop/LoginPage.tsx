@@ -1,3 +1,5 @@
+import { canEnterAdmin } from "../../hooks/useCan.ts";
+import type { User } from "../../types/auth.ts";
 import { useMutation } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -14,18 +16,18 @@ export function LoginPage() {
   const explicitRedirect = params.get("redirect");
   const redirect = safeRedirect(explicitRedirect);
   // Admin không có ?redirect= rõ ràng thì vào thẳng trang quản trị.
-  const targetFor = (role?: string) => (role === "admin" && !explicitRedirect ? "/admin" : redirect);
+  const targetFor = (u: User) => (canEnterAdmin(u) && !explicitRedirect ? "/admin" : redirect);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
 
   const mutation = useMutation({
     mutationFn: () => login({ email: email.trim(), password, remember }),
-    onSuccess: (result) => navigate(targetFor(result.user.role), { replace: true }),
+    onSuccess: (result) => navigate(targetFor(result.user), { replace: true }),
   });
 
   if (user && !mutation.isPending && !mutation.isSuccess) {
-    return <Navigate to={targetFor(user.role)} replace />;
+    return <Navigate to={targetFor(user)} replace />;
   }
 
   const onSubmit = (event: FormEvent) => {

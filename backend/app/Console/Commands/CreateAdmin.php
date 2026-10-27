@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Services\Admin\PermissionService;
 use App\Support\VietnamesePhone;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
  * Tạo mới hoặc nâng quyền một tài khoản thành admin.
  * Dùng: php artisan admin:create  (hỏi lần lượt)
  *   hoặc php artisan admin:create --email=a@b.vn --name="Admin" --password=... --phone=09...
+ *   nhân viên: php artisan admin:create --email=nv@b.vn --role=staff --staff-role=product_manager,accountant
  */
 class CreateAdmin extends Command
 {
@@ -18,7 +21,9 @@ class CreateAdmin extends Command
         {--name= : Họ tên}
         {--email= : Email đăng nhập}
         {--password= : Mật khẩu (tối thiểu 8 ký tự). Bỏ trống để nhập ẩn}
-        {--phone= : Số điện thoại (tùy chọn)}';
+        {--phone= : Số điện thoại (tùy chọn)}
+        {--role=admin : admin hoặc staff (nhân viên)}
+        {--staff-role= : Slug vai trò cho nhân viên, cách nhau bằng dấu phẩy (vd. product_manager,accountant)}';
 
     protected $description = 'Tạo tài khoản quản trị hoặc nâng quyền tài khoản có sẵn thành admin';
 
@@ -31,6 +36,21 @@ class CreateAdmin extends Command
             ['email.required' => 'Email là bắt buộc.', 'email.email' => 'Email không hợp lệ.', 'email.max' => 'Email tối đa 255 ký tự.']);
         if ($emailCheck->fails()) {
             return $this->failWith($emailCheck->errors()->all());
+        }
+
+        $role = (string) $this->option('role');
+        if (! in_array($role, ['admin', 'staff'], true)) {
+            return $this->failWith(['--role chỉ nhận admin hoặc staff.']);
+        }
+        $roleIds = [];
+        if ($role === 'staff') {
+            $slugs = array_values(array_filter(array_map('trim', explode(',', (string) $this->option('staff-role')))));
+            $found = Role::whereIn('slug', $slugs)->pluck('id', 'slug');
+            $missing = array_diff($slugs, $found->keys()->all());
+            if ($slugs === [] || $missing) {
+                return $this->failWith(['Cần --staff-role hợp lệ. Vai trò có sẵn: '.Role::orderBy('slug')->pluck('slug')->implode(', ').($missing ? '. Không tìm thấy: '.implode(', ', $missing) : '')]);
+            }
+            $roleIds = $found->values()->all();
         }
 
         $user = User::where('email', $email)->first();
@@ -71,7 +91,7 @@ class CreateAdmin extends Command
 
         $isNew = ! $user;
         $user ??= new User(['email' => $email]);
-        $attrs = ['name' => $name, 'role' => 'admin', 'is_active' => true];
+        $attrs = ['name' => $name, 'role' => $role, 'is_active' => true];
         if ($password !== null) {
             $attrs['password'] = $password;
         }
@@ -82,6 +102,13 @@ class CreateAdmin extends Command
             $attrs['email_verified_at'] = now();
         }
         $user->forceFill($attrs)->save();
+        $user->roles()->sync($roleIds);
+        app(PermissionService::class)->forget($user->id);
+        if ($role === 'staff') {
+            $this->info("Đã tạo/cập nhật nhân viên {$email} với vai trò: ".implode(', ', $slugs).'.');
+
+            return self::SUCCESS;
+        }
 
         $this->info($isNew
             ? "Đã tạo tài khoản quản trị {$email}."

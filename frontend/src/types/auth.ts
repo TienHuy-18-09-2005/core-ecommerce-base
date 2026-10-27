@@ -7,6 +7,8 @@ export interface User {
   avatar_url: string | null;
   /** false = chưa xác thực email: vẫn duyệt/giỏ/đăng nhập, nhưng không đặt hàng bằng tài khoản. */
   email_verified: boolean;
+  /** R6: quyền hiệu lực (admin = tất cả, nhân viên = hợp quyền các vai trò). */
+  permissions?: string[];
 }
 
 /** Điều chỉnh khi server gộp giỏ khách vào giỏ tài khoản. */
