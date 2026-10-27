@@ -1,18 +1,16 @@
 import { Bookmark, Search, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { inputClass } from "../../../utils/adminFormat.ts";
 import { FormField } from "../form/FormField.tsx";
 import { Popover } from "./Popover.tsx";
 import { useSavedViews } from "./useTablePrefs.ts";
+import { ctlIdle, ctlOn, ghostBtn, toolBtn, toolBtnOn, toolLabel } from "./toolbarStyles.ts";
 
 export type FilterDef =
   | { key: string; label: string; type: "select"; options: { value: string; label: string }[] }
   | { key: string; label: string; type: "toggle" }
   | { key: string; label: string; type: "date" };
 
-const chip = "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-medium";
-const chipIdle = `${chip} border-dashed border-admin-border-strong bg-admin-surface text-admin-fg-soft hover:bg-admin-subtle`;
-const chipOn = `${chip} border-admin-primary bg-admin-primary/10 text-admin-primary`;
 
 /** Ô tìm kiếm debounce (400ms), Enter áp dụng ngay; đồng bộ khi URL đổi từ nơi khác. */
 export function SearchBox({ label, placeholder, value, onChange, delay = 400 }: { label: string; placeholder?: string; value: string; onChange: (v: string) => void; delay?: number }) {
@@ -23,18 +21,19 @@ export function SearchBox({ label, placeholder, value, onChange, delay = 400 }: 
     const t = setTimeout(() => onChange(text.trim()), delay);
     return () => clearTimeout(t);
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
+  const id = useId();
   return (
-    <div className="relative w-full sm:w-72">
-      <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-admin-muted" />
-      <input type="search" aria-label={label} placeholder={placeholder} className={`${inputClass} pl-9`} value={text}
-        onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onChange(text.trim()); } }} />
+    <div className="w-full sm:w-72">
+      <label htmlFor={id} className={`${toolLabel} mb-1`}>{label}</label>
+      <div className="relative">
+        <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-admin-muted" />
+        <input id={id} type="search" placeholder={placeholder} className={`${ctlIdle} w-full pl-9`} value={text}
+          onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onChange(text.trim()); } }} />
+      </div>
     </div>
   );
 }
 
-const ctl = "h-9 rounded-lg border bg-admin-surface px-2 text-sm text-admin-fg focus:outline-none focus:ring-2 focus:ring-admin-primary/40";
-const ctlIdle = `${ctl} border-admin-border-strong`;
-const ctlOn = `${ctl} border-admin-primary bg-admin-primary/10 font-medium text-admin-primary`;
 
 /** Thanh lọc hiện sẵn: mỗi bộ lọc là một ô có nhãn, chọn là áp dụng ngay (đồng bộ URL); đang lọc thì tô nổi. */
 export function FilterChips({ filters, values, onChange, onClear }: {
@@ -42,23 +41,26 @@ export function FilterChips({ filters, values, onChange, onClear }: {
 }) {
   const anyActive = filters.some((f) => values[f.key]);
   return (
-    <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-end gap-x-3 gap-y-2">
+    <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-end gap-3">
       {filters.map((f) => {
         const v = values[f.key] ?? "";
         const id = `filter-${f.key}`;
         if (f.type === "toggle") {
           return (
-            <label key={f.key} htmlFor={id} className={`${v === "1" ? ctlOn : ctlIdle} inline-flex cursor-pointer items-center gap-2`}>
-              <input id={id} type="checkbox" className="size-4 accent-admin-primary" checked={v === "1"} onChange={(e) => onChange(f.key, e.target.checked ? "1" : "")} />
-              {f.label}
-            </label>
+            <div key={f.key}>
+              <span aria-hidden className={`${toolLabel} mb-1`}>&nbsp;</span>
+              <label htmlFor={id} className={`${v === "1" ? ctlOn : ctlIdle} inline-flex cursor-pointer items-center gap-2`}>
+                <input id={id} type="checkbox" className="size-4 accent-admin-primary" checked={v === "1"} onChange={(e) => onChange(f.key, e.target.checked ? "1" : "")} />
+                {f.label}
+              </label>
+            </div>
           );
         }
         return (
-          <div key={f.key} className="flex flex-col gap-0.5">
-            <label htmlFor={id} className="text-xs font-medium text-admin-muted">{f.label}</label>
+          <div key={f.key}>
+            <label htmlFor={id} className={`${toolLabel} mb-1`}>{f.label}</label>
             {f.type === "select" ? (
-              <select id={id} className={`${v ? ctlOn : ctlIdle} min-w-32`} value={v} onChange={(e) => onChange(f.key, e.target.value)}>
+              <select id={id} className={`${v ? ctlOn : ctlIdle} min-w-36 pr-8`} value={v} onChange={(e) => onChange(f.key, e.target.value)}>
                 <option value="">Tất cả</option>
                 {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -69,7 +71,7 @@ export function FilterChips({ filters, values, onChange, onClear }: {
         );
       })}
       {anyActive && (
-        <button type="button" className="inline-flex h-9 items-center gap-1 rounded-lg px-2 text-sm text-admin-muted hover:bg-admin-subtle hover:text-admin-fg" onClick={onClear}>
+        <button type="button" className={ghostBtn} onClick={onClear}>
           <X aria-hidden className="size-4" />Xóa bộ lọc
         </button>
       )}
@@ -91,8 +93,8 @@ export function SavedViews({ tableId, presets, query, onApply }: {
       onClick={() => { onApply(v.query); close(); }}>{v.name}</button>
   );
   return (
-    <Popover label="Chế độ xem" panelClass="w-72" buttonClass={current ? chipOn : chipIdle}
-      button={<><Bookmark aria-hidden className="size-3.5" />{current ? current.name : "Xem đã lưu"}</>}>
+    <Popover label="Chế độ xem" panelClass="w-72" buttonClass={current ? toolBtnOn : toolBtn}
+      button={<><Bookmark aria-hidden className="size-4" />{current ? current.name : "Xem đã lưu"}</>}>
       {(close) => (
         <div className="space-y-3">
           <ul className="space-y-0.5">

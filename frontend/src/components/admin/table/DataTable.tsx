@@ -3,6 +3,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SortState } from "../../../hooks/useListParams.ts";
 import { EmptyState, Skeleton } from "../feedback.tsx";
 import { Popover } from "./Popover.tsx";
+import { toolBtn } from "./toolbarStyles.ts";
 import { useDensity, useHiddenColumns } from "./useTablePrefs.ts";
 import type { RowId, Selection } from "./useSelection.ts";
 
@@ -22,7 +23,6 @@ export interface Column<T> {
   hideable?: boolean;
 }
 
-const toolBtn = "inline-flex items-center gap-1.5 rounded-lg border border-admin-border-strong bg-admin-surface px-3 py-1.5 text-sm font-medium text-admin-fg-soft hover:bg-admin-subtle";
 
 function HeaderCheckbox({ selection, ids }: { selection: Selection; ids: RowId[] }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -31,7 +31,7 @@ function HeaderCheckbox({ selection, ids }: { selection: Selection; ids: RowId[]
     checked={selection.allSelected} onChange={() => selection.toggleAll()} />;
 }
 
-export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không có dữ liệu.", sort, onSort, tableId, selection, rowLabel, bulkActions, toolbar }: {
+export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không có dữ liệu.", sort, onSort, tableId, selection, rowLabel, bulkActions, toolbar, actions }: {
   columns: Column<T>[];
   rows: T[] | undefined;
   rowKey: (row: T) => RowId;
@@ -47,6 +47,8 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không
   bulkActions?: ReactNode;
   /** Nội dung bên trái thanh công cụ (vd. bộ lọc). */
   toolbar?: ReactNode;
+  /** Thao tác cấp bảng (vd. Xem đã lưu) — nằm bên phải cùng nhóm Cột/Mật độ. */
+  actions?: ReactNode;
 }) {
   const [density, setDensity] = useDensity();
   const { hidden, toggle } = useHiddenColumns(tableId);
@@ -64,10 +66,11 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không
   return (
     <div className="space-y-2">
       {(tableId || toolbar) && (
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{toolbar}</div>
-          {tableId && (
-            <div className="flex gap-2">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">{toolbar}</div>
+          {(tableId || actions) && (
+            <div role="group" aria-label="Thao tác bảng" className="ml-auto flex items-end gap-2">
+              {actions}
               <Popover label="Ẩn/hiện cột" align="right" buttonClass={toolBtn} button={<><Columns3 aria-hidden className="size-4" />Cột</>}>
                 {() => (
                   <fieldset>

@@ -58,10 +58,10 @@ export default function ProductsPage() {
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable tableId="products" sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp."
         selection={selection} rowLabel={(p) => p.name}
+        actions={<SavedViews tableId="products" presets={PRESETS} query={query} onApply={applyQuery} />}
         toolbar={<>
           <SearchBox label="Tìm sản phẩm" placeholder="Tên hoặc SKU..." value={values.q} onChange={(v) => set("q", v)} />
           <FilterChips filters={filters} values={values} onChange={(k, v) => set(k as (typeof KEYS)[number], v)} onClear={() => setMany({ status: "", category_id: "", low_stock: "" })} />
-          <SavedViews tableId="products" presets={PRESETS} query={query} onApply={applyQuery} />
         </>}
         bulkActions={<button type="button" className={btnDanger} disabled={bulkDelete.isPending} onClick={() => void onBulkDelete()}>{bulkDelete.isPending ? "Đang xóa..." : "Xóa đã chọn"}</button>}
         columns={[

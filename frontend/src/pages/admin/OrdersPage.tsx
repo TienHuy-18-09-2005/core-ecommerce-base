@@ -33,10 +33,10 @@ export default function OrdersPage() {
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable tableId="orders" sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(o) => o.id} empty="Không có đơn phù hợp."
         rowLabel={(o) => `đơn ${o.order_code}`}
+        actions={<SavedViews tableId="orders" presets={PRESETS} query={query} onApply={applyQuery} />}
         toolbar={<>
           <SearchBox label="Tìm đơn" placeholder="Mã đơn, tên, SĐT..." value={values.q} onChange={(v) => set("q", v)} />
           <FilterChips filters={FILTERS} values={values} onChange={(k, v) => set(k as (typeof KEYS)[number], v)} onClear={() => setMany({ status: "", payment_status: "", from: "", to: "" })} />
-          <SavedViews tableId="orders" presets={PRESETS} query={query} onApply={applyQuery} />
         </>}
         columns={[
           { header: "Mã đơn", sortKey: "order_code", hideable: false, cell: (o) => <Link to={`/admin/don-hang/${o.id}`} className="font-medium text-admin-primary">{o.order_code}</Link> },

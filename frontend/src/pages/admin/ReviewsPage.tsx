@@ -58,10 +58,10 @@ export default function ReviewsPage() {
       <PageHeader title="Đánh giá" />
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable tableId="reviews" selection={selection} rowLabel={(r) => `đánh giá ${r.id} của ${r.user?.name ?? "khách"}`}
+        actions={<SavedViews tableId="reviews" presets={PRESETS} query={query} onApply={applyQuery} />}
         toolbar={<>
           <SearchBox label="Tìm đánh giá" placeholder="Nội dung, sản phẩm, khách..." value={values.q} onChange={(v) => set("q", v)} />
           <FilterChips filters={FILTERS} values={values} onChange={(k, v) => set(k as (typeof KEYS)[number], v)} onClear={() => setMany({ visibility: "", rating: "" })} />
-          <SavedViews tableId="reviews" presets={PRESETS} query={query} onApply={applyQuery} />
         </>}
         bulkActions={<>
           <button type="button" className={btnSecondary} disabled={busy} onClick={() => onBulkModerate(false)}>Ẩn</button>
