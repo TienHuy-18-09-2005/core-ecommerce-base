@@ -51,7 +51,6 @@ const order = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  window.confirm = vi.fn(() => true);
 });
 
 describe("admin panel", () => {
@@ -147,6 +146,10 @@ describe("admin panel", () => {
     fireEvent.change(await screen.findByLabelText("Trạng thái mới"), { target: { value: "cancelled" } });
     fireEvent.change(screen.getByLabelText("Lý do hủy"), { target: { value: "Khách đổi ý" } });
     fireEvent.click(screen.getByRole("button", { name: "Cập nhật" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Hủy đơn hàng?" });
+    expect(document.activeElement?.textContent).toBe("Không");
+    expect(svc.updateOrderStatus).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Hủy đơn" }));
     await waitFor(() => expect(svc.updateOrderStatus).toHaveBeenCalledWith(7, { status: "cancelled", admin_note: undefined, cancel_reason: "Khách đổi ý" }));
   });
 
@@ -165,6 +168,11 @@ describe("admin panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hiện" }));
     await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledWith(2, true));
     fireEvent.click(screen.getAllByRole("button", { name: "Xóa" })[0]);
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Hủy bỏ" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(svc.deleteReview).not.toHaveBeenCalled();
+    fireEvent.click(screen.getAllByRole("button", { name: "Xóa" })[0]);
+    fireEvent.click(within(await screen.findByRole("alertdialog", { name: "Xóa đánh giá?" })).getByRole("button", { name: "Xóa" }));
     await waitFor(() => expect(svc.deleteReview).toHaveBeenCalledWith(1));
   });
 
@@ -179,6 +187,7 @@ describe("admin panel", () => {
     expect(items[0].textContent).toContain("Đèn LED");
     expect(items[1].textContent).toContain("└ Đèn âm trần");
     fireEvent.click(within(items[0]).getByRole("button", { name: "Xóa" }));
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Xóa" }));
     expect(await screen.findByText("Danh mục còn danh mục con hoặc sản phẩm.")).toBeTruthy();
   });
 

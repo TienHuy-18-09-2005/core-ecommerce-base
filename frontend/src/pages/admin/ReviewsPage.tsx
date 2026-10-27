@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { btnDanger, btnSecondary, formatDateTime, inputClass } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
 import { StarRating } from "../../components/common/StarRating.tsx";
+import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
+import { ReviewStatusBadge } from "../../components/admin/Badge.tsx";
 import { DataTable, PageHeader, Pagination, QueryError } from "../../components/admin/ui.tsx";
 import { useAdminReviewsQuery, useReviewModeration } from "../../hooks/useAdminQuery.ts";
 import { useListParams } from "../../hooks/useListParams.ts";
@@ -9,15 +11,16 @@ import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
 export default function ReviewsPage() {
   const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q", "visibility", "rating"] as const);
-  const { data, error, isLoading } = useAdminReviewsQuery({ ...values, ...sortParams, page });
+  const { data, error, isLoading, refetch, isRefetching } = useAdminReviewsQuery({ ...values, ...sortParams, page });
+  const confirm = useConfirm();
   const { moderate, remove } = useReviewModeration();
   const toast = useToast();
 
   const toggle = (id: number, approved: boolean) =>
     moderate.mutate({ id, approved }, { onSuccess: () => toast.showSuccess(approved ? "Đã hiện đánh giá." : "Đã ẩn đánh giá."), onError: toast.showError });
 
-  const onDelete = (id: number) => {
-    if (window.confirm("Xóa vĩnh viễn đánh giá này (kèm ảnh)?")) {
+  const onDelete = async (id: number) => {
+    if (await confirm({ title: "Xóa đánh giá?", message: "Đánh giá này (kèm ảnh) sẽ bị xóa vĩnh viễn.", confirmLabel: "Xóa", danger: true })) {
       remove.mutate(id, { onSuccess: () => toast.showSuccess("Đã xóa đánh giá."), onError: toast.showError });
     }
   };
@@ -37,7 +40,7 @@ export default function ReviewsPage() {
           {[5, 4, 3, 2, 1].map((r) => <option key={r} value={r}>{r} sao</option>)}
         </select>
       </div>
-      <QueryError error={error} />
+      <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(r) => r.id} empty="Không có đánh giá phù hợp." columns={[
         { header: "Đánh giá", sortKey: "rating", cell: (r) => (
           <div className="max-w-md">
@@ -57,11 +60,11 @@ export default function ReviewsPage() {
         { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham/${r.product.id}`} className="text-admin-primary">{r.product.name}</Link> : "—") },
         { header: "Khách hàng", cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-admin-muted">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-admin-success">Đã mua hàng</p>}</> },
         { header: "Ngày", sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
-        { header: "Trạng thái", sortKey: "is_approved", cell: (r) => (r.is_approved ? <span className="text-admin-success">Đang hiện</span> : <span className="text-admin-muted">Đang ẩn</span>) },
+        { header: "Trạng thái", sortKey: "is_approved", cell: (r) => <ReviewStatusBadge approved={r.is_approved} /> },
         { header: "Thao tác", cell: (r) => (
           <div className="flex flex-col gap-2">
             <button type="button" className={btnSecondary} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)}>{r.is_approved ? "Ẩn" : "Hiện"}</button>
-            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(r.id)}>Xóa</button>
+            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(r.id)}>Xóa</button>
           </div>
         ) },
       ]} />

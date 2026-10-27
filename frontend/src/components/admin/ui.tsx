@@ -1,27 +1,11 @@
 import { btnSecondary } from "../../utils/adminFormat.ts";
+import type { SortState } from "../../hooks/useListParams.ts";
 import type { ReactNode } from "react";
-import { ORDER_STATUS_LABELS } from "../../types/order.ts";
 import type { PageMeta } from "../../types/admin.ts";
 
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-admin-status-pending-bg text-admin-status-pending-fg",
-  confirmed: "bg-admin-status-confirmed-bg text-admin-status-confirmed-fg",
-  packing: "bg-admin-status-processing-bg text-admin-status-processing-fg",
-  shipping: "bg-admin-status-shipping-bg text-admin-status-shipping-fg",
-  delivered: "bg-admin-status-success-bg text-admin-status-success-fg",
-  cancelled: "bg-admin-status-danger-bg text-admin-status-danger-fg",
-  returned: "bg-admin-status-neutral-bg text-admin-fg-soft",
-};
-import type { SortState } from "../../hooks/useListParams.ts";
-
-export function OrderStatusBadge({ status }: { status: string }) {
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLORS[status] ?? "bg-admin-subtle text-admin-fg-soft"}`}>
-      {ORDER_STATUS_LABELS[status] ?? status}
-    </span>
-  );
-}
+import { EmptyState, ErrorState, Skeleton } from "./feedback.tsx";
+export { OrderStatusBadge } from "./Badge.tsx";
 
 export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
@@ -75,9 +59,13 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không
         </thead>
         <tbody className="divide-y divide-admin-border">
           {isLoading && !rows ? (
-            <tr><td colSpan={columns.length} className="px-4 py-6 text-center text-admin-muted">Đang tải...</td></tr>
+            Array.from({ length: 5 }, (_, i) => (
+              <tr key={`sk-${i}`} aria-hidden={i > 0 ? true : undefined}>
+                {columns.map((c, j) => <td key={c.header} className="px-4 py-3">{i === 0 && j === 0 && <span className="sr-only">Đang tải...</span>}<Skeleton className={`h-4 ${j === 0 ? "w-3/4" : "w-1/2"}`} /></td>)}
+              </tr>
+            ))
           ) : !rows || rows.length === 0 ? (
-            <tr><td colSpan={columns.length} className="px-4 py-6 text-center text-admin-muted">{empty}</td></tr>
+            <tr><td colSpan={columns.length}><EmptyState title={empty} /></td></tr>
           ) : (
             rows.map((row) => (
               <tr key={rowKey(row)} className="hover:bg-admin-subtle">
@@ -104,10 +92,8 @@ export function Pagination({ meta, onPage }: { meta: PageMeta | undefined; onPag
   );
 }
 
-export function QueryError({ error }: { error: unknown }) {
-  if (!error) {
-    return null;
-  }
-  return <p role="alert" className="mb-4 rounded-lg bg-admin-danger-subtle p-3 text-sm text-admin-danger">Không tải được dữ liệu. Vui lòng thử lại.</p>;
+/** Giữ cho tương thích: dùng ErrorState (có nút "Thử lại") ở màn hình mới. */
+export function QueryError({ error, onRetry, retrying }: { error: unknown; onRetry?: () => unknown; retrying?: boolean }) {
+  return <ErrorState error={error} onRetry={onRetry} retrying={retrying} compact />;
 }
 

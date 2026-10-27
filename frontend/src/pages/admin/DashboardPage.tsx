@@ -1,5 +1,6 @@
 import { formatDateTime } from "../../utils/adminFormat.ts";
 import { Link } from "react-router-dom";
+import { Skeleton } from "../../components/admin/feedback.tsx";
 import { DataTable, OrderStatusBadge, PageHeader, QueryError } from "../../components/admin/ui.tsx";
 import { useDashboardQuery } from "../../hooks/useAdminQuery.ts";
 import { formatCurrency } from "../../utils/formatCurrency.ts";
@@ -15,14 +16,19 @@ function Stat({ label, value, to }: { label: string; value: string | number; to?
 }
 
 export default function DashboardPage() {
-  const { data, error, isLoading } = useDashboardQuery();
+  const { data, error, isLoading, refetch, isRefetching } = useDashboardQuery();
   const max = Math.max(1, ...(data?.revenue_series.map((d) => d.revenue) ?? [1]));
 
   return (
     <>
       <PageHeader title="Tổng quan" />
-      <QueryError error={error} />
-      {isLoading && <p>Đang tải...</p>}
+      <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
+      {isLoading && (
+        <div role="status" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <span className="sr-only">Đang tải...</span>
+          {Array.from({ length: 4 }, (_, i) => <div key={i} className="space-y-3 rounded-xl border border-admin-border bg-admin-surface p-4"><Skeleton className="h-3 w-1/2" /><Skeleton className="h-7 w-2/3" /></div>)}
+        </div>
+      )}
       {data && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

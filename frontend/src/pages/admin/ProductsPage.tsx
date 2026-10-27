@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { PRODUCT_STATUS_LABELS, btnDanger, btnPrimary, inputClass } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
+import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
+import { ProductStatusBadge } from "../../components/admin/Badge.tsx";
 import { DataTable, PageHeader, Pagination, QueryError } from "../../components/admin/ui.tsx";
 import { useAdminCategoriesQuery, useAdminProductsQuery, useProductMutations } from "../../hooks/useAdminQuery.ts";
 import { useListParams } from "../../hooks/useListParams.ts";
@@ -9,13 +11,14 @@ import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
 export default function ProductsPage() {
   const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q", "status", "category_id", "low_stock"] as const);
-  const { data, error, isLoading } = useAdminProductsQuery({ ...values, ...sortParams, page });
+  const { data, error, isLoading, refetch, isRefetching } = useAdminProductsQuery({ ...values, ...sortParams, page });
+  const confirm = useConfirm();
   const categories = useAdminCategoriesQuery();
   const { remove } = useProductMutations();
   const toast = useToast();
 
-  const onDelete = (id: number, name: string) => {
-    if (!window.confirm(`Xóa sản phẩm "${name}"? Đơn hàng cũ vẫn giữ nguyên thông tin.`)) {
+  const onDelete = async (id: number, name: string) => {
+    if (!(await confirm({ title: "Xóa sản phẩm?", message: `Sản phẩm "${name}" sẽ bị xóa. Đơn hàng cũ vẫn giữ nguyên thông tin.`, confirmLabel: "Xóa", danger: true }))) {
       return;
     }
     remove.mutate(id, { onSuccess: () => toast.showSuccess("Đã xóa sản phẩm."), onError: toast.showError });
@@ -41,7 +44,7 @@ export default function ProductsPage() {
           Chỉ sắp hết hàng
         </label>
       </div>
-      <QueryError error={error} />
+      <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(p) => p.id} empty="Không có sản phẩm phù hợp." columns={[
         { header: "Sản phẩm", sortKey: "name", cell: (p) => (
           <div className="flex items-center gap-3">
@@ -54,11 +57,11 @@ export default function ProductsPage() {
         ) },
         { header: "Giá từ", sortKey: "price_min", cell: (p) => formatCurrency(p.price_min) },
         { header: "Tồn kho", sortKey: "stock_total", cell: (p) => <span className={p.stock_total <= 5 ? "font-semibold text-admin-danger" : ""}>{p.stock_total} ({p.variants_count} biến thể)</span> },
-        { header: "Trạng thái", sortKey: "status", cell: (p) => PRODUCT_STATUS_LABELS[p.status] ?? p.status },
+        { header: "Trạng thái", sortKey: "status", cell: (p) => <ProductStatusBadge status={p.status} /> },
         { header: "Thao tác", cell: (p) => (
           <div className="flex gap-2">
             <Link to={`/admin/san-pham/${p.id}`} className="text-sm text-admin-primary">Sửa</Link>
-            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(p.id, p.name)}>Xóa</button>
+            <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(p.id, p.name)}>Xóa</button>
           </div>
         ) },
       ]} />

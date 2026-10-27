@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { PAYMENT_STATUS_LABELS, btnPrimary, btnSecondary, formatDateTime, inputClass } from "../../utils/adminFormat.ts";
+import { btnPrimary, btnSecondary, formatDateTime, inputClass } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
+import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
+import { PaymentStatusBadge } from "../../components/admin/Badge.tsx";
+import { SkeletonBlock } from "../../components/admin/feedback.tsx";
 import { OrderStatusBadge, PageHeader, QueryError } from "../../components/admin/ui.tsx";
 import { useAdminOrderQuery, useOrderStatusMutation } from "../../hooks/useAdminQuery.ts";
 import { ORDER_STATUS_LABELS } from "../../types/order.ts";
@@ -10,7 +13,8 @@ import { formatCurrency } from "../../utils/formatCurrency.ts";
 
 export default function OrderDetailPage() {
   const id = Number(useParams().id);
-  const { data: order, error, isLoading } = useAdminOrderQuery(id);
+  const { data: order, error, isLoading, refetch, isRefetching } = useAdminOrderQuery(id);
+  const confirm = useConfirm();
   const mutation = useOrderStatusMutation(id);
   const toast = useToast();
   const [status, setStatus] = useState("");
@@ -19,18 +23,18 @@ export default function OrderDetailPage() {
   const errors = firstFieldErrors(mutation.error);
 
   if (isLoading) {
-    return <p>Đang tải đơn hàng...</p>;
+    return <div className="grid gap-4 lg:grid-cols-3"><SkeletonBlock lines={6} label="Đang tải đơn hàng..." className="lg:col-span-2" /><SkeletonBlock lines={4} label="" /></div>;
   }
   if (error || !order) {
-    return <QueryError error={error ?? true} />;
+    return <QueryError error={error ?? true} onRetry={refetch} retrying={isRefetching} />;
   }
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!status) {
       return;
     }
-    if (status === "cancelled" && !window.confirm("Hủy đơn sẽ hoàn lại tồn kho và lượt dùng mã giảm giá. Tiếp tục?")) {
+    if (status === "cancelled" && !(await confirm({ title: "Hủy đơn hàng?", message: "Hủy đơn sẽ hoàn lại tồn kho và lượt dùng mã giảm giá. Thao tác này không hoàn tác được.", confirmLabel: "Hủy đơn", cancelLabel: "Không", danger: true }))) {
       return;
     }
     mutation.mutate(
@@ -50,7 +54,7 @@ export default function OrderDetailPage() {
           <section className="rounded-xl border border-admin-border bg-admin-surface p-5">
             <div className="mb-3 flex flex-wrap items-center gap-3">
               <OrderStatusBadge status={order.status} />
-              <span className="text-sm text-admin-fg-soft">{PAYMENT_STATUS_LABELS[order.payment_status] ?? order.payment_status} · {order.payment_method.toUpperCase()}</span>
+              <span className="text-sm text-admin-fg-soft"><PaymentStatusBadge status={order.payment_status} /> · {order.payment_method.toUpperCase()}</span>
               <span className="text-sm text-admin-muted">Đặt lúc {formatDateTime(order.created_at)}</span>
             </div>
             <table className="min-w-full text-sm">
@@ -103,7 +107,7 @@ export default function OrderDetailPage() {
             {order.allowed_transitions.length === 0 ? (
               <p className="text-sm text-admin-muted">Đơn đã ở trạng thái cuối, không thể chuyển tiếp.</p>
             ) : (
-              <form onSubmit={onSubmit} className="space-y-3 text-sm" noValidate>
+              <form onSubmit={(e) => void onSubmit(e)} className="space-y-3 text-sm" noValidate>
                 <label className="block">
                   <span className="mb-1 block font-medium">Trạng thái mới</span>
                   <select className={inputClass} value={status} onChange={(e) => setStatus(e.target.value)}>

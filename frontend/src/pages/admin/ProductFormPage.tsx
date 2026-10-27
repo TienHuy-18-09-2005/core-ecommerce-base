@@ -3,6 +3,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PRODUCT_STATUS_LABELS, btnDanger, btnPrimary, btnSecondary, inputClass } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
+import { SkeletonBlock } from "../../components/admin/feedback.tsx";
 import { PageHeader, QueryError } from "../../components/admin/ui.tsx";
 import { useAdminCategoriesQuery, useAdminProductQuery, useProductMutations } from "../../hooks/useAdminQuery.ts";
 import { productService } from "../../services/productService.ts";
@@ -46,10 +47,10 @@ export default function ProductFormPage() {
   const detail = useAdminProductQuery(id);
 
   if (id !== null && detail.isLoading) {
-    return <p>Đang tải sản phẩm...</p>;
+    return <SkeletonBlock lines={8} label="Đang tải sản phẩm..." />;
   }
   if (id !== null && detail.error) {
-    return <QueryError error={detail.error} />;
+    return <QueryError error={detail.error} onRetry={detail.refetch} retrying={detail.isRefetching} />;
   }
   // key: nạp lại form khi đổi sản phẩm
   return <ProductForm key={id ?? "new"} id={id} initial={detail.data ? toInput(detail.data) : emptyProduct} slug={detail.data?.slug} />;

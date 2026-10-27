@@ -1,8 +1,9 @@
+import { CheckCircle2, Info, XCircle } from "lucide-react";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ApiError, mapApiError } from "../services/apiError.ts";
 import { ToastContext } from "./useToast.ts";
 
-type ToastKind = "error" | "success";
+type ToastKind = "error" | "success" | "info";
 
 interface ToastItem {
   id: number;
@@ -23,7 +24,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = nextToastId;
     nextToastId += 1;
     setToasts((current) => [...current, { id, kind, message }]);
-    window.setTimeout(() => dismiss(id), 5000);
+    window.setTimeout(() => dismiss(id), kind === "error" ? 7000 : 4000);
   }, [dismiss]);
 
   const showError = useCallback((error: unknown) => {
@@ -35,41 +36,47 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     push("success", message);
   }, [push]);
 
+  const showInfo = useCallback((message: string) => {
+    push("info", message);
+  }, [push]);
+
   const value = useMemo(
-    () => ({ showError, showSuccess }),
-    [showError, showSuccess],
+    () => ({ showError, showSuccess, showInfo }),
+    [showError, showSuccess, showInfo],
   );
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div
-        aria-live="polite"
-        className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2"
-      >
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            role={toast.kind === "error" ? "alert" : "status"}
-            className={`pointer-events-auto rounded-lg border px-4 py-3 text-sm shadow-lg ${
-              toast.kind === "error"
-                ? "border-red-200 bg-white text-red-700"
-                : "border-green-200 bg-white text-green-800"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <p>{toast.message}</p>
-              <button
-                type="button"
-                onClick={() => dismiss(toast.id)}
-                className="text-xs font-medium text-gray-500 hover:text-gray-800"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Hai vùng thông báo luôn có sẵn để trình đọc màn hình bắt kịp: lỗi (assertive), còn lại (polite). */}
+      <div className="pointer-events-none fixed bottom-4 right-4 z-[70] flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2">
+        <div aria-live="assertive" className="flex flex-col gap-2">
+          {toasts.filter((t) => t.kind === "error").map((t) => <ToastView key={t.id} toast={t} onClose={dismiss} />)}
+        </div>
+        <div aria-live="polite" className="flex flex-col gap-2">
+          {toasts.filter((t) => t.kind !== "error").map((t) => <ToastView key={t.id} toast={t} onClose={dismiss} />)}
+        </div>
       </div>
     </ToastContext.Provider>
+  );
+}
+
+const TOAST_STYLE: Record<ToastKind, { cls: string; Icon: typeof Info }> = {
+  error: { cls: "border-admin-danger-border text-admin-danger", Icon: XCircle },
+  success: { cls: "border-admin-border text-admin-success", Icon: CheckCircle2 },
+  info: { cls: "border-admin-border text-admin-primary", Icon: Info },
+};
+
+function ToastView({ toast, onClose }: { toast: ToastItem; onClose: (id: number) => void }) {
+  const { cls, Icon } = TOAST_STYLE[toast.kind];
+  return (
+    <div role={toast.kind === "error" ? "alert" : "status"} data-kind={toast.kind}
+      className={`pointer-events-auto animate-fade-in rounded-lg border bg-admin-surface px-4 py-3 text-sm shadow-lg ${cls}`}>
+      <div className="flex items-start gap-3">
+        <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />
+        <p className="flex-1 text-admin-fg">{toast.message}</p>
+        <button type="button" onClick={() => onClose(toast.id)} className="text-xs font-medium text-admin-muted hover:text-admin-fg">Đóng</button>
+      </div>
+    </div>
   );
 }

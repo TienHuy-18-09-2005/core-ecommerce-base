@@ -1,7 +1,9 @@
 import { ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, LogOut, Menu, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../../app/useAuth.ts";
+import { Drawer } from "../overlay/Drawer.tsx";
+import { ConfirmProvider } from "../overlay/Modal.tsx";
 import { ThemeToggle } from "../../common/ThemeToggle.tsx";
 import { readSidebarCollapsed, saveSidebarCollapsed } from "../../../utils/adminPrefs.ts";
 import { adminHref, breadcrumbFor, navGroups } from "../../../pages/admin/adminRoutes.ts";
@@ -38,42 +40,17 @@ function SidebarNav({ compact, compactBelowXl, onNavigate }: { compact: boolean;
   );
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
-
-/** Ngăn kéo menu cho tablet dọc / màn hẹp: bẫy focus, ESC để đóng, trả focus về nút mở. */
-function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const panel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const opener = document.activeElement as HTMLElement | null;
-    panel.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-      if (e.key !== "Tab" || !panel.current) return;
-      const items = [...panel.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (items.length === 0) return;
-      const first = items[0], last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener("keydown", onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = overflow; opener?.focus?.(); };
-  }, [open, onClose]);
-  if (!open) return null;
+function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 lg:hidden">
-      <div className="absolute inset-0 bg-black/50" aria-hidden onClick={onClose} />
-      <div ref={panel} role="dialog" aria-modal="true" aria-label="Menu quản trị"
-        className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] animate-slide-in-left flex-col overflow-y-auto bg-admin-sidebar">
+    <Drawer open={open} onClose={onClose} title="Menu quản trị" side="left" width="w-72" className="lg:hidden" hideTitle>
+      <div className="flex min-h-full flex-col bg-admin-sidebar">
         <div className="flex h-14 items-center justify-between px-4">
           <span className="font-bold text-white">Đồ Điện Siêu Xịn</span>
           <button type="button" onClick={onClose} aria-label="Đóng menu" className="rounded-lg p-2 text-admin-sidebar-fg hover:bg-admin-sidebar-hover"><X aria-hidden className="size-5" /></button>
         </div>
         <SidebarNav compact={false} onNavigate={onClose} />
       </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -125,7 +102,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           {collapsed ? <ChevronsRight aria-hidden className="size-5" /> : <><ChevronsLeft aria-hidden className="size-5" /><span>Thu gọn</span></>}
         </button>
       </aside>
-      <Drawer open={drawer} onClose={closeDrawer} />
+      <MenuDrawer open={drawer} onClose={closeDrawer} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-admin-border bg-admin-surface px-4 sm:px-6">
           <button type="button" onClick={() => setDrawer(true)} aria-label="Mở menu" aria-expanded={drawer}
@@ -142,7 +119,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
-        <main id="admin-main" tabIndex={-1} className="mx-auto w-full min-w-0 max-w-[1440px] p-4 outline-none sm:p-6">{children}</main>
+        <main id="admin-main" tabIndex={-1} className="mx-auto w-full min-w-0 max-w-[1440px] p-4 outline-none sm:p-6"><ConfirmProvider>{children}</ConfirmProvider></main>
       </div>
     </div>
   );

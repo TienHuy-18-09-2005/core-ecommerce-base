@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { btnDanger, btnPrimary, btnSecondary, formatDateTime, inputClass, toLocalInput } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
+import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
 import { DataTable, PageHeader, Pagination, QueryError } from "../../components/admin/ui.tsx";
 import { useAdminCouponsQuery, useCouponMutations } from "../../hooks/useAdminQuery.ts";
 import { useListParams } from "../../hooks/useListParams.ts";
@@ -16,7 +17,8 @@ const numOrNull = (v: string) => (v === "" ? null : Number(v));
 
 export default function CouponsPage() {
   const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q"] as const);
-  const { data, error, isLoading } = useAdminCouponsQuery({ ...values, ...sortParams, page });
+  const { data, error, isLoading, refetch, isRefetching } = useAdminCouponsQuery({ ...values, ...sortParams, page });
+  const confirm = useConfirm();
   const { create, update, remove } = useCouponMutations();
   const toast = useToast();
   const [editing, setEditing] = useState<AdminCoupon | null>(null);
@@ -47,8 +49,8 @@ export default function CouponsPage() {
     }
   };
 
-  const onDelete = (c: AdminCoupon) => {
-    if (window.confirm(`Xóa mã ${c.code}?`)) {
+  const onDelete = async (c: AdminCoupon) => {
+    if (await confirm({ title: "Xóa mã giảm giá?", message: `Mã ${c.code} sẽ bị xóa vĩnh viễn.`, confirmLabel: "Xóa", danger: true })) {
       remove.mutate(c.id, { onSuccess: () => toast.showSuccess("Đã xóa mã giảm giá."), onError: toast.showError });
     }
   };
@@ -58,7 +60,7 @@ export default function CouponsPage() {
   return (
     <>
       <PageHeader title="Mã giảm giá" />
-      <QueryError error={error} />
+      <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <input aria-label="Tìm mã" placeholder="Tìm mã..." className={`${inputClass} mb-3`} defaultValue={values.q}
@@ -72,7 +74,7 @@ export default function CouponsPage() {
             { header: "Thao tác", cell: (c) => (
               <div className="flex gap-2">
                 <button type="button" className="text-admin-primary" onClick={() => startEdit(c)}>Sửa</button>
-                <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => onDelete(c)}>Xóa</button>
+                <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(c)}>Xóa</button>
               </div>
             ) },
           ]} />
