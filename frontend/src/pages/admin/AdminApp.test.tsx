@@ -80,9 +80,19 @@ describe("admin panel", () => {
     const router = renderAdmin("/admin/san-pham");
     expect(await screen.findByRole("link", { name: "Bóng đèn" })).toBeTruthy();
     expect(await seriousViolations()).toEqual([]);
-    fireEvent.change(screen.getByLabelText("Trạng thái"), { target: { value: "draft" } });
+    fireEvent.click(within(screen.getByRole("group", { name: "Bộ lọc" })).getByRole("button", { name: "Trạng thái" }));
+    fireEvent.change(within(screen.getByRole("dialog", { name: "Lọc theo trạng thái" })).getByLabelText("Trạng thái"), { target: { value: "draft" } });
     await waitFor(() => expect(router.state.location.search).toBe("?status=draft"));
     await waitFor(() => expect(svc.products).toHaveBeenLastCalledWith(expect.objectContaining({ status: "draft", page: 1 }), expect.anything()));
+    // chip đang lọc hiện giá trị, bấm × để bỏ
+    fireEvent.click(await screen.findByRole("button", { name: "Bỏ lọc trạng thái" }));
+    await waitFor(() => expect(router.state.location.search).toBe(""));
+    // chế độ xem có sẵn "Hàng sắp hết"
+    fireEvent.click(screen.getByRole("button", { name: "Xem đã lưu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hàng sắp hết" }));
+    await waitFor(() => expect(router.state.location.search).toBe("?low_stock=1"));
+    expect(screen.getByRole("button", { name: "Sắp hết hàng" }).getAttribute("aria-pressed")).toBe("true");
+    expect(await seriousViolations()).toEqual([]);
   });
 
   it("sorts products by clicking column headers (asc → desc) and keeps sort in the URL", async () => {
@@ -180,6 +190,32 @@ describe("admin panel", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Xóa" })[0]);
     fireEvent.click(within(await screen.findByRole("alertdialog", { name: "Xóa đánh giá?" })).getByRole("button", { name: "Xóa" }));
     await waitFor(() => expect(svc.deleteReview).toHaveBeenCalledWith(1));
+  });
+
+  it("bulk-hides and bulk-deletes selected reviews from the bulk bar", async () => {
+    svc.reviews.mockResolvedValue({ data: [
+      { id: 1, rating: 5, comment: "A", images: [], is_approved: true, verified_purchase: true, created_at: null, product: null, user: { id: 2, name: "Bình", email: "b@x.vn" } },
+      { id: 2, rating: 1, comment: "B", images: [], is_approved: true, verified_purchase: false, created_at: null, product: null, user: null },
+      { id: 3, rating: 3, comment: "C", images: [], is_approved: true, verified_purchase: false, created_at: null, product: null, user: null },
+    ], meta });
+    svc.moderateReview.mockResolvedValue({} as never);
+    svc.deleteReview.mockResolvedValue();
+    renderAdmin("/admin/danh-gia");
+    await screen.findByText("A");
+    expect(screen.queryByRole("region", { name: "Thao tác hàng loạt" })).toBeNull();
+    fireEvent.click(screen.getByLabelText("Chọn đánh giá 1 của Bình"));
+    fireEvent.click(screen.getByLabelText("Chọn đánh giá 3 của khách"), { shiftKey: true });
+    const bar = screen.getByRole("region", { name: "Thao tác hàng loạt" });
+    expect(within(bar).getByText("Đã chọn 3")).toBeTruthy();
+    expect(await seriousViolations()).toEqual([]);
+    fireEvent.click(within(bar).getByRole("button", { name: "Ẩn" }));
+    await waitFor(() => expect(svc.moderateReview).toHaveBeenCalledTimes(3));
+    expect(svc.moderateReview).toHaveBeenCalledWith(2, false);
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Thao tác hàng loạt" })).toBeNull());
+    fireEvent.click(screen.getByLabelText("Chọn tất cả hàng trên trang"));
+    fireEvent.click(within(screen.getByRole("region", { name: "Thao tác hàng loạt" })).getByRole("button", { name: "Xóa" }));
+    fireEvent.click(within(await screen.findByRole("alertdialog", { name: "Xóa 3 đánh giá?" })).getByRole("button", { name: "Xóa" }));
+    await waitFor(() => expect(svc.deleteReview).toHaveBeenCalledTimes(3));
   });
 
   it("renders the category tree and shows a 409 error toast on delete", async () => {

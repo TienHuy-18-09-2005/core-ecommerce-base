@@ -1,20 +1,37 @@
 import { Link } from "react-router-dom";
-import { btnDanger, btnSecondary, formatDateTime, inputClass } from "../../utils/adminFormat.ts";
+import { btnDanger, btnSecondary, formatDateTime } from "../../utils/adminFormat.ts";
 import { useToast } from "../../app/useToast.ts";
 import { StarRating } from "../../components/common/StarRating.tsx";
 import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
 import { ReviewStatusBadge } from "../../components/admin/Badge.tsx";
 import { DataTable, PageHeader, Pagination, QueryError } from "../../components/admin/ui.tsx";
-import { useAdminReviewsQuery, useReviewModeration } from "../../hooks/useAdminQuery.ts";
+import { useAdminReviewsQuery, useBulkAction, useBulkActionWith, useReviewModeration } from "../../hooks/useAdminQuery.ts";
+import { FilterChips, SavedViews, SearchBox, type FilterDef } from "../../components/admin/table/FilterBar.tsx";
+import { useSelection } from "../../components/admin/table/useSelection.ts";
+import { bulkMessage } from "../../components/admin/table/bulkMessage.ts";
+import { adminService } from "../../services/adminService.ts";
 import { useListParams } from "../../hooks/useListParams.ts";
 import { safeImageUrl } from "../../utils/safeImageUrl.ts";
 
+const KEYS = ["q", "visibility", "rating"] as const;
+const FILTERS: FilterDef[] = [
+  { key: "visibility", label: "Hiển thị", type: "select", options: [{ value: "visible", label: "Đang hiện" }, { value: "hidden", label: "Đang ẩn" }] },
+  { key: "rating", label: "Số sao", type: "select", options: [5, 4, 3, 2, 1].map((r) => ({ value: String(r), label: `${r} sao` })) },
+];
+const PRESETS = [
+  { name: "Đang ẩn", query: "visibility=hidden" },
+  { name: "Đánh giá 1 sao", query: "rating=1" },
+];
+
 export default function ReviewsPage() {
-  const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q", "visibility", "rating"] as const);
+  const { values, page, set, setMany, setPage, sort, toggleSort, sortParams, query, applyQuery } = useListParams(KEYS);
   const { data, error, isLoading, refetch, isRefetching } = useAdminReviewsQuery({ ...values, ...sortParams, page });
   const confirm = useConfirm();
   const { moderate, remove } = useReviewModeration();
   const toast = useToast();
+  const selection = useSelection((data?.data ?? []).map((r) => r.id), `${query}|${page}`);
+  const bulkModerate = useBulkActionWith((id: number, approved: boolean) => adminService.moderateReview(id, approved));
+  const bulkDelete = useBulkAction((id: number) => adminService.deleteReview(id));
 
   const toggle = (id: number, approved: boolean) =>
     moderate.mutate({ id, approved }, { onSuccess: () => toast.showSuccess(approved ? "Đã hiện đánh giá." : "Đã ẩn đánh giá."), onError: toast.showError });
@@ -25,24 +42,34 @@ export default function ReviewsPage() {
     }
   };
 
+  const onBulkModerate = (approved: boolean) =>
+    bulkModerate.mutate({ ids: selection.ids as number[], approved }, {
+      onSuccess: (r) => { (r.failed ? toast.showError : toast.showSuccess)(bulkMessage(r, approved ? "Đã hiện" : "Đã ẩn", "đánh giá")); selection.clear(); },
+    });
+  const onBulkDelete = async () => {
+    const ids = selection.ids as number[];
+    if (!(await confirm({ title: `Xóa ${ids.length} đánh giá?`, message: "Các đánh giá đã chọn (kèm ảnh) sẽ bị xóa vĩnh viễn.", confirmLabel: "Xóa", danger: true }))) return;
+    bulkDelete.mutate(ids, { onSuccess: (r) => { (r.failed ? toast.showError : toast.showSuccess)(bulkMessage(r, "Đã xóa", "đánh giá")); selection.clear(); } });
+  };
+  const busy = bulkModerate.isPending || bulkDelete.isPending;
+
   return (
     <>
       <PageHeader title="Đánh giá" />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <input aria-label="Tìm đánh giá" placeholder="Nội dung, sản phẩm, khách..." className={inputClass} defaultValue={values.q}
-          onKeyDown={(e) => { if (e.key === "Enter") set("q", e.currentTarget.value.trim()); }}
-          onBlur={(e) => set("q", e.currentTarget.value.trim())} />
-        <select aria-label="Hiển thị" className={inputClass} value={values.visibility} onChange={(e) => set("visibility", e.target.value)}>
-          <option value="">Tất cả</option><option value="visible">Đang hiện</option><option value="hidden">Đang ẩn</option>
-        </select>
-        <select aria-label="Số sao" className={inputClass} value={values.rating} onChange={(e) => set("rating", e.target.value)}>
-          <option value="">Mọi số sao</option>
-          {[5, 4, 3, 2, 1].map((r) => <option key={r} value={r}>{r} sao</option>)}
-        </select>
-      </div>
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
-      <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(r) => r.id} empty="Không có đánh giá phù hợp." columns={[
-        { header: "Đánh giá", sortKey: "rating", cell: (r) => (
+      <DataTable tableId="reviews" selection={selection} rowLabel={(r) => `đánh giá ${r.id} của ${r.user?.name ?? "khách"}`}
+        toolbar={<>
+          <SearchBox label="Tìm đánh giá" placeholder="Nội dung, sản phẩm, khách..." value={values.q} onChange={(v) => set("q", v)} />
+          <FilterChips filters={FILTERS} values={values} onChange={(k, v) => set(k as (typeof KEYS)[number], v)} onClear={() => setMany({ visibility: "", rating: "" })} />
+          <SavedViews tableId="reviews" presets={PRESETS} query={query} onApply={applyQuery} />
+        </>}
+        bulkActions={<>
+          <button type="button" className={btnSecondary} disabled={busy} onClick={() => onBulkModerate(false)}>Ẩn</button>
+          <button type="button" className={btnSecondary} disabled={busy} onClick={() => onBulkModerate(true)}>Hiện</button>
+          <button type="button" className={btnDanger} disabled={busy} onClick={() => void onBulkDelete()}>Xóa</button>
+        </>}
+        sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(r) => r.id} empty="Không có đánh giá phù hợp." columns={[
+        { header: "Đánh giá", sortKey: "rating", hideable: false, cell: (r) => (
           <div className="max-w-md">
             <StarRating value={r.rating} size="sm" />
             {/* Văn bản thuần — render qua text node */}
@@ -58,10 +85,10 @@ export default function ReviewsPage() {
           </div>
         ) },
         { header: "Sản phẩm", cell: (r) => (r.product ? <Link to={`/admin/san-pham/${r.product.id}`} className="text-admin-primary">{r.product.name}</Link> : "—") },
-        { header: "Khách hàng", cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-admin-muted">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-admin-success">Đã mua hàng</p>}</> },
-        { header: "Ngày", sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
+        { header: "Khách hàng", secondary: true, cell: (r) => <>{r.user?.name ?? "—"}<p className="text-xs text-admin-muted">{r.user?.email}</p>{r.verified_purchase && <p className="text-xs text-admin-success">Đã mua hàng</p>}</> },
+        { header: "Ngày", secondary: true, sortKey: "created_at", cell: (r) => formatDateTime(r.created_at) },
         { header: "Trạng thái", sortKey: "is_approved", cell: (r) => <ReviewStatusBadge approved={r.is_approved} /> },
-        { header: "Thao tác", cell: (r) => (
+        { header: "Thao tác", hideable: false, cell: (r) => (
           <div className="flex flex-col gap-2">
             <button type="button" className={btnSecondary} disabled={moderate.isPending} onClick={() => toggle(r.id, !r.is_approved)}>{r.is_approved ? "Ẩn" : "Hiện"}</button>
             <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(r.id)}>Xóa</button>

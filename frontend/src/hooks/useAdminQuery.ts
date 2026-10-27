@@ -94,3 +94,38 @@ export function useReviewModeration() {
     remove: useMutation({ mutationFn: (id: number) => adminService.deleteReview(id), onSuccess }),
   };
 }
+
+export interface BulkResult { ok: number; failed: number; total: number }
+
+/**
+ * Thao tác hàng loạt bằng API từng mục sẵn có (chạy tuần tự để không dồn tải server, mỗi mục độc lập).
+ * Trả về số thành công/thất bại để báo người dùng. API bulk riêng (vd. đổi trạng thái đơn) thuộc R4/R5/R10.
+ */
+export function useBulkAction<Id>(fn: (id: Id) => Promise<unknown>) {
+  const onSuccess = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async (ids: Id[]): Promise<BulkResult> => {
+      let ok = 0;
+      for (const id of ids) {
+        try { await fn(id); ok++; } catch { /* đếm là thất bại */ }
+      }
+      return { ok, failed: ids.length - ok, total: ids.length };
+    },
+    onSettled: onSuccess,
+  });
+}
+
+/** Như useBulkAction nhưng kèm một tham số chung cho mọi mục (vd. ẩn/hiện). */
+export function useBulkActionWith<Id, A>(fn: (id: Id, arg: A) => Promise<unknown>) {
+  const onSuccess = useInvalidateAdmin();
+  return useMutation({
+    mutationFn: async ({ ids, approved }: { ids: Id[]; approved: A }): Promise<BulkResult> => {
+      let ok = 0;
+      for (const id of ids) {
+        try { await fn(id, approved); ok++; } catch { /* đếm là thất bại */ }
+      }
+      return { ok, failed: ids.length - ok, total: ids.length };
+    },
+    onSettled: onSuccess,
+  });
+}

@@ -4,7 +4,11 @@ import { CheckboxField, FormField, useSaveShortcut, useUnsavedChanges } from "..
 import { useToast } from "../../app/useToast.ts";
 import { useConfirm } from "../../components/admin/overlay/Modal.tsx";
 import { DataTable, PageHeader, Pagination, QueryError } from "../../components/admin/ui.tsx";
-import { useAdminCouponsQuery, useCouponMutations } from "../../hooks/useAdminQuery.ts";
+import { useAdminCouponsQuery, useBulkAction, useCouponMutations } from "../../hooks/useAdminQuery.ts";
+import { SearchBox } from "../../components/admin/table/FilterBar.tsx";
+import { useSelection } from "../../components/admin/table/useSelection.ts";
+import { bulkMessage } from "../../components/admin/table/bulkMessage.ts";
+import { adminService } from "../../services/adminService.ts";
 import { useListParams } from "../../hooks/useListParams.ts";
 import type { AdminCoupon, AdminCouponInput } from "../../types/admin.ts";
 import { firstFieldErrors } from "../../utils/fieldErrors.ts";
@@ -17,7 +21,7 @@ const empty: AdminCouponInput = {
 const numOrNull = (v: string) => (v === "" ? null : Number(v));
 
 export default function CouponsPage() {
-  const { values, page, set, setPage, sort, toggleSort, sortParams } = useListParams(["q"] as const);
+  const { values, page, set, setPage, sort, toggleSort, sortParams, query } = useListParams(["q"] as const);
   const { data, error, isLoading, refetch, isRefetching } = useAdminCouponsQuery({ ...values, ...sortParams, page });
   const confirm = useConfirm();
   const { create, update, remove } = useCouponMutations();
@@ -26,6 +30,13 @@ export default function CouponsPage() {
   const [form, setForm] = useState<AdminCouponInput>(empty);
   const active = editing ? update : create;
   const errors = firstFieldErrors(active.error);
+  const selection = useSelection((data?.data ?? []).map((c) => c.id), `${query}|${page}`);
+  const bulkDelete = useBulkAction((id: number) => adminService.deleteCoupon(id));
+  const onBulkDelete = async () => {
+    const ids = selection.ids as number[];
+    if (!(await confirm({ title: `Xóa ${ids.length} mã giảm giá?`, message: "Các mã đã chọn sẽ bị xóa vĩnh viễn.", confirmLabel: "Xóa", danger: true }))) return;
+    bulkDelete.mutate(ids, { onSuccess: (r) => { (r.failed ? toast.showError : toast.showSuccess)(bulkMessage(r, "Đã xóa", "mã giảm giá")); selection.clear(); if (editing && ids.includes(editing.id)) startEdit(null); } });
+  };
   const formRef = useRef<HTMLFormElement>(null);
   const unsaved = useUnsavedChanges(form);
   useSaveShortcut(formRef);
@@ -70,15 +81,16 @@ export default function CouponsPage() {
       <QueryError error={error} onRetry={refetch} retrying={isRefetching} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <input aria-label="Tìm mã" placeholder="Tìm mã..." className={`${inputClass} mb-3`} defaultValue={values.q}
-            onKeyDown={(e) => { if (e.key === "Enter") set("q", e.currentTarget.value.trim()); }} />
-          <DataTable sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(c) => c.id} empty="Chưa có mã giảm giá." columns={[
-            { header: "Mã", sortKey: "code", cell: (c) => <span className="font-mono font-semibold">{c.code}</span> },
+          <DataTable tableId="coupons" selection={selection} rowLabel={(c) => `mã ${c.code}`}
+            toolbar={<SearchBox label="Tìm mã" placeholder="Tìm mã..." value={values.q} onChange={(v) => set("q", v)} />}
+            bulkActions={<button type="button" className={btnDanger} disabled={bulkDelete.isPending} onClick={() => void onBulkDelete()}>Xóa đã chọn</button>}
+            sort={sort} onSort={toggleSort} rows={data?.data} isLoading={isLoading} rowKey={(c) => c.id} empty="Chưa có mã giảm giá." columns={[
+            { header: "Mã", sortKey: "code", hideable: false, cell: (c) => <span className="font-mono font-semibold">{c.code}</span> },
             { header: "Giảm", sortKey: "value", cell: (c) => (c.type === "percent" ? `${c.value}%${c.max_discount_amount ? ` (tối đa ${formatCurrency(c.max_discount_amount)})` : ""}` : formatCurrency(c.value)) },
-            { header: "Đã dùng", sortKey: "used_count", cell: (c) => `${c.used_count}${c.usage_limit !== null ? `/${c.usage_limit}` : ""}` },
-            { header: "Hiệu lực", sortKey: "expires_at", cell: (c) => <span className="text-xs">{formatDateTime(c.starts_at)} → {formatDateTime(c.expires_at)}</span> },
+            { header: "Đã dùng", sortKey: "used_count", align: "right", cell: (c) => `${c.used_count}${c.usage_limit !== null ? `/${c.usage_limit}` : ""}` },
+            { header: "Hiệu lực", secondary: true, sortKey: "expires_at", cell: (c) => <span className="text-xs">{formatDateTime(c.starts_at)} → {formatDateTime(c.expires_at)}</span> },
             { header: "Trạng thái", sortKey: "is_active", cell: (c) => (c.is_active ? "Đang bật" : "Tắt") },
-            { header: "Thao tác", cell: (c) => (
+            { header: "Thao tác", hideable: false, cell: (c) => (
               <div className="flex gap-2">
                 <button type="button" className="text-admin-primary" onClick={() => startEdit(c)}>Sửa</button>
                 <button type="button" className={btnDanger} disabled={remove.isPending} onClick={() => void onDelete(c)}>Xóa</button>

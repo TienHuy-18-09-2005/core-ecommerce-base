@@ -41,5 +41,21 @@ export function useListParams<K extends string>(keys: readonly K[]) {
 
   const sortParams = sort ? { sort: sort.field, direction: sort.direction } : {};
 
-  return { values, page, set, setPage: (p: number) => set("page", String(p)), sort, toggleSort, sortParams };
+  /** Đổi nhiều khóa một lần (giá trị rỗng = xóa); về trang 1. */
+  const setMany = (patch: Partial<Record<K, string>>) => {
+    setSearch((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(patch) as [string, string | undefined][]) {
+        if (v) next.set(k, v); else next.delete(k);
+      }
+      next.delete("page");
+      return next;
+    }, { replace: true });
+  };
+
+  /** Query hiện tại (bỏ trang) — dùng cho "chế độ xem đã lưu". */
+  const query = (() => { const q = new URLSearchParams(search); q.delete("page"); q.sort(); return q.toString(); })();
+  const applyQuery = (q: string) => setSearch(new URLSearchParams(q), { replace: true });
+
+  return { values, page, set, setMany, query, applyQuery, setPage: (p: number) => set("page", String(p)), sort, toggleSort, sortParams };
 }
