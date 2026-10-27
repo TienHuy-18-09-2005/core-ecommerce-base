@@ -1,8 +1,9 @@
-import { Bell, BellOff, ChevronRight, ChevronsLeft, ChevronsRight, ExternalLink, LogOut, Menu, X } from "lucide-react";
+import { Bell, BellOff, ChevronRight, ExternalLink, LogOut, Menu, X } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../../app/useAuth.ts";
 import { Drawer } from "../overlay/Drawer.tsx";
+import { Tooltip } from "../ui/IconButton.tsx";
 import { ConfirmProvider } from "../overlay/Modal.tsx";
 import { useOrderNotifier } from "../../../hooks/useOrderNotifier.ts";
 import { ThemeToggle } from "../../common/ThemeToggle.tsx";
@@ -10,6 +11,22 @@ import { readSidebarCollapsed, saveSidebarCollapsed } from "../../../utils/admin
 import { adminHref, breadcrumbFor, navGroups } from "../../../pages/admin/adminRoutes.ts";
 
 export { SIDEBAR_KEY } from "../../../utils/adminPrefs.ts";
+
+const XL_QUERY = "(min-width: 80rem)";
+/** true khi màn hình ≥1280px (sidebar có thể mở rộng/thu gọn); nhỏ hơn thì nút ☰ mở drawer. */
+function useIsXl() {
+  const get = () => typeof window.matchMedia === "function" && window.matchMedia(XL_QUERY).matches;
+  const [xl, setXl] = useState(get);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia(XL_QUERY);
+    const on = () => setXl(mq.matches);
+    on();
+    mq.addEventListener?.("change", on);
+    return () => mq.removeEventListener?.("change", on);
+  }, []);
+  return xl;
+}
 
 /** Danh sách nhóm + mục menu. `compact` = chỉ icon (rail 64px). */
 function SidebarNav({ compact, compactBelowXl, onNavigate, badges = {} }: { compact: boolean; compactBelowXl?: boolean; onNavigate?: () => void; badges?: Record<string, number | null> }) {
@@ -50,7 +67,7 @@ function SidebarNav({ compact, compactBelowXl, onNavigate, badges = {} }: { comp
 
 function MenuDrawer({ open, onClose, badges }: { open: boolean; onClose: () => void; badges: Record<string, number | null> }) {
   return (
-    <Drawer open={open} onClose={onClose} title="Menu quản trị" side="left" width="w-72" className="lg:hidden" hideTitle>
+    <Drawer open={open} onClose={onClose} title="Menu quản trị" side="left" width="w-72" className="xl:hidden" hideTitle>
       <div className="flex min-h-full flex-col bg-admin-sidebar">
         <div className="flex h-14 items-center justify-between px-4">
           <span className="font-bold text-white">Đồ Điện Siêu Xịn</span>
@@ -90,16 +107,21 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const notifier = useOrderNotifier(user?.id);
   const badges = { "don-hang": notifier.pendingCount };
 
+  const isXl = useIsXl();
+  useEffect(() => { if (isXl) setDrawer(false); }, [isXl]);
+  // ≥1280px: mở rộng ↔ rail (lưu lại); <1280px (tablet là rail, mobile ẩn sidebar): mở drawer đầy đủ đè lên trang.
   const toggle = () => {
+    if (!isXl) { setDrawer(true); return; }
     const next = !collapsed;
     saveSidebarCollapsed(next);
     setCollapsed(next);
   };
+  const expanded = isXl ? !collapsed : drawer;
 
   return (
     <div className="flex min-h-screen bg-admin-bg text-admin-fg print:block print:bg-white print:text-black">
       <a href="#admin-main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-admin-surface focus:px-3 focus:py-2">Bỏ qua menu</a>
-      <aside data-collapsed={collapsed} className={`print:hidden sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto bg-admin-sidebar transition-[width] lg:flex ${collapsed ? "w-16" : "w-16 xl:w-60"}`}>
+      <aside id="admin-sidebar" data-collapsed={collapsed} className={`print:hidden sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto bg-admin-sidebar transition-[width] lg:flex ${collapsed ? "w-16" : "w-16 xl:w-60"}`}>
         <div className="flex h-14 items-center px-4">
           <Link to="/admin" title="Đồ Điện Siêu Xịn" className="flex items-center gap-2 font-bold text-white">
             <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-lg bg-admin-primary text-sm">Đ</span>
@@ -107,16 +129,18 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <div className="flex-1"><SidebarNav compact={collapsed} compactBelowXl={!collapsed} badges={badges} /></div>
-        <button type="button" onClick={toggle} aria-pressed={collapsed} aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
-          className="m-2 hidden h-10 items-center gap-3 rounded-lg px-3 text-sm text-admin-sidebar-muted hover:bg-admin-sidebar-hover hover:text-admin-sidebar-fg xl:flex">
-          {collapsed ? <ChevronsRight aria-hidden className="size-5" /> : <><ChevronsLeft aria-hidden className="size-5" /><span>Thu gọn</span></>}
-        </button>
       </aside>
       <MenuDrawer open={drawer} onClose={closeDrawer} badges={badges} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="print:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-admin-border bg-admin-surface px-4 sm:px-6">
-          <button type="button" onClick={() => setDrawer(true)} aria-label="Mở menu" aria-expanded={drawer}
-            className="-ml-2 rounded-lg p-2 text-admin-fg-soft hover:bg-admin-subtle lg:hidden"><Menu aria-hidden className="size-5" /></button>
+          <Tooltip text={isXl ? (collapsed ? "Mở rộng menu" : "Thu gọn menu") : "Mở menu"}>
+            {(t) => (
+              <button type="button" {...t} onClick={toggle} aria-label="Mở/Thu gọn menu" aria-expanded={expanded} aria-controls={isXl ? "admin-sidebar" : undefined}
+                className="-ml-2 inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-admin-fg-soft hover:bg-admin-subtle hover:text-admin-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary">
+                <Menu aria-hidden className="size-5" />
+              </button>
+            )}
+          </Tooltip>
           <div className="min-w-0 flex-1"><Breadcrumb /></div>
           <div className="flex items-center gap-1 text-sm sm:gap-2">
             <Link to="/" className="hidden items-center gap-1 rounded-lg px-2 py-2 font-medium text-admin-primary hover:bg-admin-subtle sm:inline-flex">

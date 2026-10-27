@@ -56,21 +56,32 @@ describe("AdminLayout", () => {
     expect(within(bc).getByRole("link", { name: "Sản phẩm" }).getAttribute("href")).toBe("/admin/san-pham");
   });
 
-  it("collapses to icon rail and remembers it", () => {
+  it("nút ☰ ở đầu trang: ≥1280px thu gọn/mở rộng sidebar và ghi nhớ; không còn nút Thu gọn ở cuối menu", () => {
+    const mm = vi.spyOn(window, "matchMedia").mockImplementation((q: string) => ({ matches: q.includes("80rem"), media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as unknown as MediaQueryList);
     const { unmount } = renderLayout();
-    fireEvent.click(screen.getByRole("button", { name: "Thu gọn menu" }));
+    expect(screen.queryByText("Thu gọn")).toBeNull();
+    const btn = screen.getByRole("button", { name: "Mở/Thu gọn menu" });
+    expect(btn.closest("header")).toBeTruthy();
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(btn);
     expect(localStorage.getItem(SIDEBAR_KEY)).toBe("1");
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("dialog")).toBeNull();
     unmount();
     renderLayout();
-    expect(screen.getByRole("button", { name: "Mở rộng menu" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Mở/Thu gọn menu" }).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.focus(screen.getByRole("button", { name: "Mở/Thu gọn menu" }));
+    return waitFor(() => expect(screen.getByRole("tooltip").textContent).toBe("Mở rộng menu")).finally(() => mm.mockRestore());
   });
 
   it("opens drawer, traps focus and closes on ESC", () => {
     renderLayout();
-    const opener = screen.getByRole("button", { name: "Mở menu" });
+    const opener = screen.getByRole("button", { name: "Mở/Thu gọn menu" });
+    expect(screen.getAllByRole("button", { name: /menu/i }).filter((b) => b.closest("header"))).toHaveLength(1);
     opener.focus();
     fireEvent.click(opener);
     const dialog = screen.getByRole("dialog", { name: "Menu quản trị" });
+    expect(opener.getAttribute("aria-expanded")).toBe("true");
     const close = within(dialog).getByRole("button", { name: "Đóng menu" });
     expect(document.activeElement).toBe(close);
     fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
