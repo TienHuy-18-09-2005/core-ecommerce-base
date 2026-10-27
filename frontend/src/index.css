@@ -274,3 +274,25 @@ body {
 .rich-prose th > p, .rich-prose td > p { margin: 0; }
 .rich-prose .selectedCell { background: color-mix(in srgb, var(--color-blue-500, #3b82f6) 15%, transparent); }
 .rich-prose p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; opacity: 0.5; }
+
+/* Select gốc (native) — popup <option>/<optgroup> phải theo theme, kể cả trên Windows/Chrome
+   nơi popup không thừa hưởng nền của <select> → chữ sáng trên nền trắng khi dark. */
+:root.dark select { color-scheme: dark; }
+:root:not(.dark) select { color-scheme: light; }
+select option,
+select optgroup {
+  background-color: var(--admin-surface, var(--app-surface));
+  color: var(--admin-fg, var(--app-fg));
+}
+select optgroup {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--admin-fg-soft, var(--app-fg));
+}
+select optgroup option { font-weight: 400; color: var(--admin-fg, var(--app-fg)); }
+select option:checked,
+select option:hover {
+  background-color: var(--admin-primary-subtle, var(--app-surface-hover));
+  color: var(--admin-fg, var(--app-fg));
+}
+select option:disabled { color: var(--admin-muted, #94a3b8); }
