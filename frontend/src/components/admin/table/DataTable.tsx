@@ -71,7 +71,7 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không
           {(tableId || actions) && (
             <div role="group" aria-label="Thao tác bảng" className="ml-auto flex items-end gap-2">
               {actions}
-              <Popover label="Ẩn/hiện cột" align="right" buttonClass={toolBtn} button={<><Columns3 aria-hidden className="size-4" />Cột</>}>
+              <Popover label="Ẩn/hiện cột" align="right" buttonClass={toolBtn} button={<><Columns3 aria-hidden className="size-4" /><span className="xl:max-2xl:sr-only">Cột</span></>}>
                 {() => (
                   <fieldset>
                     <legend className="mb-2 font-semibold text-admin-fg">Hiển thị cột</legend>
@@ -87,7 +87,7 @@ export function DataTable<T>({ columns, rows, rowKey, isLoading, empty = "Không
                   </fieldset>
                 )}
               </Popover>
-              <Popover label="Mật độ bảng" align="right" panelClass="w-48" buttonClass={toolBtn} button={<><Rows3 aria-hidden className="size-4" />{density === "compact" ? "Gọn" : "Vừa"}</>}>
+              <Popover label="Mật độ bảng" align="right" panelClass="w-48" buttonClass={toolBtn} button={<><Rows3 aria-hidden className="size-4" /><span className="xl:max-2xl:sr-only">{density === "compact" ? "Gọn" : "Vừa"}</span></>}>
                 {(close) => (
                   <fieldset>
                     <legend className="mb-2 font-semibold text-admin-fg">Mật độ</legend>

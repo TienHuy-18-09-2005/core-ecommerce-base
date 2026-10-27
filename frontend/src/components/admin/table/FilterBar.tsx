@@ -23,7 +23,7 @@ export function SearchBox({ label, placeholder, value, onChange, delay = 400 }: 
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
   const id = useId();
   return (
-    <div className="w-full sm:w-72">
+    <div className="w-full sm:w-72 xl:w-[280px] xl:shrink-0">
       <label htmlFor={id} className={`${toolLabel} mb-1`}>{label}</label>
       <div className="relative">
         <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-admin-muted" />
@@ -41,7 +41,7 @@ export function FilterChips({ filters, values, onChange, onClear }: {
 }) {
   const anyActive = filters.some((f) => values[f.key]);
   return (
-    <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-end gap-3">
+    <div role="group" aria-label="Bộ lọc" className="flex flex-wrap items-end gap-3 xl:flex-nowrap">
       {filters.map((f) => {
         const v = values[f.key] ?? "";
         const id = `filter-${f.key}`;
